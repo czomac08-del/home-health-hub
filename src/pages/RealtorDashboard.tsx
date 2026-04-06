@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, TrendingUp, FileText, Send, ChevronRight, Star, Plus, BarChart3, Clock, Users, Eye, Download, Share2, ExternalLink } from "lucide-react";
+import { Home, TrendingUp, FileText, Send, Star, Plus, Clock, Eye, Download, Share2, Mail, Printer, CheckCircle2, AlertTriangle, Shield, Calendar, Ruler, Search as SearchIcon, Lock, ChevronRight } from "lucide-react";
 
 const listings = [
   { address: "123 Main St", health: 78, status: "Complete" as const, dom: 12, price: "$425,000" },
