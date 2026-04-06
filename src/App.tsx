@@ -7,6 +7,9 @@ import WelcomeScreen from "./pages/WelcomeScreen";
 import ScanningScreen from "./pages/ScanningScreen";
 import DashboardScreen from "./pages/DashboardScreen";
 import SystemDetailScreen from "./pages/SystemDetailScreen";
+import SystemsScreen from "./pages/SystemsScreen";
+import GuidesScreen from "./pages/GuidesScreen";
+import ProfileScreen from "./pages/ProfileScreen";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +25,9 @@ const App = () => (
           <Route path="/scanning" element={<ScanningScreen />} />
           <Route path="/dashboard" element={<DashboardScreen />} />
           <Route path="/system/:id" element={<SystemDetailScreen />} />
+          <Route path="/systems" element={<SystemsScreen />} />
+          <Route path="/guides" element={<GuidesScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
