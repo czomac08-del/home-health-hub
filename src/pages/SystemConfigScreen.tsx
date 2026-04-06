@@ -1,28 +1,36 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Save, X, Upload, FileText, Plus } from "lucide-react";
+import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getSpecFields, type SpecField } from "@/data/systemSpecFields";
+import { getAiData, type AiAutoFillData } from "@/data/aiAutoFillData";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
 
-interface PhotoItem {
-  url: string;
-  label: string;
-}
+interface PhotoItem { url: string; label: string; }
+interface DocItem { name: string; date: string; }
 
-interface DocItem {
-  name: string;
-  date: string;
-}
+// Small teal badge
+const AiBadge = () => (
+  <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 border border-primary/30 px-1.5 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wide leading-none">
+    <Sparkles className="h-2.5 w-2.5" /> AI
+  </span>
+);
 
 const SystemConfigScreen = () => {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const displayName = decodeURIComponent(name || "");
+
+  const aiData = useMemo(() => getAiData(displayName), [displayName]);
+
+  // Track which fields were filled by AI and confirmed
+  const [aiFilledKeys, setAiFilledKeys] = useState<Set<string>>(new Set());
+  const [aiApplied, setAiApplied] = useState(false);
+  const [aiConfirmed, setAiConfirmed] = useState(false);
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -44,13 +52,9 @@ const SystemConfigScreen = () => {
   const [serviceCompany, setServiceCompany] = useState("");
   const [servicePhone, setServicePhone] = useState("");
 
-  // Specs (dynamic key-value)
+  // Specs
   const [specs, setSpecs] = useState<Record<string, string | boolean | string[]>>({});
-
-  // Documents
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
-
-  // Notes & Location
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
 
@@ -60,50 +64,68 @@ const SystemConfigScreen = () => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Completeness calculation
+  // Apply AI data
+  const applyAiData = useCallback(() => {
+    if (!aiData) return;
+    const keys = new Set<string>();
+    if (aiData.brand) { setBrand(aiData.brand); keys.add("brand"); }
+    if (aiData.model) { setModel(aiData.model); keys.add("model"); }
+    if (aiData.serial) { setSerial(aiData.serial); keys.add("serial"); }
+    if (aiData.installDate) { setInstallDate(aiData.installDate); keys.add("installDate"); }
+    if (aiData.purchaseDate) { setPurchaseDate(aiData.purchaseDate); keys.add("purchaseDate"); }
+    if (aiData.warrantyExp) { setWarrantyExp(aiData.warrantyExp); keys.add("warrantyExp"); }
+    if (aiData.warrantyProvider) { setWarrantyProvider(aiData.warrantyProvider); keys.add("warrantyProvider"); }
+    if (aiData.lastService) { setLastService(aiData.lastService); keys.add("lastService"); }
+    if (aiData.nextService) { setNextService(aiData.nextService); keys.add("nextService"); }
+    if (aiData.serviceCompany) { setServiceCompany(aiData.serviceCompany); keys.add("serviceCompany"); }
+    if (aiData.servicePhone) { setServicePhone(aiData.servicePhone); keys.add("servicePhone"); }
+    if (aiData.location) { setLocation(aiData.location); keys.add("location"); }
+    if (aiData.specs) {
+      setSpecs((prev) => {
+        const next = { ...prev };
+        for (const [k, v] of Object.entries(aiData.specs!)) {
+          next[k] = v;
+          keys.add(`spec:${k}`);
+        }
+        return next;
+      });
+    }
+    setAiFilledKeys(keys);
+    setAiApplied(true);
+    toast.success("AI data applied — review and confirm below.");
+  }, [aiData]);
+
+  const confirmAllAi = () => {
+    setAiConfirmed(true);
+    toast.success("All AI-sourced data confirmed!");
+  };
+
+  const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
+
+  // Completeness
   const completeness = useMemo(() => {
-    let filled = 0;
-    let total = 0;
-    // Basic info (5 fields)
+    let filled = 0, total = 0;
     [brand, model, serial, installDate, purchaseDate].forEach((v) => { total++; if (v) filled++; });
-    // Service (7 fields)
     [warrantyExp, warrantyProvider, lastService, nextService, serviceCompany, servicePhone].forEach((v) => { total++; if (v) filled++; });
-    total++; // extended warranty always counts
-    filled++; // toggle always has a value
-    // Specs
-    specFields.forEach((f) => {
-      total++;
-      const val = specs[f.key];
-      if (val !== undefined && val !== "" && !(Array.isArray(val) && val.length === 0)) filled++;
-    });
-    // Photos, docs, notes, location
+    total++; filled++;
+    specFields.forEach((f) => { total++; const val = specs[f.key]; if (val !== undefined && val !== "" && !(Array.isArray(val) && val.length === 0)) filled++; });
     total += 4;
     if (photos.length > 0) filled++;
     if (Object.values(docs).some((d) => d !== null && d !== undefined)) filled++;
     if (notes) filled++;
     if (location) filled++;
     return total > 0 ? Math.round((filled / total) * 100) : 0;
-  }, [brand, model, serial, installDate, purchaseDate, warrantyExp, warrantyProvider, lastService, nextService, serviceCompany, servicePhone, extendedWarranty, specFields, specs, photos, docs, notes, location]);
+  }, [brand, model, serial, installDate, purchaseDate, warrantyExp, warrantyProvider, lastService, nextService, serviceCompany, servicePhone, specFields, specs, photos, docs, notes, location]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newPhotos = Array.from(files).map((file) => ({
-      url: URL.createObjectURL(file),
-      label: photoLabel,
-    }));
-    setPhotos((prev) => [...prev, ...newPhotos]);
-  };
-
-  const removePhoto = (idx: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+    setPhotos((prev) => [...prev, ...Array.from(files).map((file) => ({ url: URL.createObjectURL(file), label: photoLabel }))]);
   };
 
   const handleDocUpload = (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString() } }));
-    }
+    if (file) setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString() } }));
   };
 
   const handleSave = () => {
@@ -113,7 +135,6 @@ const SystemConfigScreen = () => {
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-      {/* Header */}
       <button onClick={() => navigate("/systems")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
         <ArrowLeft className="h-4 w-4" /> Back to Systems
       </button>
@@ -122,7 +143,7 @@ const SystemConfigScreen = () => {
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
 
       {/* Progress Bar */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Profile Completeness</span>
           <span className="text-xs font-bold text-primary">{completeness}%</span>
@@ -132,14 +153,35 @@ const SystemConfigScreen = () => {
         </div>
       </div>
 
+      {/* AI Auto-Fill Banner */}
+      {aiData && !aiApplied && (
+        <button onClick={applyAiData} className="w-full mb-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-center gap-3 hover:bg-primary/15 transition-colors text-left">
+          <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-primary">AI found data for this system</p>
+            <p className="text-xs text-primary/70">Tap to review and confirm</p>
+          </div>
+        </button>
+      )}
+      {aiData && aiApplied && !aiConfirmed && (
+        <div className="mb-2 space-y-2">
+          <button onClick={confirmAllAi} className="w-full rounded-xl bg-primary/15 border border-primary/30 px-4 py-3 flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
+            <Check className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">Confirm All AI Data</span>
+          </button>
+        </div>
+      )}
+      {aiData && (
+        <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
+      )}
+
       {/* === PHOTOS === */}
       <SectionHeader title="Photos" />
       <div className="mb-2">
-        <select
-          value={photoLabel}
-          onChange={(e) => setPhotoLabel(e.target.value)}
-          className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
-        >
+        <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)}
+          className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
           {PHOTO_LABELS.map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
         <label className="cursor-pointer block">
@@ -156,7 +198,7 @@ const SystemConfigScreen = () => {
           {photos.map((p, i) => (
             <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-border">
               <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-              <button onClick={() => removePhoto(i)} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5">
+              <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5">
                 <X className="h-3 w-3 text-foreground" />
               </button>
               <span className="absolute bottom-0 inset-x-0 bg-background/80 text-[9px] text-center text-foreground truncate px-1">{p.label}</span>
@@ -168,30 +210,30 @@ const SystemConfigScreen = () => {
       {/* === BASIC INFO === */}
       <SectionHeader title="Basic Info" />
       <div className="space-y-3 mb-6">
-        <Field label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" />
-        <Field label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" />
-        <Field label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" />
-        <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" />
-        <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" />
+        <Field label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} />
+        <Field label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} />
+        <Field label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} />
+        <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
+        <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
       </div>
 
       {/* === SERVICE & WARRANTY === */}
       <SectionHeader title="Service & Warranty" />
       <div className="space-y-3 mb-6">
-        <Field label="Warranty Expiration Date" value={warrantyExp} onChange={setWarrantyExp} type="date" />
-        <Field label="Warranty Provider" value={warrantyProvider} onChange={setWarrantyProvider} />
+        <Field label="Warranty Expiration Date" value={warrantyExp} onChange={setWarrantyExp} type="date" ai={isAiField("warrantyExp")} />
+        <Field label="Warranty Provider" value={warrantyProvider} onChange={setWarrantyProvider} ai={isAiField("warrantyProvider")} />
         <ToggleRow label="Extended Warranty" checked={extendedWarranty} onChange={setExtendedWarranty} />
-        <Field label="Last Service Date" value={lastService} onChange={setLastService} type="date" />
-        <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" />
-        <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} />
-        <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" />
+        <Field label="Last Service Date" value={lastService} onChange={setLastService} type="date" ai={isAiField("lastService")} />
+        <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" ai={isAiField("nextService")} />
+        <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} ai={isAiField("serviceCompany")} />
+        <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
       </div>
 
-      {/* === SPECIFICATIONS (dynamic) === */}
+      {/* === SPECIFICATIONS === */}
       <SectionHeader title="Specifications" />
       <div className="space-y-3 mb-6">
         {specFields.map((field) => (
-          <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} />
+          <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
         ))}
       </div>
 
@@ -205,11 +247,7 @@ const SystemConfigScreen = () => {
               <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">{docType}</p>
-                {doc ? (
-                  <p className="text-xs text-muted-foreground truncate">{doc.name} — {doc.date}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground/50 italic">No file uploaded</p>
-                )}
+                {doc ? <p className="text-xs text-muted-foreground truncate">{doc.name} — {doc.date}</p> : <p className="text-xs text-muted-foreground/50 italic">No file uploaded</p>}
               </div>
               <label className="cursor-pointer shrink-0">
                 <input type="file" accept=".pdf,.jpg,.png" className="hidden" onChange={(e) => handleDocUpload(docType, e)} />
@@ -223,39 +261,28 @@ const SystemConfigScreen = () => {
       {/* === LOCATION === */}
       <SectionHeader title="Location in Home" />
       <div className="mb-6">
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="e.g. Northeast corner of basement behind water heater"
-          className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-        />
+        <div className="relative">
+          {isAiField("location") && <div className="absolute right-3 top-1/2 -translate-y-1/2"><AiBadge /></div>}
+          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g. Northeast corner of basement behind water heater"
+            className={`w-full rounded-xl border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${isAiField("location") ? "border-primary/40 pr-16" : "border-border"}`} />
+        </div>
       </div>
 
       {/* === NOTES === */}
       <SectionHeader title="Notes" />
       <div className="mb-8">
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any additional details, service provider info, etc."
-          rows={4}
-          className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-        />
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+          placeholder="Any additional details, service provider info, etc." rows={4}
+          className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
       </div>
 
       {/* === BUTTONS === */}
       <div className="space-y-3">
-        <button
-          onClick={handleSave}
-          className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2"
-        >
+        <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
           <Save className="h-5 w-5" /> Save to Passport
         </button>
-        <button
-          onClick={() => navigate("/systems")}
-          className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors"
-        >
+        <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
           Cancel
         </button>
       </div>
@@ -269,18 +296,15 @@ const SectionHeader = ({ title }: { title: string }) => (
   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-2">{title}</h2>
 );
 
-const Field = ({ label, value, onChange, placeholder, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+const Field = ({ label, value, onChange, placeholder, type = "text", ai = false }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean;
 }) => (
   <div>
-    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-    />
+    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+      {label} {ai && <AiBadge />}
+    </label>
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
   </div>
 );
 
@@ -293,38 +317,32 @@ const ToggleRow = ({ label, checked, onChange }: {
   </div>
 );
 
-const SpecFieldInput = ({ field, value, onChange }: {
-  field: SpecField;
-  value: string | boolean | string[] | undefined;
-  onChange: (v: string | boolean | string[]) => void;
+const SpecFieldInput = ({ field, value, onChange, ai = false }: {
+  field: SpecField; value: string | boolean | string[] | undefined; onChange: (v: string | boolean | string[]) => void; ai?: boolean;
 }) => {
+  const borderClass = ai ? "border-primary/40" : "border-border";
+  const labelEl = (
+    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+      {field.label}{field.suffix ? ` (${field.suffix})` : ""} {ai && <AiBadge />}
+    </label>
+  );
+
   switch (field.type) {
     case "text":
     case "number":
       return (
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-            {field.label}{field.suffix ? ` (${field.suffix})` : ""}
-          </label>
-          <input
-            type={field.type === "number" ? "number" : "text"}
-            value={(value as string) || ""}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder}
-            className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+          {labelEl}
+          <input type={field.type === "number" ? "number" : "text"} value={(value as string) || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder}
+            className={`w-full rounded-xl border ${borderClass} bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50`} />
         </div>
       );
     case "date":
       return (
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{field.label}</label>
-          <input
-            type="date"
-            value={(value as string) || ""}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+          {labelEl}
+          <input type="date" value={(value as string) || ""} onChange={(e) => onChange(e.target.value)}
+            className={`w-full rounded-xl border ${borderClass} bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50`} />
         </div>
       );
     case "select": {
@@ -332,27 +350,22 @@ const SpecFieldInput = ({ field, value, onChange }: {
       const warning = field.warning?.[strVal];
       return (
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{field.label}</label>
-          <select
-            value={strVal}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
+          {labelEl}
+          <select value={strVal} onChange={(e) => onChange(e.target.value)}
+            className={`w-full rounded-xl border ${borderClass} bg-card py-2.5 px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50`}>
             <option value="">Select…</option>
             {field.options?.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
           </select>
           {warning && (
-            <div className="mt-1.5 rounded-lg bg-destructive/15 border border-destructive/30 px-3 py-2 text-xs text-destructive font-medium">
-              {warning}
-            </div>
+            <div className="mt-1.5 rounded-lg bg-destructive/15 border border-destructive/30 px-3 py-2 text-xs text-destructive font-medium">{warning}</div>
           )}
         </div>
       );
     }
     case "toggle":
       return (
-        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
-          <span className="text-sm text-foreground">{field.label}</span>
+        <div className={`flex items-center justify-between rounded-xl border ${borderClass} bg-card px-4 py-3`}>
+          <span className="text-sm text-foreground flex items-center gap-1.5">{field.label} {ai && <AiBadge />}</span>
           <Switch checked={!!value} onCheckedChange={(v) => onChange(v)} />
         </div>
       );
@@ -360,23 +373,18 @@ const SpecFieldInput = ({ field, value, onChange }: {
       const selected = (value as string[]) || [];
       return (
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">{field.label}</label>
-          <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-2.5">
-            {field.options?.map((opt) => {
-              const isChecked = selected.includes(opt);
-              return (
-                <label key={opt} className="flex items-center gap-3 cursor-pointer">
-                  <Checkbox
-                    checked={isChecked}
-                    onCheckedChange={(checked) => {
-                      if (checked) onChange([...selected, opt]);
-                      else onChange(selected.filter((s) => s !== opt));
-                    }}
-                  />
-                  <span className="text-sm text-foreground">{opt}</span>
-                </label>
-              );
-            })}
+          {labelEl}
+          <div className={`rounded-xl border ${borderClass} bg-card px-4 py-3 space-y-2.5`}>
+            {field.options?.map((opt) => (
+              <label key={opt} className="flex items-center gap-3 cursor-pointer">
+                <Checkbox checked={selected.includes(opt)}
+                  onCheckedChange={(checked) => {
+                    if (checked) onChange([...selected, opt]);
+                    else onChange(selected.filter((s) => s !== opt));
+                  }} />
+                <span className="text-sm text-foreground">{opt}</span>
+              </label>
+            ))}
           </div>
         </div>
       );
