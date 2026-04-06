@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, TrendingUp, FileText, Send, ChevronRight, Star, Plus, BarChart3, Clock, Users, Eye, Download, Share2, ExternalLink } from "lucide-react";
+import { Home, TrendingUp, FileText, Send, Star, Plus, Clock, Eye, Download, Share2, Mail, Printer, CheckCircle2, AlertTriangle, Shield, Calendar, Ruler, Search as SearchIcon, Lock, ChevronRight } from "lucide-react";
 
 const listings = [
   { address: "123 Main St", health: 78, status: "Complete" as const, dom: 12, price: "$425,000" },
@@ -111,90 +111,263 @@ const RealtorDashboard = () => {
 
 /* ── Buyer Report ── */
 const BuyerReport = ({ address, onBack }: { address: string; onBack: () => void }) => {
-  const systemBreakdown = [
-    { name: "HVAC", health: 92, last: "Mar 2024", status: "green" },
-    { name: "Plumbing", health: 78, last: "Jan 2024", status: "green" },
-    { name: "Electrical", health: 65, last: "Nov 2023", status: "amber" },
-    { name: "Roof", health: 55, last: "Sep 2023", status: "red" },
-    { name: "Water Heater", health: 70, last: "Jun 2023", status: "amber" },
-    { name: "Well/Water", health: 85, last: "Jan 2024", status: "green" },
+  const [unlocked, setUnlocked] = useState(false);
+
+  const systems = [
+    { name: "HVAC", health: 92, last: "Mar 2024", status: "green" as const, label: "Excellent" },
+    { name: "Roof", health: 55, last: "Sep 2023", status: "red" as const, label: "Needs Attention" },
+    { name: "Electrical", health: 65, last: "Nov 2023", status: "amber" as const, label: "Fair" },
+    { name: "Plumbing", health: 78, last: "Jan 2024", status: "green" as const, label: "Good" },
+    { name: "Water Heater", health: 88, last: "Jun 2023", status: "green" as const, label: "Very Good" },
+    { name: "Well System", health: 95, last: "Feb 2024", status: "green" as const, label: "Excellent" },
   ];
 
+  const timeline = [
+    { date: "Mar 2024", event: "HVAC filter replaced & system tune-up", by: "CoolAir HVAC Solutions", verified: true },
+    { date: "Feb 2024", event: "Well water quality test — passed", by: "AquaPure Testing", verified: true },
+    { date: "Jan 2024", event: "Annual plumbing inspection", by: "Reliable Plumbing Co", verified: true },
+    { date: "Sep 2023", event: "Roof inspection — shingle wear noted", by: "TopShield Roofing", verified: true },
+    { date: "Jun 2023", event: "Water heater anode rod replaced", by: "Owner (DIY)", verified: false },
+    { date: "Mar 2023", event: "Electrical panel inspection", by: "SafeWire Electric", verified: true },
+    { date: "Nov 2022", event: "Furnace heat exchanger inspection", by: "CoolAir HVAC Solutions", verified: true },
+    { date: "Aug 2022", event: "Roof gutter cleaning & repair", by: "TopShield Roofing", verified: true },
+  ];
+
+  const docs = [
+    { name: "Building Permits", exists: true },
+    { name: "Warranties", exists: true },
+    { name: "Owner's Manuals", exists: true },
+    { name: "Inspection Reports", exists: true },
+    { name: "Service Records", exists: true },
+    { name: "Property Survey", exists: false },
+    { name: "Insurance Certificates", exists: false },
+  ];
+
+  const history = [
+    { year: "1994", event: "Home built — original construction" },
+    { year: "2005", event: "Kitchen renovation — full remodel" },
+    { year: "2012", event: "Roof replacement — 30yr architectural shingles" },
+    { year: "2019", event: "HVAC system replaced — Trane XR15" },
+    { year: "2021", event: "Electrical panel upgrade — 200 amp" },
+  ];
+
+  const healthColor = (s: string) => s === "green" ? "bg-health-green" : s === "amber" ? "bg-health-amber" : "bg-health-red";
+  const healthText = (s: string) => s === "green" ? "text-health-green" : s === "amber" ? "text-health-amber" : "text-health-red";
+
   return (
-    <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen pb-32 max-w-2xl mx-auto px-4 py-6">
       <button onClick={onBack} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">
         ← Back to Dashboard
       </button>
 
-      <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-6 text-center">
-          <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-3 py-1 mb-3">
-            <Star className="h-3 w-3 text-primary fill-primary" />
-            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Verified by Home Passport</span>
+      {/* ── Report Card ── */}
+      <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden relative">
+
+        {/* Verified Stamp */}
+        <div className="absolute top-6 right-6 rotate-12 opacity-15 pointer-events-none select-none">
+          <div className="border-4 border-primary rounded-xl px-4 py-2">
+            <p className="text-primary font-black text-lg uppercase tracking-widest leading-none">Home Passport</p>
+            <p className="text-primary font-bold text-[10px] uppercase tracking-widest text-center">Verified</p>
           </div>
-          <h2 className="text-xl font-bold text-foreground">{address}</h2>
-          <p className="text-xs text-muted-foreground">Built 2005 · 3 bed / 2 bath · 1,850 sqft</p>
-          <div className="mt-4 inline-flex items-center justify-center h-24 w-24 rounded-full border-4 border-primary bg-primary/10">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-primary">78</p>
-              <p className="text-[8px] text-primary/70 uppercase font-semibold">Health Score</p>
+        </div>
+
+        {/* ── Header ── */}
+        <div className="bg-gradient-to-br from-primary/15 to-transparent p-6 md:p-8 text-center border-b border-border">
+          <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-4 py-1.5 mb-4">
+            <Shield className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Home Passport Report</span>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">{address}</h2>
+          <p className="text-sm text-muted-foreground mb-6">Comprehensive Property Health Report</p>
+
+          {/* Health Score Ring */}
+          <div className="relative inline-flex items-center justify-center mb-6">
+            <svg className="h-32 w-32 -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke="hsl(var(--primary))" strokeWidth="8"
+                strokeDasharray={`${(78 / 100) * 327} 327`} strokeLinecap="round" />
+            </svg>
+            <div className="absolute text-center">
+              <p className="text-4xl font-black text-primary leading-none">78</p>
+              <p className="text-[9px] text-primary/70 uppercase font-bold tracking-wider mt-0.5">Health Score</p>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl bg-secondary/50 border border-border p-3 text-center">
+              <Calendar className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">1994</p>
+              <p className="text-[10px] text-muted-foreground">Year Built</p>
+            </div>
+            <div className="rounded-xl bg-secondary/50 border border-border p-3 text-center">
+              <Ruler className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">2,150</p>
+              <p className="text-[10px] text-muted-foreground">Sq Ft</p>
+            </div>
+            <div className="rounded-xl bg-secondary/50 border border-border p-3 text-center">
+              <SearchIcon className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg font-bold text-foreground">Mar '24</p>
+              <p className="text-[10px] text-muted-foreground">Last Inspected</p>
             </div>
           </div>
         </div>
 
-        {/* Systems */}
-        <div className="p-5">
-          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">System Health Breakdown</h3>
-          <div className="space-y-2 mb-5">
-            {systemBreakdown.map((s) => (
-              <div key={s.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2.5 w-2.5 rounded-full ${s.status === "green" ? "bg-health-green" : s.status === "amber" ? "bg-health-amber" : "bg-health-red"}`} />
-                  <span className="text-sm text-foreground">{s.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-semibold ${s.status === "green" ? "text-health-green" : s.status === "amber" ? "text-health-amber" : "text-health-red"}`}>{s.health}%</span>
-                  <span className="text-[10px] text-muted-foreground w-16 text-right">{s.last}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Documents on File</h3>
-          <div className="flex flex-wrap gap-1.5 mb-5">
-            {["Warranties", "Permits", "Service Records", "Manuals"].map((d) => (
-              <span key={d} className="inline-flex items-center gap-1 text-[10px] bg-health-green/15 text-health-green px-2 py-1 rounded-full font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-health-green" /> {d}
+        {/* ── Verification Badges ── */}
+        <div className="px-5 md:px-8 py-4 border-b border-border">
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {["Permit Records Verified", "Inspector Reviewed", "AI Analyzed", "Owner Confirmed", "Documents on File"].map((b) => (
+              <span key={b} className="inline-flex items-center gap-1 text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="h-3 w-3" /> {b}
               </span>
             ))}
           </div>
+        </div>
 
-          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Maintenance Timeline</h3>
-          <div className="space-y-1.5 mb-5">
-            {[
-              { date: "Mar 2024", event: "HVAC filter replaced" },
-              { date: "Jan 2024", event: "Annual plumbing inspection" },
-              { date: "Sep 2023", event: "Roof inspection — repairs recommended" },
-              { date: "Jun 2023", event: "Water heater anode rod replaced" },
-            ].map((e, i) => (
-              <div key={i} className="flex items-center gap-3 text-xs">
-                <span className="text-muted-foreground w-16 shrink-0">{e.date}</span>
-                <span className="text-foreground">{e.event}</span>
+        {/* ── Systems Health Grid ── */}
+        <div className="px-5 md:px-8 py-5 border-b border-border">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Systems Health Overview</h3>
+          <div className="space-y-3">
+            {systems.map((s) => (
+              <div key={s.name} className="flex items-center gap-3">
+                <span className="text-sm font-medium text-foreground w-24 shrink-0">{s.name}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-secondary overflow-hidden">
+                  <div className={`h-full rounded-full ${healthColor(s.status)} transition-all`} style={{ width: `${s.health}%` }} />
+                </div>
+                <span className={`text-sm font-bold w-10 text-right ${healthText(s.status)}`}>{s.health}%</span>
+                <span className="text-[10px] text-muted-foreground w-16 text-right hidden md:block">{s.last}</span>
+                <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full w-24 text-center hidden md:block ${
+                  s.status === "green" ? "bg-health-green/15 text-health-green" : s.status === "amber" ? "bg-health-amber/15 text-health-amber" : "bg-health-red/15 text-health-red"
+                }`}>{s.label}</span>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Share buttons */}
-          <div className="flex gap-2">
-            <button className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground flex items-center justify-center gap-2 hover:opacity-90">
-              <Share2 className="h-4 w-4" /> Share Link
-            </button>
-            <button className="flex-1 rounded-xl bg-secondary py-3 text-sm font-semibold text-secondary-foreground flex items-center justify-center gap-2 hover:bg-secondary/80">
-              <Download className="h-4 w-4" /> Download PDF
-            </button>
+        {/* ── Maintenance Timeline ── */}
+        <div className="px-5 md:px-8 py-5 border-b border-border">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Maintenance Timeline</h3>
+          <div className="relative">
+            <div className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
+            <div className="space-y-4">
+              {timeline.map((t, i) => (
+                <div key={i} className="flex gap-4 relative">
+                  <div className={`h-3 w-3 rounded-full mt-1 shrink-0 z-10 ${t.verified ? "bg-primary" : "bg-muted-foreground"}`} />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-foreground font-medium">{t.event}</p>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{t.date}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">{t.by}</span>
+                      {t.verified && (
+                        <span className="inline-flex items-center gap-0.5 text-[8px] text-primary font-semibold">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> Licensed Pro
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* ── Active Alerts ── */}
+        <div className="px-5 md:px-8 py-5 border-b border-border">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Active Alerts</h3>
+          <div className="rounded-xl border-2 border-health-red/40 bg-health-red/5 p-4 space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-health-red shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-health-red">Roof — Shingle wear detected</p>
+                <p className="text-[11px] text-muted-foreground">Last inspected Sep 2023. Recommend professional re-inspection and repair estimate within 90 days.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 text-health-amber shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-health-amber">Electrical — Panel age concern</p>
+                <p className="text-[11px] text-muted-foreground">Panel upgraded in 2021 but some original wiring remains. Recommend full circuit evaluation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Documents on File ── */}
+        <div className="px-5 md:px-8 py-5 border-b border-border">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Documents on File</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {docs.map((d) => (
+              <div key={d.name} className="flex items-center gap-2 text-xs">
+                <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${d.exists ? "text-health-green" : "text-muted-foreground/40"}`} />
+                <span className={d.exists ? "text-foreground" : "text-muted-foreground/60"}>{d.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Home History ── */}
+        <div className="px-5 md:px-8 py-5 border-b border-border">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Home History</h3>
+          <div className="space-y-2">
+            {history.map((h) => (
+              <div key={h.year} className="flex items-center gap-3 text-xs">
+                <span className="text-primary font-bold w-10">{h.year}</span>
+                <span className="text-foreground">{h.event}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Paywall / Full Report ── */}
+        <div className="px-5 md:px-8 py-6">
+          {!unlocked ? (
+            <div className="rounded-xl border border-border bg-secondary/30 p-5 text-center">
+              <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-foreground mb-1">Unlock Full Report</h4>
+              <p className="text-[11px] text-muted-foreground mb-1">Free preview shown above. The full report adds:</p>
+              <ul className="text-[11px] text-muted-foreground space-y-0.5 mb-4">
+                <li>• Detailed contractor service records</li>
+                <li>• Complete permit history with documents</li>
+                <li>• Cost analysis & replacement estimates</li>
+                <li>• Comparable home health scores</li>
+              </ul>
+              <button onClick={() => setUnlocked(true)}
+                className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong">
+                Unlock Full Report — $9.99
+              </button>
+              <p className="text-[9px] text-muted-foreground mt-2">One-time purchase · Instant access · Shareable</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center">
+              <CheckCircle2 className="h-6 w-6 text-primary mx-auto mb-1" />
+              <p className="text-sm font-bold text-primary">Full Report Unlocked</p>
+              <p className="text-[10px] text-muted-foreground">All details are now visible throughout the report</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Share Toolbar ── */}
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        <button className="rounded-xl bg-primary py-3 flex flex-col items-center gap-1 text-primary-foreground hover:opacity-90 transition-opacity">
+          <Download className="h-4 w-4" />
+          <span className="text-[10px] font-semibold">PDF</span>
+        </button>
+        <button className="rounded-xl bg-secondary py-3 flex flex-col items-center gap-1 text-secondary-foreground hover:bg-secondary/80 transition-colors">
+          <Share2 className="h-4 w-4" />
+          <span className="text-[10px] font-semibold">Share</span>
+        </button>
+        <button className="rounded-xl bg-secondary py-3 flex flex-col items-center gap-1 text-secondary-foreground hover:bg-secondary/80 transition-colors">
+          <Mail className="h-4 w-4" />
+          <span className="text-[10px] font-semibold">Email</span>
+        </button>
+        <button className="rounded-xl bg-secondary py-3 flex flex-col items-center gap-1 text-secondary-foreground hover:bg-secondary/80 transition-colors">
+          <Printer className="h-4 w-4" />
+          <span className="text-[10px] font-semibold">Print</span>
+        </button>
       </div>
     </div>
   );
