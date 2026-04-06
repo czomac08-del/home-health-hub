@@ -12,6 +12,9 @@ import SystemsScreen from "./pages/SystemsScreen";
 import GuidesScreen from "./pages/GuidesScreen";
 import GuideWalkthroughScreen from "./pages/GuideWalkthroughScreen";
 import ProfileScreen from "./pages/ProfileScreen";
+import PropertyDetailScreen from "./pages/PropertyDetailScreen";
+import HandoverWizardScreen from "./pages/HandoverWizardScreen";
+import ClaimHomeScreen from "./pages/ClaimHomeScreen";
 import BottomNav from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +38,9 @@ const AppContent = () => {
           <Route path="/guides" element={<GuidesScreen />} />
           <Route path="/guide/:id" element={<GuideWalkthroughScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/property" element={<PropertyDetailScreen />} />
+          <Route path="/handover" element={<HandoverWizardScreen />} />
+          <Route path="/claim" element={<ClaimHomeScreen />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {showNav && <BottomNav />}

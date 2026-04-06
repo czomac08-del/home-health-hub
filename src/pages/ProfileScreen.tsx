@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3 } from "lucide-react";
 
 const maintenanceHistory = [
@@ -14,6 +15,7 @@ const proFeatures = [
 ];
 
 const ProfileScreen = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState(true);
   const [weeklyEmail, setWeeklyEmail] = useState(false);
   const [reminders, setReminders] = useState(true);
@@ -34,7 +36,7 @@ const ProfileScreen = () => {
       {/* My Properties */}
       <Section title="My Properties">
         <div className="rounded-xl border border-border bg-card">
-          <button className="w-full flex items-center gap-3 p-4 border-b border-border/50 hover:bg-secondary/30 transition-colors text-left">
+          <button onClick={() => navigate("/property")} className="w-full flex items-center gap-3 p-4 border-b border-border/50 hover:bg-secondary/30 transition-colors text-left">
             <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
               <Home className="h-5 w-5 text-primary" />
             </div>
