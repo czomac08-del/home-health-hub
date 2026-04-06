@@ -140,7 +140,8 @@ const DashboardScreen = () => {
           ))}
         </div>
       </div>
-
+      {/* AI Chat Bubble */}
+      <HomeAIChat />
     </div>
   );
 };
