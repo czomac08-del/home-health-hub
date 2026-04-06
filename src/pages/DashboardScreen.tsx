@@ -13,6 +13,7 @@ const systems = [
 ];
 
 const needsAttention = systems.filter((s) => s.health < 70);
+const healthySystems = systems.filter((s) => s.health >= 70);
 
 const DashboardScreen = () => {
   const navigate = useNavigate();
@@ -88,11 +89,11 @@ const DashboardScreen = () => {
         </div>
       </div>
 
-      {/* All Systems */}
+      {/* All Systems (excluding ones already in Needs Attention) */}
       <div className="px-6">
         <h3 className="text-foreground font-semibold text-lg mb-4">All Systems</h3>
         <div className="flex flex-col gap-3">
-          {systems.map((sys) => (
+          {healthySystems.map((sys) => (
             <SystemCard
               key={sys.id}
               id={sys.id}
