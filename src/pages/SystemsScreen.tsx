@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater } from "lucide-react";
 
 type SystemStatus = "configured" | "unconfigured";
@@ -29,10 +30,10 @@ const appliances: SystemItem[] = [
   { name: "Water Softener", icon: <GlassWater className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
 ];
 
-const SystemRow = ({ item }: { item: SystemItem }) => {
+const SystemRow = ({ item, onClick }: { item: SystemItem; onClick: () => void }) => {
   const isConfigured = item.status === "configured";
   return (
-    <button className="w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left">
+    <button onClick={onClick} className="w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left">
       <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
         {item.icon}
       </div>
@@ -52,6 +53,7 @@ const SystemRow = ({ item }: { item: SystemItem }) => {
 
 const SystemsScreen = () => {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filterItems = (items: SystemItem[]) =>
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
