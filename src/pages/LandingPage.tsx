@@ -41,7 +41,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 pt-16 pb-20 text-center">
+      <section className="max-w-4xl mx-auto px-6 pt-16 pb-12 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
           <Zap className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
@@ -59,6 +59,42 @@ const LandingPage = () => {
           <button className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm">
             View Demo
           </button>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="max-w-4xl mx-auto px-6 pb-12">
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { step: "1", icon: Search, title: "Scan Your Address", desc: "Enter your address and we pull public records instantly" },
+            { step: "2", icon: Shield, title: "Verify Your Systems", desc: "Confirm AI-found data and add your own details" },
+            { step: "3", icon: FileText, title: "Share Your Passport", desc: "Transfer to buyers, share with pros, or generate reports" },
+          ].map((s) => (
+            <div key={s.step} className="rounded-xl border border-border bg-card p-4 text-center">
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                <span className="text-sm font-bold text-primary">{s.step}</span>
+              </div>
+              <s.icon className="h-5 w-5 text-primary mx-auto mb-2" />
+              <h3 className="text-sm font-bold text-foreground mb-1">{s.title}</h3>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Trust Indicators */}
+      <section className="max-w-4xl mx-auto px-6 pb-16">
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: Home, label: "50,000+ Homes Documented" },
+            { icon: Briefcase, label: "Trusted by Realtors" },
+            { icon: ClipboardList, label: "Inspector Verified" },
+          ].map((t) => (
+            <div key={t.label} className="flex flex-col items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
+              <t.icon className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-semibold text-primary">{t.label}</span>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -15,16 +15,15 @@ const WelcomeScreen = () => {
   const navigate = useNavigate();
   const { role, setRole } = useRole();
 
-  const handleScan = () => {
-    if (!address.trim() && role === "homeowner") return;
+  const handleContinue = () => {
+    if (role === "homeowner" && !address.trim()) return;
     const dest: Record<UserRole, string> = {
       homeowner: "/scanning",
       realtor: "/realtor",
       inspector: "/inspector",
       contractor: "/contractor",
     };
-    if (role === "homeowner") navigate("/scanning");
-    else navigate(dest[role]);
+    navigate(dest[role]);
   };
 
   return (
@@ -69,14 +68,14 @@ const WelcomeScreen = () => {
               placeholder="Enter your home address..."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleScan()}
+              onKeyDown={(e) => e.key === "Enter" && handleContinue()}
               className="w-full rounded-xl border border-border bg-card py-4 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
           </div>
         )}
 
         <button
-          onClick={handleScan}
+          onClick={handleContinue}
           disabled={role === "homeowner" && !address.trim()}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed glow-teal-strong"
         >

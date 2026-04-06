@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, ClipboardList, CheckCircle2, Clock, ChevronRight, AlertTriangle, Shield, Home, Star, FileText, Check } from "lucide-react";
 
 const upcomingInspections = [
-  { address: "789 Pine Rd", date: "Apr 8, 2026", time: "10:00 AM", hasPassport: true },
+  { address: "456 Oak Street", date: "Tomorrow — Apr 7, 2026", time: "10:00 AM", hasPassport: true },
   { address: "555 Cedar Dr", date: "Apr 10, 2026", time: "2:00 PM", hasPassport: false },
   { address: "102 Birch Ln", date: "Apr 12, 2026", time: "9:00 AM", hasPassport: true },
 ];
@@ -174,19 +174,32 @@ const InspectorDashboard = () => {
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming Inspections</h2>
       <div className="space-y-2 mb-6">
         {upcomingInspections.map((insp) => (
-          <button key={insp.address} onClick={() => { setActiveInspection(insp.address); setMode("inspect"); }}
-            className="w-full rounded-xl border border-border bg-card p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors text-left">
-            <div>
-              <p className="text-sm font-medium text-foreground">{insp.address}</p>
-              <p className="text-[10px] text-muted-foreground">{insp.date} · {insp.time}</p>
-              {insp.hasPassport && (
-                <span className="inline-flex items-center gap-1 text-[9px] text-primary bg-primary/10 px-2 py-0.5 rounded-full mt-1 font-medium">
-                  <Home className="h-2.5 w-2.5" /> Passport Available
-                </span>
-              )}
+          <div key={insp.address} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">{insp.address}</p>
+                <p className="text-[10px] text-muted-foreground">{insp.date} · {insp.time}</p>
+                {insp.hasPassport && (
+                  <span className="inline-flex items-center gap-1 text-[9px] text-primary bg-primary/10 px-2 py-0.5 rounded-full mt-1 font-medium">
+                    <Home className="h-2.5 w-2.5" /> Passport Available
+                  </span>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </button>
+            <div className="flex gap-2">
+              {insp.hasPassport && (
+                <button onClick={() => { setActiveInspection(insp.address); setMode("inspect"); }}
+                  className="flex-1 rounded-lg bg-primary/10 border border-primary/30 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1">
+                  <Shield className="h-3 w-3" /> View Pre-Inspection Intel
+                </button>
+              )}
+              <button onClick={() => { setActiveInspection(insp.address); setMode("inspect"); }}
+                className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-1">
+                <ClipboardList className="h-3 w-3" /> Start Inspection
+              </button>
+            </div>
+          </div>
         ))}
       </div>
 

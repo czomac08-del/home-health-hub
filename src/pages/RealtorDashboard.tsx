@@ -25,14 +25,14 @@ const RealtorDashboard = () => {
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-foreground mb-1">Realtor Dashboard</h1>
-      <p className="text-xs text-muted-foreground mb-6">Sarah Johnson · License #RE-2024-1847</p>
+      <h1 className="text-xl font-bold text-foreground mb-1">Welcome, Sarah Johnson</h1>
+      <p className="text-xs text-muted-foreground mb-6">RE/MAX Realty · License #RE-2024-1847</p>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <StatCard icon={<Home className="h-4 w-4 text-primary" />} value="4" label="Active Listings" />
-        <StatCard icon={<FileText className="h-4 w-4 text-primary" />} value="12" label="Reports Generated" />
-        <StatCard icon={<TrendingUp className="h-4 w-4 text-primary" />} value="78%" label="Avg Health" />
+        <StatCard icon={<Home className="h-4 w-4 text-primary" />} value="12" label="Active Listings" />
+        <StatCard icon={<FileText className="h-4 w-4 text-primary" />} value="8" label="Passports Generated" />
+        <StatCard icon={<TrendingUp className="h-4 w-4 text-primary" />} value="79%" label="Avg Health Score" />
       </div>
 
       {/* Recent Activity */}
