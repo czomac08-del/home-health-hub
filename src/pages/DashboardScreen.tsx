@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
-import BottomNav from "@/components/BottomNav";
 import { Home, User, ChevronDown, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
@@ -107,7 +106,6 @@ const DashboardScreen = () => {
         </div>
       </div>
 
-      <BottomNav />
     </div>
   );
 };

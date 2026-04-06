@@ -3,7 +3,6 @@ import { HealthRing } from "@/components/HealthRing";
 import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home } from "lucide-react";
 import { systems } from "./DashboardScreen";
 import { useState } from "react";
-import BottomNav from "@/components/BottomNav";
 import type { ReactNode } from "react";
 
 const iconMap: Record<string, ReactNode> = {
@@ -141,7 +140,6 @@ const SystemDetailScreen = () => {
         Schedule a Pro
       </button>
 
-      <BottomNav />
     </div>
   );
 };

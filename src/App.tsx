@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,9 +10,33 @@ import SystemDetailScreen from "./pages/SystemDetailScreen";
 import SystemsScreen from "./pages/SystemsScreen";
 import GuidesScreen from "./pages/GuidesScreen";
 import ProfileScreen from "./pages/ProfileScreen";
+import BottomNav from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+const hideNavRoutes = ["/", "/scanning"];
+
+const AppContent = () => {
+  const location = useLocation();
+  const showNav = !hideNavRoutes.includes(location.pathname);
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<WelcomeScreen />} />
+        <Route path="/scanning" element={<ScanningScreen />} />
+        <Route path="/dashboard" element={<DashboardScreen />} />
+        <Route path="/system/:id" element={<SystemDetailScreen />} />
+        <Route path="/systems" element={<SystemsScreen />} />
+        <Route path="/guides" element={<GuidesScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      {showNav && <BottomNav />}
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,16 +44,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<WelcomeScreen />} />
-          <Route path="/scanning" element={<ScanningScreen />} />
-          <Route path="/dashboard" element={<DashboardScreen />} />
-          <Route path="/system/:id" element={<SystemDetailScreen />} />
-          <Route path="/systems" element={<SystemsScreen />} />
-          <Route path="/guides" element={<GuidesScreen />} />
-          <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppContent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

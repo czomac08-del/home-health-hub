@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Search, Wrench, Clock, ChevronRight } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 const categories = ["All", "HVAC", "Plumbing", "Electrical", "Roof", "Appliances"];
 
@@ -128,7 +127,6 @@ const GuidesScreen = () => {
         ))}
       </div>
 
-      <BottomNav />
     </div>
   );
 };

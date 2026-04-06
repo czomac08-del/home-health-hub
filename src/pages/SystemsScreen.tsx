@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Search, Plus, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 type SystemStatus = "green" | "amber" | "red" | "grey";
 
@@ -96,7 +95,6 @@ const SystemsScreen = () => {
         </div>
       </div>
 
-      <BottomNav />
     </div>
   );
 };
