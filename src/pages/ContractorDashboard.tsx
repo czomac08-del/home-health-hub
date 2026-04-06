@@ -4,9 +4,9 @@ import { Wrench, Search, ChevronRight, Camera, Check, Clock, FileText, DollarSig
 import { toast } from "sonner";
 
 const assignedJobs = [
-  { id: 1, address: "123 Main St", system: "HVAC", issue: "AC not cooling properly", date: "Apr 9, 2026", status: "upcoming" as const },
-  { id: 2, address: "456 Oak Ave", system: "Plumbing", issue: "Leaking kitchen faucet", date: "Apr 10, 2026", status: "upcoming" as const },
-  { id: 3, address: "789 Pine Rd", system: "Electrical", issue: "Outlet not working in bedroom", date: "Apr 7, 2026", status: "completed" as const },
+  { id: 1, address: "123 Main St", system: "HVAC", issue: "AC not cooling properly", date: "Today — Apr 6, 2026", status: "upcoming" as const },
+  { id: 2, address: "456 Oak Ave", system: "Plumbing", issue: "Leaking kitchen faucet", date: "Tomorrow — Apr 7, 2026", status: "upcoming" as const },
+  { id: 3, address: "789 Pine Rd", system: "Electrical", issue: "Outlet not working in bedroom", date: "Apr 5, 2026", status: "completed" as const },
 ];
 
 const systemInfo = {
