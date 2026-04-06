@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Search, Wrench, Clock, ChevronRight } from "lucide-react";
+import { Search, Wrench, Clock, Fan, Droplets, Zap, Home, Refrigerator, Snowflake } from "lucide-react";
 
-const categories = ["All", "HVAC", "Plumbing", "Electrical", "Roof", "Appliances"];
+const categories = ["All", "HVAC", "Plumbing", "Electrical", "Roof", "Appliances", "Seasonal"];
 
 interface Guide {
   id: string;
@@ -10,40 +10,70 @@ interface Guide {
   category: string;
   difficulty: number;
   time: string;
+  icon: React.ReactNode;
+  headerColor: string;
 }
 
 const guides: Guide[] = [
   {
     id: "replace-hvac-filter",
     title: "Replace HVAC Filter",
-    description: "Swap out your air filter to improve airflow and indoor air quality. A clean filter reduces energy costs by up to 15%.",
+    description: "Swap out your air filter to improve airflow and cut energy costs by up to 15%.",
     category: "HVAC",
     difficulty: 1,
     time: "15 min",
+    icon: <Fan className="h-6 w-6" />,
+    headerColor: "from-emerald-600/80 to-emerald-800/80",
   },
   {
     id: "flush-water-heater",
     title: "Flush Water Heater",
-    description: "Drain sediment buildup from your water heater tank to improve efficiency and extend the unit's lifespan.",
+    description: "Drain sediment buildup to improve efficiency and extend unit lifespan.",
     category: "Plumbing",
     difficulty: 2,
     time: "45 min",
+    icon: <Droplets className="h-6 w-6" />,
+    headerColor: "from-blue-600/80 to-blue-800/80",
   },
   {
     id: "test-smoke-detectors",
     title: "Test Smoke Detectors",
-    description: "Press the test button on each smoke and CO detector. Replace batteries annually and units every 10 years.",
+    description: "Press test buttons on each detector. Replace batteries annually.",
     category: "Electrical",
     difficulty: 1,
     time: "10 min",
+    icon: <Zap className="h-6 w-6" />,
+    headerColor: "from-amber-600/80 to-amber-800/80",
   },
   {
     id: "inspect-roof-shingles",
     title: "Inspect Roof Shingles",
-    description: "Check for missing, cracked, or curling shingles from the ground or with binoculars. Look for granule loss in gutters.",
+    description: "Check for missing or curling shingles and granule loss in gutters.",
     category: "Roof",
     difficulty: 2,
     time: "30 min",
+    icon: <Home className="h-6 w-6" />,
+    headerColor: "from-red-600/80 to-red-800/80",
+  },
+  {
+    id: "clean-fridge-coils",
+    title: "Clean Refrigerator Coils",
+    description: "Vacuum dust from condenser coils to improve cooling efficiency.",
+    category: "Appliances",
+    difficulty: 1,
+    time: "20 min",
+    icon: <Refrigerator className="h-6 w-6" />,
+    headerColor: "from-violet-600/80 to-violet-800/80",
+  },
+  {
+    id: "winterize-faucets",
+    title: "Winterize Outdoor Faucets",
+    description: "Disconnect hoses, shut off supply valves, and drain outdoor lines.",
+    category: "Seasonal",
+    difficulty: 2,
+    time: "30 min",
+    icon: <Snowflake className="h-6 w-6" />,
+    headerColor: "from-cyan-600/80 to-cyan-800/80",
   },
 ];
 
@@ -52,7 +82,7 @@ const DifficultyWrenches = ({ level }: { level: number }) => (
     {Array.from({ length: 5 }).map((_, i) => (
       <Wrench
         key={i}
-        className={`h-3.5 w-3.5 ${i < level ? "text-primary" : "text-muted-foreground/30"}`}
+        className={`h-3 w-3 ${i < level ? "text-primary" : "text-muted-foreground/20"}`}
       />
     ))}
   </div>
@@ -84,7 +114,7 @@ const GuidesScreen = () => {
       </div>
 
       {/* Category chips */}
-      <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -100,33 +130,35 @@ const GuidesScreen = () => {
         ))}
       </div>
 
-      {/* Guide cards */}
-      <div className="flex flex-col gap-3">
+      {/* Guide cards grid */}
+      <div className="grid grid-cols-2 gap-3">
         {filtered.map((guide) => (
-          <div key={guide.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-foreground font-semibold">{guide.title}</h3>
-              <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full whitespace-nowrap ml-2">
+          <div key={guide.id} className="rounded-xl border border-border bg-card overflow-hidden flex flex-col">
+            {/* Colored header */}
+            <div className={`bg-gradient-to-br ${guide.headerColor} p-4 flex items-center justify-between`}>
+              <span className="text-foreground/90">{guide.icon}</span>
+              <span className="text-[10px] font-medium text-foreground/70 bg-background/20 px-2 py-0.5 rounded-full">
                 {guide.category}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{guide.description}</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            {/* Card body */}
+            <div className="p-3.5 flex flex-col flex-1">
+              <h3 className="text-foreground font-semibold text-sm mb-1">{guide.title}</h3>
+              <p className="text-xs text-muted-foreground mb-3 leading-relaxed line-clamp-2 flex-1">{guide.description}</p>
+              <div className="flex items-center gap-3 mb-3">
                 <DifficultyWrenches level={guide.difficulty} />
                 <div className="flex items-center gap-1 text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="text-xs">{guide.time}</span>
+                  <Clock className="h-3 w-3" />
+                  <span className="text-[10px]">{guide.time}</span>
                 </div>
               </div>
-              <button className="flex items-center gap-1 text-primary text-sm font-medium hover:opacity-80 transition-opacity">
-                Start Guide <ChevronRight className="h-4 w-4" />
+              <button className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+                Start Guide
               </button>
             </div>
           </div>
         ))}
       </div>
-
     </div>
   );
 };
