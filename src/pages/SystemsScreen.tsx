@@ -77,7 +77,7 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(coreInfrastructure).map((item) => (
-            <SystemRow key={item.name} item={item} />
+            <SystemRow key={item.name} item={item} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
           ))}
         </div>
       </div>
@@ -86,7 +86,7 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(appliances).map((item) => (
-            <SystemRow key={item.name} item={item} />
+            <SystemRow key={item.name} item={item} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
           ))}
         </div>
       </div>
