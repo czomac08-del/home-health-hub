@@ -62,9 +62,43 @@ const DashboardScreen = () => {
       </div>
 
       {/* Health Score */}
-      <div className="flex flex-col items-center gap-2 mb-8 px-6">
+      <div className="flex flex-col items-center gap-2 mb-6 px-6">
         <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home Health</h2>
         <HealthRing percentage={87} size={160} strokeWidth={10} />
+      </div>
+
+      {/* This Week Summary */}
+      <div className="px-6 mb-6">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-foreground font-semibold">Good morning, John</p>
+              <p className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
+              <Sun className="h-3.5 w-3.5 text-health-yellow" />
+              <span className="text-xs text-foreground font-medium">72°F</span>
+            </div>
+          </div>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
+          <div className="space-y-2">
+            {[
+              { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-health-amber", action: "Set Reminder" },
+              { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-health-yellow", action: "Find a Pro" },
+              { icon: Wrench, text: "Well water test is overdue", color: "text-health-red", action: "Schedule Test" },
+            ].map((tip) => (
+              <div key={tip.text} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <tip.icon className={`h-3.5 w-3.5 ${tip.color} shrink-0`} />
+                  <span className="text-xs text-foreground truncate">{tip.text}</span>
+                </div>
+                <button className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
+                  {tip.action} <ChevronRight className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Needs Attention */}
