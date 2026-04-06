@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { User, Home, Plus, ChevronRight, Crown, Clock, Bell, Mail } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 
 const maintenanceHistory = [
   { date: "Mar 15, 2024", action: "HVAC filter replaced", system: "HVAC" },
@@ -97,7 +96,6 @@ const ProfileScreen = () => {
         </div>
       </Section>
 
-      <BottomNav />
     </div>
   );
 };
