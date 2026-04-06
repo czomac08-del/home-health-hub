@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Shield, Check, Star, ArrowRight, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp } from "lucide-react";
+import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp } from "lucide-react";
 
 const tiers = [
   { name: "Free", price: "$0", features: ["1 property", "Basic health score", "DIY guides", "System tracking"], cta: "Get Started Free" },
