@@ -22,25 +22,25 @@ const systemDetails: Record<string, {
   hvac: {
     lastService: "March 15, 2024",
     aiRecommendation: "Your HVAC system is performing well. Consider scheduling a pre-summer tune-up to maintain peak efficiency and extend system lifespan by 3–5 years.",
-    steps: ["Replace air filter every 90 days", "Clean condenser coils annually", "Schedule professional tune-up"],
+    steps: ["Replace the air filter (check if it's a 1\" or 4\" filter for your unit)", "Clean condenser coils with a garden hose — remove debris and dirt buildup", "Inspect the blower motor and lubricate bearings if accessible"],
   },
   plumbing: {
     lastService: "January 8, 2024",
-    warning: "Water heater is 9 years old — consider replacement within 2 years.",
-    aiRecommendation: "Your plumbing is in good shape overall. The water heater is approaching end-of-life. Budget $1,200–$2,000 for a replacement within the next 24 months.",
-    steps: ["Inspect under-sink pipes for leaks", "Test water pressure at main valve", "Flush water heater sediment"],
+    warning: "Water heater is 9 years old — consider replacement within 2 years to avoid potential leaks or failure.",
+    aiRecommendation: "Your plumbing is in good shape overall. The water heater is approaching end-of-life. Budget $1,200–$2,000 for a tankless or traditional replacement within 24 months.",
+    steps: ["Test water pressure at the main valve — ideal range is 40–60 PSI", "Locate and label the main water shutoff valve for emergencies", "Check under all sinks for slow drips or mineral buildup on fittings"],
   },
   electrical: {
     lastService: "November 22, 2023",
-    warning: "Panel is original (1998). Recommend licensed electrician inspection. Potential fire hazard if left unaddressed.",
-    aiRecommendation: "Your electrical panel is 26+ years old. Modern panels improve safety and support higher loads. Schedule a professional evaluation — estimated cost $1,500–$3,000.",
-    steps: ["Test all GFCI outlets monthly", "Check breaker panel for corrosion", "Replace any flickering fixtures"],
+    warning: "Electrical panel is original (1998) — 26+ years old. Risk of overloaded circuits and potential fire hazard. Licensed electrician inspection strongly recommended.",
+    aiRecommendation: "Your electrical panel is outdated. Modern 200-amp panels improve safety and support today's electrical loads. Schedule a professional evaluation — estimated cost $1,500–$3,000.",
+    steps: ["Test all GFCI outlets by pressing the 'Test' and 'Reset' buttons monthly", "Open the breaker panel and visually check for corrosion, scorch marks, or loose wires", "Replace any outlets or switches that feel warm to the touch or spark when used"],
   },
   roof: {
     lastService: "June 3, 2022",
-    warning: "Shingles show significant wear. Estimated 3–5 years remaining before full replacement needed.",
-    aiRecommendation: "Roof condition is declining. Begin getting quotes for replacement ($8,000–$15,000). In the meantime, address any active leaks and clear debris regularly.",
-    steps: ["Inspect for missing or curled shingles", "Clear gutters and downspouts", "Check attic for water stains or leaks"],
+    warning: "Shingles show significant curling and granule loss. Estimated 3–5 years of remaining life. Risk of leaks during heavy storms.",
+    aiRecommendation: "Roof condition is declining. Begin getting quotes for full replacement ($8,000–$15,000). Address any active leaks and clear debris regularly to extend remaining life.",
+    steps: ["Walk the perimeter and look for missing, cracked, or curled shingles", "Clear all gutters and downspouts of leaves and debris — check for proper drainage", "Inspect the attic interior for water stains, daylight through boards, or mold growth"],
   },
 };
 
@@ -83,7 +83,7 @@ const SystemDetailScreen = () => {
       </div>
 
       {/* AI Recommendation */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3 mb-4">
+      <div className="rounded-xl border-l-4 border-primary bg-primary/5 p-4 flex items-start gap-3 mb-4">
         <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <div>
           <h3 className="text-primary font-semibold text-sm mb-1">AI Recommendation</h3>
@@ -91,19 +91,30 @@ const SystemDetailScreen = () => {
         </div>
       </div>
 
-      {/* Potential Issue */}
-      {details.warning && (
-        <div className="rounded-xl border border-health-red/40 bg-health-red/10 p-4 flex items-start gap-3 mb-6">
+      {/* Alert */}
+      {details.warning && system.health < 70 && (
+        <div className="rounded-xl border-l-4 border-health-red bg-health-red/10 p-4 flex items-start gap-3 mb-6">
           <AlertTriangle className="h-5 w-5 text-health-red shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-health-red font-semibold text-sm mb-1">Potential Issue</h3>
+            <h3 className="text-health-red font-semibold text-sm mb-1">Alert</h3>
+            <p className="text-sm text-foreground">{details.warning}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Warning for systems above 70 */}
+      {details.warning && system.health >= 70 && (
+        <div className="rounded-xl border-l-4 border-health-amber bg-health-amber/10 p-4 flex items-start gap-3 mb-6">
+          <AlertTriangle className="h-5 w-5 text-health-amber shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-health-amber font-semibold text-sm mb-1">Warning</h3>
             <p className="text-sm text-foreground">{details.warning}</p>
           </div>
         </div>
       )}
 
       {/* DIY Checklist */}
-      <div className="rounded-xl border border-border bg-card p-5">
+      <div className="rounded-xl border border-border bg-card p-5 mb-6">
         <h2 className="text-foreground font-semibold text-lg mb-4">DIY Maintenance Checklist</h2>
         <div className="flex flex-col gap-3">
           {details.steps.map((step, i) => (
@@ -124,6 +135,11 @@ const SystemDetailScreen = () => {
           ))}
         </div>
       </div>
+
+      {/* Schedule a Pro */}
+      <button className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong mb-4">
+        Schedule a Pro
+      </button>
 
       <BottomNav />
     </div>

@@ -18,7 +18,7 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/30" style={{ backgroundColor: "#1A1F24" }}>
       <div className="max-w-lg mx-auto flex items-center justify-around py-2">
         {tabs.map((tab) => {
           const active = isActive(tab.path);
@@ -26,7 +26,7 @@ const BottomNav = () => {
             <button
               key={tab.path}
               onClick={() => navigate(tab.path)}
-              className={`flex flex-col items-center gap-1 px-3 py-1 transition-colors ${
+              className={`flex flex-col items-center gap-1 px-3 py-1.5 transition-colors ${
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
