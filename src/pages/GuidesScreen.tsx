@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Wrench, Clock, Fan, Droplets, Zap, Home, Refrigerator, Snowflake } from "lucide-react";
 
 const categories = ["All", "HVAC", "Plumbing", "Electrical", "Roof", "Appliances", "Seasonal"];
@@ -91,6 +92,7 @@ const DifficultyWrenches = ({ level }: { level: number }) => (
 const GuidesScreen = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const navigate = useNavigate();
 
   const filtered = guides.filter((g) => {
     const matchesSearch = g.title.toLowerCase().includes(search.toLowerCase());
@@ -152,7 +154,10 @@ const GuidesScreen = () => {
                   <span className="text-[10px]">{guide.time}</span>
                 </div>
               </div>
-              <button className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+              <button
+                onClick={() => navigate(`/guide/${guide.id}`)}
+                className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+              >
                 Start Guide
               </button>
             </div>
