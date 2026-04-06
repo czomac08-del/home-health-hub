@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
-import { Home, User, ChevronDown, AlertTriangle } from "lucide-react";
+import HomeAIChat from "@/components/HomeAIChat";
+import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
 import { useState } from "react";
 
 const systems = [
