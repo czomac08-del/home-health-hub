@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Search, Plus, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater } from "lucide-react";
+import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater } from "lucide-react";
 
-type SystemStatus = "green" | "amber" | "red" | "grey";
+type SystemStatus = "configured" | "unconfigured";
 
 interface SystemItem {
   name: string;
@@ -10,51 +10,45 @@ interface SystemItem {
   detail: string;
 }
 
-const statusDot: Record<SystemStatus, string> = {
-  green: "bg-health-green",
-  amber: "bg-health-amber",
-  red: "bg-health-red",
-  grey: "bg-muted-foreground/40",
-};
-
 const coreInfrastructure: SystemItem[] = [
-  { name: "Well / Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "green", detail: "Municipal — Good pressure" },
-  { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, status: "green", detail: "92% health — Excellent" },
-  { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, status: "amber", detail: "65% health — Needs inspection" },
-  { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, status: "green", detail: "78% health — Good" },
-  { name: "Roof", icon: <Home className="h-5 w-5 text-primary" />, status: "red", detail: "55% health — Action required" },
-  { name: "Septic / Sewer", icon: <Gauge className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
-  { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, status: "amber", detail: "9 years old — Monitor" },
-  { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
+  { name: "Well / Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure" },
+  { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, status: "configured", detail: "92% health — Excellent" },
+  { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, status: "configured", detail: "65% health — Needs inspection" },
+  { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, status: "configured", detail: "78% health — Good" },
+  { name: "Roof", icon: <Home className="h-5 w-5 text-primary" />, status: "configured", detail: "55% health — Action required" },
+  { name: "Septic / Sewer", icon: <Gauge className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, status: "configured", detail: "9 years old — Monitor" },
+  { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
 ];
 
 const appliances: SystemItem[] = [
-  { name: "Refrigerator", icon: <Refrigerator className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
-  { name: "Washer / Dryer", icon: <WashingMachine className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
-  { name: "Dishwasher", icon: <UtensilsCrossed className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
-  { name: "Garage Door Opener", icon: <DoorOpen className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
-  { name: "Water Softener", icon: <GlassWater className="h-5 w-5 text-primary" />, status: "grey", detail: "Not configured" },
+  { name: "Refrigerator", icon: <Refrigerator className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Washer / Dryer", icon: <WashingMachine className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Dishwasher", icon: <UtensilsCrossed className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Garage Door Opener", icon: <DoorOpen className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Water Softener", icon: <GlassWater className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
 ];
 
-const SystemRow = ({ item }: { item: SystemItem }) => (
-  <div className="flex items-center gap-3 py-3 border-b border-border/50 last:border-0">
-    <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-      {item.icon}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${statusDot[item.status]}`} />
-        <span className="text-foreground font-medium text-sm">{item.name}</span>
+const SystemRow = ({ item }: { item: SystemItem }) => {
+  const isConfigured = item.status === "configured";
+  return (
+    <button className="w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left">
+      <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+        {item.icon}
       </div>
-      <p className={`text-xs mt-0.5 ${item.status === "grey" ? "text-muted-foreground/60" : "text-muted-foreground"}`}>
-        {item.detail}
-      </p>
-    </div>
-    <button className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors shrink-0">
-      <Plus className="h-4 w-4" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${isConfigured ? "bg-health-green" : "bg-muted-foreground/30"}`} />
+          <span className={`font-medium text-sm ${isConfigured ? "text-foreground" : "text-muted-foreground"}`}>{item.name}</span>
+        </div>
+        <p className={`text-xs mt-0.5 ml-[18px] ${isConfigured ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}>
+          {item.detail}
+        </p>
+      </div>
+      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
     </button>
-  </div>
-);
+  );
+};
 
 const SystemsScreen = () => {
   const [search, setSearch] = useState("");
@@ -79,22 +73,25 @@ const SystemsScreen = () => {
 
       <div className="mb-6">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(coreInfrastructure).map((item) => (
             <SystemRow key={item.name} item={item} />
           ))}
         </div>
       </div>
 
-      <div>
+      <div className="mb-8">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(appliances).map((item) => (
             <SystemRow key={item.name} item={item} />
           ))}
         </div>
       </div>
 
+      <button className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal flex items-center justify-center gap-2">
+        <Plus className="h-5 w-5" /> Add Custom System
+      </button>
     </div>
   );
 };
