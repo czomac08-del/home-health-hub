@@ -70,13 +70,13 @@ const WelcomeScreen = () => {
   };
 
   const handleContinue = () => {
-    if (!address.trim() || !user) return;
+    if (!address.trim()) return;
     setLoading(true);
 
     const finalAddress = address.trim();
 
     // Fire-and-forget: save property in background, don't block navigation
-    if (properties.length === 0) {
+    if (user && properties.length === 0) {
       supabase.from("properties").insert({
         user_id: user.id,
         address: finalAddress,
@@ -86,7 +86,7 @@ const WelcomeScreen = () => {
     }
 
     // Navigate IMMEDIATELY — no awaits, no API blocking
-    navigate("/scanning");
+    navigate(user ? "/scanning" : "/auth");
   };
 
   return (
