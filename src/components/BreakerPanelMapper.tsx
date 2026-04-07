@@ -242,6 +242,7 @@ const BreakerPanelMapper = () => {
   const [editingBreaker, setEditingBreaker] = useState<number | null>(null);
   const [specialNotes, setSpecialNotes] = useState("");
   const [showShare, setShowShare] = useState(false);
+  const [locationData, setLocationData] = useState<Record<string, string>>({});
 
   const isDangerousBrand = panelBrand === "Federal Pacific" || panelBrand === "Zinsco";
   const labeledCount = breakers.filter((b) => b.label).length;
