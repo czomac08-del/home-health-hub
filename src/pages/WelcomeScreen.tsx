@@ -19,12 +19,12 @@ const WelcomeScreen = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [verified, setVerified] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState(false);
   const navigate = useNavigate();
   const { user, profile, properties, refreshProperties } = useAuth();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -57,6 +57,7 @@ const WelcomeScreen = () => {
   const handleInputChange = (value: string) => {
     setAddress(value);
     setVerified(false);
+    setVerifyFailed(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 400);
   };
@@ -71,21 +72,21 @@ const WelcomeScreen = () => {
   const handleContinue = async () => {
     if (!address.trim() || !user) return;
 
-    if (!verified) {
+    if (!verified && !verifyFailed) {
       setLoading(true);
       try {
         const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(address.trim())}`);
         const data = await res.json();
         const matches = data?.matches || [];
         if (matches.length === 0) {
-          toast.error("We couldn't verify that address. Please select a suggestion or enter a valid US address.");
+          setVerifyFailed(true);
           setLoading(false);
           return;
         }
         setAddress(matches[0].matchedAddress);
         setVerified(true);
       } catch {
-        toast.error("Address verification failed. Please try again.");
+        setVerifyFailed(true);
         setLoading(false);
         return;
       }
@@ -122,7 +123,7 @@ const WelcomeScreen = () => {
         </div>
 
         <p className="text-muted-foreground text-lg text-center">
-          Welcome, {profile?.full_name?.split(" ")[0] || "there"}! Let's set up your home.
+          Welcome, {profile?.full_name?.split(" ")[0] || "there"}! Let&apos;s set up your home.
         </p>
 
         <div className="w-full relative" ref={wrapperRef}>
@@ -165,12 +166,18 @@ const WelcomeScreen = () => {
           </p>
         )}
 
+        {verifyFailed && (
+          <p className="text-xs text-muted-foreground text-center">
+            We couldn&apos;t verify this address automatically. You can still proceed — just double-check it&apos;s correct.
+          </p>
+        )}
+
         <button
           onClick={handleContinue}
           disabled={!address.trim() || loading}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {loading ? "Setting up..." : "Scan My Home"}
+          {loading ? "Setting up..." : verifyFailed ? "Use This Address Anyway" : "Scan My Home"}
         </button>
       </div>
     </div>
