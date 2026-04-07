@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import WelcomeScreen from "./pages/WelcomeScreen";
+import OnboardingWizard from "./pages/OnboardingWizard";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleProvider } from "@/contexts/RoleContext";
@@ -64,6 +65,7 @@ const AppContent = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
         <Route path="/welcome" element={<WelcomeScreen />} />
+        <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />
         <Route path="/privacy-reminder" element={<ProtectedRoute><PrivacyReminderScreen /></ProtectedRoute>} />
         <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
