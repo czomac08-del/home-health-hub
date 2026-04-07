@@ -186,30 +186,36 @@ const SystemConfigScreen = () => {
       systemDetailId = data.id;
     }
 
-    // Save photos
+    // Save new photos (skip already-saved ones loaded from DB)
     for (const photo of photos) {
-      if (photo.storagePath) {
-        await supabase.from("system_photos").insert({
-          system_detail_id: systemDetailId,
-          user_id: user.id,
-          storage_path: photo.storagePath,
-          label: photo.label,
-          url: photo.url,
-        .select();
+      if (photo.storagePath && !photo.url.includes("already-saved")) {
+        const { data: existing } = await supabase.from("system_photos").select("id").eq("storage_path", photo.storagePath).maybeSingle();
+        if (!existing) {
+          await supabase.from("system_photos").insert({
+            system_detail_id: systemDetailId,
+            user_id: user.id,
+            storage_path: photo.storagePath,
+            label: photo.label,
+            url: photo.url,
+          });
+        }
       }
     }
 
-    // Save docs
+    // Save new docs
     for (const [docType, doc] of Object.entries(docs)) {
       if (doc && doc.storagePath) {
-        await supabase.from("system_documents").insert({
-          system_detail_id: systemDetailId,
-          user_id: user.id,
-          storage_path: doc.storagePath,
-          doc_type: docType,
-          file_name: doc.name,
-          url: doc.url,
-        .select();
+        const { data: existing } = await supabase.from("system_documents").select("id").eq("storage_path", doc.storagePath).maybeSingle();
+        if (!existing) {
+          await supabase.from("system_documents").insert({
+            system_detail_id: systemDetailId,
+            user_id: user.id,
+            storage_path: doc.storagePath,
+            doc_type: docType,
+            file_name: doc.name,
+            url: doc.url || "",
+          });
+        }
       }
     }
 
