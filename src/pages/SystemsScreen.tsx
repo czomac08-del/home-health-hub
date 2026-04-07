@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater } from "lucide-react";
+import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText } from "lucide-react";
 
 type SystemStatus = "configured" | "unconfigured";
 
@@ -91,7 +91,11 @@ const SystemsScreen = () => {
         </div>
       </div>
 
-      <button className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal flex items-center justify-center gap-2">
+      <button onClick={() => navigate("/documents")} className="w-full rounded-xl border border-border bg-card py-3.5 font-semibold text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2 mb-4">
+        <FileText className="h-5 w-5 text-primary" /> Document Vault
+      </button>
+
+      <button className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
         <Plus className="h-5 w-5" /> Add Custom System
       </button>
     </div>

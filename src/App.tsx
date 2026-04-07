@@ -25,6 +25,7 @@ import InspectorDashboard from "./pages/InspectorDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
 import ScoreReportPage from "./pages/ScoreReportPage";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
+import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import BottomNav from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 
@@ -82,6 +83,7 @@ const AppContent = () => {
         <Route path="/inspector" element={<ProtectedRoute><InspectorDashboard /></ProtectedRoute>} />
         <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
         <Route path="/report/:id" element={<ScoreReportPage />} />
+        <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
         <Route path="/report" element={<ScoreReportPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { WaterHeaterLocation, HvacLocation, WaterSystemLocation } from "@/components/SystemLocationTracking";
 import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
+import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -64,6 +65,23 @@ const SystemConfigScreen = () => {
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [manualResult, setManualResult] = useState<ManualSearchResult | null>(null);
+  const [warrantyInfo, setWarrantyInfo] = useState<WarrantyInfo | null>(null);
+  const [recallInfo, setRecallInfo] = useState<RecallInfo | null>(null);
+
+  const { searching: manualSearching, search: searchManual } = useManualSearch({
+    brand, model, onResult: setManualResult,
+  });
+
+  const triggerManualSearch = useCallback(() => {
+    if (brand || model) {
+      searchManual();
+      supabase.functions.invoke("manual-finder", { body: { brand, model, action: "extract_warranty" } })
+        .then(({ data }) => { if (data?.result) setWarrantyInfo(data.result); });
+      supabase.functions.invoke("manual-finder", { body: { brand, model, action: "check_recall" } })
+        .then(({ data }) => { if (data?.result) setRecallInfo(data.result); });
+    }
+  }, [brand, model, searchManual]);
 
   const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
 
@@ -379,7 +397,33 @@ const SystemConfigScreen = () => {
         <FieldWithScan label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} scanField="serial" />
         <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
         <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
+        {/* Find Manual button */}
+        {(brand || model) && (
+          <button onClick={triggerManualSearch} disabled={manualSearching}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 py-2.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors disabled:opacity-50">
+            <Sparkles className="h-3.5 w-3.5" /> {manualSearching ? "Searching..." : "Find Manual & Check Recalls"}
+          </button>
+        )}
+        <ManualSearchIndicator searching={manualSearching} />
       </div>
+
+      {/* Manual Search Result */}
+      {manualResult && (
+        <div className="mb-6">
+          <ManualFoundBanner
+            result={manualResult}
+            onView={() => { if (manualResult.manualUrl) window.open(manualResult.manualUrl, "_blank"); }}
+            onDownload={() => toast.success("Manual saved to your document vault!")}
+          />
+        </div>
+      )}
+
+      {/* Recall Alert */}
+      {recallInfo && (
+        <div className="mb-6">
+          <RecallAlertBanner info={recallInfo} />
+        </div>
+      )}
 
       {/* === SERVICE & WARRANTY === */}
       <SectionHeader title="Service & Warranty" />
@@ -391,7 +435,15 @@ const SystemConfigScreen = () => {
         <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" ai={isAiField("nextService")} />
         <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} ai={isAiField("serviceCompany")} />
         <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
+        <WarrantyStatusBadge warrantyExp={warrantyExp} />
       </div>
+
+      {/* AI Warranty Info */}
+      {warrantyInfo && (
+        <div className="mb-6">
+          <WarrantyInfoCard info={warrantyInfo} />
+        </div>
+      )}
 
       {/* === SPECIFICATIONS === */}
       <SectionHeader title="Specifications" />
