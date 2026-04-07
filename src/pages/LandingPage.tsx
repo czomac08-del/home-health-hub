@@ -35,8 +35,8 @@ const LandingPage = () => {
           <span className="text-lg font-bold text-foreground">Home Passport</span>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/welcome")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
-          <button onClick={() => navigate("/welcome")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">Get Started</button>
+          <button onClick={() => navigate("/auth")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
+          <button onClick={() => navigate("/auth")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">Get Started</button>
         </div>
       </nav>
 
@@ -53,7 +53,7 @@ const LandingPage = () => {
           Track every system, protect your investment, and transfer verified home data seamlessly — whether you're a homeowner, realtor, inspector, or contractor.
         </p>
         <div className="flex items-center justify-center gap-3">
-          <button onClick={() => navigate("/welcome")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity glow-teal-strong text-sm">
+          <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity glow-teal-strong text-sm">
             Get Started Free
           </button>
           <button className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm">
@@ -165,7 +165,7 @@ const LandingPage = () => {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => navigate("/welcome")} className={`w-full rounded-xl py-3 text-sm font-semibold transition-opacity ${t.highlight ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
+              <button onClick={() => navigate("/auth")} className={`w-full rounded-xl py-3 text-sm font-semibold transition-opacity ${t.highlight ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                 {t.cta}
               </button>
             </div>
