@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Home, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+
 
 const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
 
@@ -69,48 +69,23 @@ const WelcomeScreen = () => {
     setSuggestions([]);
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!address.trim() || !user) return;
     setLoading(true);
 
-    let finalAddress = address.trim();
+    const finalAddress = address.trim();
 
-    // If not yet verified, try geocoding with a 3s timeout — never block navigation
-    if (!verified && !verifyFailed) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(
-          `${GEOCODE_URL}?address=${encodeURIComponent(finalAddress)}`,
-          { signal: controller.signal }
-        );
-        clearTimeout(timeout);
-        const data = await res.json();
-        const matches = data?.matches || [];
-        if (matches.length > 0) {
-          finalAddress = matches[0].matchedAddress;
-          setAddress(finalAddress);
-        }
-      } catch {
-        // Timeout or error — proceed with user-entered address
-      }
+    // Fire-and-forget: save property in background, don't block navigation
+    if (properties.length === 0) {
+      supabase.from("properties").insert({
+        user_id: user.id,
+        address: finalAddress,
+        label: "Primary Residence",
+        is_active: true,
+      }).then(() => { void refreshProperties(); });
     }
 
-    // Save property and navigate — always within a few seconds
-    try {
-      if (properties.length === 0) {
-        await supabase.from("properties").insert({
-          user_id: user.id,
-          address: finalAddress,
-          label: "Primary Residence",
-          is_active: true,
-        });
-        await refreshProperties();
-      }
-    } catch {
-      // Don't block navigation on DB errors either
-    }
-
+    // Navigate IMMEDIATELY — no awaits, no API blocking
     navigate("/onboarding");
   };
 
