@@ -23,6 +23,7 @@ import RealtorDashboard from "./pages/RealtorDashboard";
 import InspectorDashboard from "./pages/InspectorDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
 import ScoreReportPage from "./pages/ScoreReportPage";
+import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import BottomNav from "./components/BottomNav";
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +64,7 @@ const AppContent = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
         <Route path="/welcome" element={<WelcomeScreen />} />
+        <Route path="/privacy-reminder" element={<ProtectedRoute><PrivacyReminderScreen /></ProtectedRoute>} />
         <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
         <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />

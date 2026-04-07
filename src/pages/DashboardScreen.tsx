@@ -5,6 +5,7 @@ import HomeAIChat from "@/components/HomeAIChat";
 import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import PrivacyBadge from "@/components/PrivacyBadge";
 
 const defaultSystems = [
   { id: "hvac", name: "HVAC", health: 92, status: "Excellent", flagged: false },
@@ -36,9 +37,12 @@ const DashboardScreen = () => {
           <span className="text-foreground font-semibold text-sm">Home Passport</span>
         </div>
         <p className="text-muted-foreground text-xs text-center hidden sm:block">{address} — {activeProperty?.label || "Primary Residence"}</p>
-        <button onClick={() => navigate("/profile")} className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
-          <User className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          <PrivacyBadge />
+          <button onClick={() => navigate("/profile")} className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+            <User className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
       </header>
 
       {/* Mobile address */}
