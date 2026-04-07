@@ -435,7 +435,15 @@ const SystemConfigScreen = () => {
         <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" ai={isAiField("nextService")} />
         <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} ai={isAiField("serviceCompany")} />
         <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
+        <WarrantyStatusBadge warrantyExp={warrantyExp} />
       </div>
+
+      {/* AI Warranty Info */}
+      {warrantyInfo && (
+        <div className="mb-6">
+          <WarrantyInfoCard info={warrantyInfo} />
+        </div>
+      )}
 
       {/* === SPECIFICATIONS === */}
       <SectionHeader title="Specifications" />
