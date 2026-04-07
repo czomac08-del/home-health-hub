@@ -109,7 +109,7 @@ const WelcomeScreen = () => {
       await refreshProperties();
     }
 
-    navigate("/scanning");
+    navigate("/onboarding");
   };
 
   return (
