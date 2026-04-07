@@ -8,7 +8,7 @@ import { getSpecFields, type SpecField } from "@/data/systemSpecFields";
 import { getAiData, type AiAutoFillData } from "@/data/aiAutoFillData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { WaterHeaterLocation, HvacLocation } from "@/components/SystemLocationTracking";
+import { WaterHeaterLocation, HvacLocation, WaterSystemLocation } from "@/components/SystemLocationTracking";
 import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
@@ -440,6 +440,11 @@ const SystemConfigScreen = () => {
       {(displayName.toLowerCase().includes("hvac") || displayName.toLowerCase().includes("heating") || displayName.toLowerCase().includes("air conditioning")) && (
         <div className="mb-6">
           <HvacLocation data={locationTracking} onChange={setLocationTracking} />
+        </div>
+      )}
+      {(displayName.toLowerCase().includes("well") || displayName.toLowerCase().includes("water source") || displayName.toLowerCase().includes("plumbing")) && (
+        <div className="mb-6">
+          <WaterSystemLocation data={locationTracking} onChange={setLocationTracking} />
         </div>
       )}
 
