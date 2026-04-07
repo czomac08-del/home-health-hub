@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -40,7 +41,27 @@ const hideNavRoutes = ["/", "/auth", "/scanning", "/report", "/welcome", "/onboa
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (loading) {
+      const t = setTimeout(() => setTimedOut(true), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
+  // If still loading but not timed out, show skeleton
+  if (loading && !timedOut) {
+    return (
+      <div className="min-h-screen max-w-lg mx-auto px-6 py-8 space-y-4 animate-pulse">
+        <div className="h-8 w-48 bg-secondary rounded-lg" />
+        <div className="h-32 w-full bg-secondary rounded-xl" />
+        <div className="h-20 w-full bg-secondary rounded-xl" />
+        <div className="h-20 w-full bg-secondary rounded-xl" />
+      </div>
+    );
+  }
+
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
