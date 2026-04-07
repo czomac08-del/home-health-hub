@@ -65,6 +65,23 @@ const SystemConfigScreen = () => {
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [manualResult, setManualResult] = useState<ManualSearchResult | null>(null);
+  const [warrantyInfo, setWarrantyInfo] = useState<WarrantyInfo | null>(null);
+  const [recallInfo, setRecallInfo] = useState<RecallInfo | null>(null);
+
+  const { searching: manualSearching, search: searchManual } = useManualSearch({
+    brand, model, onResult: setManualResult,
+  });
+
+  const triggerManualSearch = useCallback(() => {
+    if (brand || model) {
+      searchManual();
+      supabase.functions.invoke("manual-finder", { body: { brand, model, action: "extract_warranty" } })
+        .then(({ data }) => { if (data?.result) setWarrantyInfo(data.result); });
+      supabase.functions.invoke("manual-finder", { body: { brand, model, action: "check_recall" } })
+        .then(({ data }) => { if (data?.result) setRecallInfo(data.result); });
+    }
+  }, [brand, model, searchManual]);
 
   const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
 
