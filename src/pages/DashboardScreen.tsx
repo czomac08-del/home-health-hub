@@ -3,6 +3,7 @@ import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
 import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import PrivacyBadge from "@/components/PrivacyBadge";
@@ -39,9 +40,7 @@ const DashboardScreen = () => {
         <p className="text-muted-foreground text-xs text-center hidden sm:block">{address} — {activeProperty?.label || "Primary Residence"}</p>
         <div className="flex items-center gap-2">
           <PrivacyBadge />
-          <button onClick={() => navigate("/profile")} className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
-            <User className="h-4 w-4 text-muted-foreground" />
-          </button>
+          <ProfileSwitcher />
         </div>
       </header>
 
