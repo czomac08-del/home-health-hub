@@ -334,6 +334,9 @@ const BreakerPanelMapper = () => {
         </div>
       </div>
 
+      {/* ─── Panel Location ─── */}
+      <ElectricalPanelLocation data={locationData} onChange={setLocationData} />
+
       {/* ─── Visual Breaker Map ─── */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
