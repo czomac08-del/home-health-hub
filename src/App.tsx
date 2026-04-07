@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import WelcomeScreen from "./pages/WelcomeScreen";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleProvider } from "@/contexts/RoleContext";
@@ -27,7 +28,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/scanning", "/report"];
+const hideNavRoutes = ["/", "/auth", "/scanning", "/report", "/welcome"];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -61,6 +62,7 @@ const AppContent = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
+        <Route path="/welcome" element={<ProtectedRoute><WelcomeScreen /></ProtectedRoute>} />
         <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
         <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />
