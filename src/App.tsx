@@ -26,7 +26,9 @@ import ContractorDashboard from "./pages/ContractorDashboard";
 import ScoreReportPage from "./pages/ScoreReportPage";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import DocumentVaultScreen from "./pages/DocumentVaultScreen";
+import FeedbackScreen from "./pages/FeedbackScreen";
 import BottomNav from "./components/BottomNav";
+import HelpButton from "./components/HelpButton";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,10 +86,11 @@ const AppContent = () => {
         <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
         <Route path="/report/:id" element={<ScoreReportPage />} />
         <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
         <Route path="/report" element={<ScoreReportPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {showNav && <BottomNav />}
+      {showNav && <><HelpButton /><BottomNav /></>}
     </>
   );
 };
