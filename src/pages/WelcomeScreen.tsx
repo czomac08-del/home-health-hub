@@ -25,7 +25,6 @@ const WelcomeScreen = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -60,8 +59,6 @@ const WelcomeScreen = () => {
     setVerified(false);
     setVerifyFailed(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestions(value), 400);
-  };
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 400);
   };
 
@@ -126,7 +123,7 @@ const WelcomeScreen = () => {
         </div>
 
         <p className="text-muted-foreground text-lg text-center">
-          Welcome, {profile?.full_name?.split(" ")[0] || "there"}! Let's set up your home.
+          Welcome, {profile?.full_name?.split(" ")[0] || "there"}! Let&apos;s set up your home.
         </p>
 
         <div className="w-full relative" ref={wrapperRef}>
@@ -170,8 +167,8 @@ const WelcomeScreen = () => {
         )}
 
         {verifyFailed && (
-          <p className="text-xs text-yellow-400 text-center">
-            We couldn't verify this address automatically. You can still proceed — just double-check it's correct.
+          <p className="text-xs text-muted-foreground text-center">
+            We couldn&apos;t verify this address automatically. You can still proceed — just double-check it&apos;s correct.
           </p>
         )}
 
