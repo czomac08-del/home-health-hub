@@ -12,8 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
 
-interface PhotoItem { url: string; label: string; }
-interface DocItem { name: string; date: string; }
+interface PhotoItem { url: string; label: string; storagePath?: string; }
+interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
 
 // Small teal badge
 const AiBadge = () => (
