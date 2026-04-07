@@ -62,6 +62,8 @@ const SystemConfigScreen = () => {
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
+  const [showAiPicker, setShowAiPicker] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
 
   const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
 
