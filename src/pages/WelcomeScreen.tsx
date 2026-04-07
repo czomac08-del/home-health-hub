@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Home, MapPin, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+
 
 const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
 
@@ -82,7 +82,7 @@ const WelcomeScreen = () => {
         address: finalAddress,
         label: "Primary Residence",
         is_active: true,
-      }).then(() => refreshProperties()).catch(() => {});
+      }).then(() => { refreshProperties(); }).catch(() => {});
     }
 
     // Navigate IMMEDIATELY — no awaits, no API blocking
