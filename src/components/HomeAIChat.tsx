@@ -35,7 +35,13 @@ const greetingMessage: Message = {
 
 const HomeAIChat = () => {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([greetingMessage]);
+  const { activeProperty } = useAuth();
+  const addr = activeProperty?.address || "your home";
+  const greeting: Message = {
+    role: "assistant",
+    content: `Hi! 👋 I know your home at **${addr}** inside and out. Your HVAC filter size is **16x25x1** and was last changed 4 months ago — coming up on time to replace it. Your roof is showing **55% health** and needs attention soon.\n\nWhat would you like to know?`,
+  };
+  const [messages, setMessages] = useState<Message[]>([greeting]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [showChips, setShowChips] = useState(true);
