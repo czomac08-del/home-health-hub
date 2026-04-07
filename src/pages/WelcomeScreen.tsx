@@ -86,7 +86,7 @@ const WelcomeScreen = () => {
     }
 
     // Navigate IMMEDIATELY — no awaits, no API blocking
-    navigate("/onboarding");
+    navigate("/scanning");
   };
 
   return (
