@@ -347,14 +347,13 @@ const SystemConfigScreen = () => {
           className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
           {PHOTO_LABELS.map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
-        <label className="cursor-pointer block">
-          <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+        <button onClick={() => setShowAiPicker(true)} className="w-full">
           <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-8 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors">
             <Camera className="h-8 w-8 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">Add Photos</span>
-            <span className="text-xs text-muted-foreground/70">Tap to upload or take a photo</span>
+            <span className="text-xs text-primary/70 flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Scan available — tap to identify product</span>
           </div>
-        </label>
+        </button>
       </div>
       {photos.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
@@ -373,9 +372,9 @@ const SystemConfigScreen = () => {
       {/* === BASIC INFO === */}
       <SectionHeader title="Basic Info" />
       <div className="space-y-3 mb-6">
-        <Field label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} />
-        <Field label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} />
-        <Field label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} />
+        <FieldWithScan label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} scanField="brand" />
+        <FieldWithScan label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} scanField="model" />
+        <FieldWithScan label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} scanField="serial" />
         <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
         <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
       </div>
