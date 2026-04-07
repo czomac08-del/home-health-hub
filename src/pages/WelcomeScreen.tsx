@@ -82,7 +82,7 @@ const WelcomeScreen = () => {
         address: finalAddress,
         label: "Primary Residence",
         is_active: true,
-      }).then(() => { refreshProperties(); }).catch(() => {});
+      }).then(() => { void refreshProperties(); });
     }
 
     // Navigate IMMEDIATELY — no awaits, no API blocking
