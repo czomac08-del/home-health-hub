@@ -4,6 +4,10 @@ import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PhotoPrivacySettings, { type PrivacySettings } from "@/components/PhotoPrivacySettings";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -21,6 +25,12 @@ const ProfileScreen = () => {
   const [newAddress, setNewAddress] = useState("");
   const [newLabel, setNewLabel] = useState("Vacation Home");
   const [addingProperty, setAddingProperty] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>({
+    coreInfrastructure: "private",
+    appliances: "private",
+    exteriorLocation: "private",
+    documents: "private",
+  });
 
   const initials = (profile?.full_name || "U")
     .split(" ")
@@ -173,6 +183,11 @@ const ProfileScreen = () => {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* Photo Privacy */}
+      <Section title="Photo Privacy">
+        <PhotoPrivacySettings settings={privacySettings} onChange={setPrivacySettings} />
       </Section>
 
       {/* Settings */}
