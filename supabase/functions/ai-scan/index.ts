@@ -1,0 +1,156 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { mode, imageBase64 } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    let systemPrompt = "";
+    let userPrompt = "";
+
+    switch (mode) {
+      case "label_scan":
+        systemPrompt = "You are an expert product label reader. Extract all visible text from product labels and return structured data. Always respond with valid JSON.";
+        userPrompt = `Analyze this product label image. Extract and return a JSON object with these fields (use null for any field not found):
+{
+  "brand": "manufacturer/brand name",
+  "model": "model number",
+  "serial": "serial number",
+  "manufactureDate": "manufacture date if visible",
+  "voltage": "voltage rating",
+  "amperage": "amperage rating",
+  "btu": "BTU rating if applicable",
+  "gallonCapacity": "gallon capacity if applicable",
+  "filterSize": "filter size if applicable",
+  "additionalInfo": "any other important info from label",
+  "confidence": { "brand": "high/medium/low", "model": "high/medium/low", "serial": "high/medium/low" }
+}`;
+        break;
+
+      case "full_unit":
+        systemPrompt = "You are a home inspection AI expert. Identify home systems, appliances, and equipment from photos. Provide detailed assessments.";
+        userPrompt = `Analyze this image of a home system/appliance. Return a JSON object:
+{
+  "unitType": "what type of unit/system this is",
+  "estimatedAge": "estimated age range based on visual condition",
+  "condition": "overall condition assessment",
+  "visibleIssues": ["list of any visible problems like rust, damage, wear"],
+  "recommendations": ["suggestions for the homeowner"],
+  "labelLocation": "where to find the label for model/serial info",
+  "summary": "A natural language summary like: This appears to be a [type] — approximately [age] based on [observations]. [Any concerns].",
+  "confidence": "high/medium/low"
+}`;
+        break;
+
+      case "barcode":
+        systemPrompt = "You are a product identification expert. Identify products from barcodes, QR codes, or any visible product identifiers.";
+        userPrompt = `Analyze this image for any barcode, QR code, or product identifier. Return a JSON object:
+{
+  "barcodeValue": "decoded barcode/QR value if visible",
+  "productName": "identified product name",
+  "manufacturer": "manufacturer name",
+  "model": "model number",
+  "manualAvailable": false,
+  "manualUrl": null,
+  "confidence": "high/medium/low"
+}`;
+        break;
+
+      case "receipt":
+        systemPrompt = "You are an expert at reading service receipts and invoices. Extract all relevant service information accurately.";
+        userPrompt = `Analyze this service receipt/invoice image. Extract and return a JSON object:
+{
+  "serviceCompany": "company name",
+  "servicePhone": "phone number",
+  "serviceDate": "date of service",
+  "workPerformed": "description of work done",
+  "partsReplaced": [{"name": "part name", "modelNumber": "model if visible"}],
+  "totalCost": "total amount",
+  "technicianName": "technician name if visible",
+  "confidence": { "serviceCompany": "high/medium/low", "serviceDate": "high/medium/low", "totalCost": "high/medium/low" }
+}`;
+        break;
+
+      default:
+        return new Response(JSON.stringify({ error: "Invalid scan mode" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: userPrompt },
+          { type: "image_url", image_url: { url: imageBase64 } },
+        ],
+      },
+    ];
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limited — please try again in a moment." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const t = await response.text();
+      console.error("AI error:", response.status, t);
+      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "{}";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = { raw: content };
+    }
+
+    return new Response(JSON.stringify({ result: parsed }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("ai-scan error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

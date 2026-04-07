@@ -9,6 +9,7 @@ import { getAiData, type AiAutoFillData } from "@/data/aiAutoFillData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { WaterHeaterLocation, HvacLocation } from "@/components/SystemLocationTracking";
+import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -61,6 +62,8 @@ const SystemConfigScreen = () => {
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
+  const [showAiPicker, setShowAiPicker] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
 
   const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
 
@@ -102,6 +105,26 @@ const SystemConfigScreen = () => {
   const confirmAllAi = () => {
     setAiConfirmed(true);
     toast.success("All AI-sourced data confirmed!");
+  };
+
+  const handleScanResult = (result: ScanResult) => {
+    setScanResult(result);
+  };
+
+  const handleScanConfirm = (fields: Record<string, string>) => {
+    if (fields.brand) setBrand(fields.brand);
+    if (fields.model) setModel(fields.model);
+    if (fields.serial) setSerial(fields.serial);
+    if (fields.manufacturer) setBrand(fields.manufacturer);
+    if (fields.voltage) setSpec("voltage", fields.voltage);
+    if (fields.amperage) setSpec("amperage", fields.amperage);
+    if (fields.btu) setSpec("btu", fields.btu);
+    if (fields.gallonCapacity) setSpec("gallonCapacity", fields.gallonCapacity);
+    if (fields.filterSize) setSpec("filterSize", fields.filterSize);
+    if (fields.serviceCompany) setServiceCompany(fields.serviceCompany);
+    if (fields.servicePhone) setServicePhone(fields.servicePhone);
+    setScanResult(null);
+    toast.success("AI scan data saved to form!");
   };
 
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
@@ -324,14 +347,13 @@ const SystemConfigScreen = () => {
           className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
           {PHOTO_LABELS.map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
-        <label className="cursor-pointer block">
-          <input type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
+        <button onClick={() => setShowAiPicker(true)} className="w-full">
           <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-8 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors">
             <Camera className="h-8 w-8 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">Add Photos</span>
-            <span className="text-xs text-muted-foreground/70">Tap to upload or take a photo</span>
+            <span className="text-xs text-primary/70 flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Scan available — tap to identify product</span>
           </div>
-        </label>
+        </button>
       </div>
       {photos.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
@@ -350,9 +372,9 @@ const SystemConfigScreen = () => {
       {/* === BASIC INFO === */}
       <SectionHeader title="Basic Info" />
       <div className="space-y-3 mb-6">
-        <Field label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} />
-        <Field label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} />
-        <Field label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} />
+        <FieldWithScan label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} scanField="brand" />
+        <FieldWithScan label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} scanField="model" />
+        <FieldWithScan label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} scanField="serial" />
         <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
         <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
       </div>
@@ -438,6 +460,31 @@ const SystemConfigScreen = () => {
           Cancel
         </button>
       </div>
+
+      {/* AI Photo Picker */}
+      <AiPhotoPicker
+        open={showAiPicker}
+        onClose={() => setShowAiPicker(false)}
+        onPhotoSelected={async (file, preview) => {
+          if (!user) return;
+          const path = `${user.id}/${Date.now()}-${file.name}`;
+          const { error } = await supabase.storage.from("system-photos").upload(path, file);
+          if (error) { toast.error("Photo upload failed"); return; }
+          const { data: urlData } = supabase.storage.from("system-photos").getPublicUrl(path);
+          setPhotos((prev) => [...prev, { url: urlData.publicUrl, label: photoLabel, storagePath: path }]);
+        }}
+        onScanComplete={handleScanResult}
+        showReceiptMode
+      />
+
+      {/* AI Scan Review */}
+      {scanResult && (
+        <AiScanReview
+          result={scanResult}
+          onConfirm={handleScanConfirm}
+          onClose={() => setScanResult(null)}
+        />
+      )}
     </div>
   );
 };
@@ -457,6 +504,21 @@ const Field = ({ label, value, onChange, placeholder, type = "text", ai = false 
     </label>
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
       className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+  </div>
+);
+
+const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, scanField }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; scanField: string;
+}) => (
+  <div>
+    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+      {label} {ai && <AiBadge />}
+    </label>
+    <div className="flex gap-2">
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+      <AiFieldScanButton fieldName={scanField} onResult={onChange} />
+    </div>
   </div>
 );
 
