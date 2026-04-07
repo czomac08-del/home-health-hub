@@ -6,6 +6,7 @@ import OnboardingWizard from "./pages/OnboardingWizard";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { ProfileSwitcherProvider } from "@/contexts/ProfileSwitcherContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
@@ -29,6 +30,8 @@ import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import FeedbackScreen from "./pages/FeedbackScreen";
 import BottomNav from "./components/BottomNav";
 import HelpButton from "./components/HelpButton";
+import CreateProfileScreen from "./pages/CreateProfileScreen";
+import PortfolioOverview from "./pages/PortfolioOverview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,6 +90,8 @@ const AppContent = () => {
         <Route path="/report/:id" element={<ScoreReportPage />} />
         <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
+        <Route path="/create-profile" element={<ProtectedRoute><CreateProfileScreen /></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><PortfolioOverview /></ProtectedRoute>} />
         <Route path="/report" element={<ScoreReportPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -99,13 +104,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <RoleProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </RoleProvider>
+        <ProfileSwitcherProvider>
+          <RoleProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </RoleProvider>
+        </ProfileSwitcherProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
