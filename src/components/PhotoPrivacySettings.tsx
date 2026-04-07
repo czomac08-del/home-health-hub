@@ -106,6 +106,7 @@ const PhotoPrivacySettings = ({ settings: externalSettings, onChange }: Props) =
             {options.map((opt) => (
               <label
                 key={opt.value}
+                onClick={() => update(cat.key, opt.value)}
                 className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
                   settings[cat.key] === opt.value
                     ? "border-primary bg-primary/10"
