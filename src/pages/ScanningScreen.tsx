@@ -77,6 +77,7 @@ const ScanningScreen = () => {
     if (done && !hasNavigated.current) {
       const t = setTimeout(() => {
         hasNavigated.current = true;
+        // New users go to onboarding, returning users go to dashboard
         navigate("/privacy-reminder", { replace: true });
       }, COMPLETE_DELAY + 800);
       return () => clearTimeout(t);
