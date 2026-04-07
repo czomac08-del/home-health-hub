@@ -169,12 +169,18 @@ const WelcomeScreen = () => {
           </p>
         )}
 
+        {verifyFailed && (
+          <p className="text-xs text-yellow-400 text-center">
+            We couldn't verify this address automatically. You can still proceed — just double-check it's correct.
+          </p>
+        )}
+
         <button
           onClick={handleContinue}
           disabled={!address.trim() || loading}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {loading ? "Setting up..." : "Scan My Home"}
+          {loading ? "Setting up..." : verifyFailed ? "Use This Address Anyway" : "Scan My Home"}
         </button>
       </div>
     </div>
