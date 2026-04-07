@@ -14,16 +14,320 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      maintenance_history: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          performed_by: string | null
+          performed_date: string
+          property_id: string
+          system_name: string
+          user_id: string
+          verified: boolean | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          performed_by?: string | null
+          performed_date: string
+          property_id: string
+          system_name: string
+          user_id: string
+          verified?: boolean | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          performed_by?: string | null
+          performed_date?: string
+          property_id?: string
+          system_name?: string
+          user_id?: string
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string
+          created_at: string
+          health_score: number | null
+          id: string
+          is_active: boolean
+          label: string
+          square_footage: string | null
+          updated_at: string
+          user_id: string
+          year_built: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          health_score?: number | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          square_footage?: string | null
+          updated_at?: string
+          user_id: string
+          year_built?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          health_score?: number | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          square_footage?: string | null
+          updated_at?: string
+          user_id?: string
+          year_built?: string | null
+        }
+        Relationships: []
+      }
+      system_details: {
+        Row: {
+          brand: string | null
+          created_at: string
+          extended_warranty: boolean | null
+          health_score: number | null
+          id: string
+          install_date: string | null
+          last_service: string | null
+          location_in_home: string | null
+          model: string | null
+          next_service: string | null
+          notes: string | null
+          property_id: string
+          purchase_date: string | null
+          serial_number: string | null
+          service_company: string | null
+          service_phone: string | null
+          specs: Json | null
+          status: string | null
+          system_name: string
+          updated_at: string
+          user_id: string
+          warranty_exp: string | null
+          warranty_provider: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          extended_warranty?: boolean | null
+          health_score?: number | null
+          id?: string
+          install_date?: string | null
+          last_service?: string | null
+          location_in_home?: string | null
+          model?: string | null
+          next_service?: string | null
+          notes?: string | null
+          property_id: string
+          purchase_date?: string | null
+          serial_number?: string | null
+          service_company?: string | null
+          service_phone?: string | null
+          specs?: Json | null
+          status?: string | null
+          system_name: string
+          updated_at?: string
+          user_id: string
+          warranty_exp?: string | null
+          warranty_provider?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          extended_warranty?: boolean | null
+          health_score?: number | null
+          id?: string
+          install_date?: string | null
+          last_service?: string | null
+          location_in_home?: string | null
+          model?: string | null
+          next_service?: string | null
+          notes?: string | null
+          property_id?: string
+          purchase_date?: string | null
+          serial_number?: string | null
+          service_company?: string | null
+          service_phone?: string | null
+          specs?: Json | null
+          status?: string | null
+          system_name?: string
+          updated_at?: string
+          user_id?: string
+          warranty_exp?: string | null
+          warranty_provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_details_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_name: string
+          id: string
+          storage_path: string
+          system_detail_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          file_name: string
+          id?: string
+          storage_path: string
+          system_detail_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+          system_detail_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_documents_system_detail_id_fkey"
+            columns: ["system_detail_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_photos: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          storage_path: string
+          system_detail_id: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          storage_path: string
+          system_detail_id: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          storage_path?: string
+          system_detail_id?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_photos_system_detail_id_fkey"
+            columns: ["system_detail_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "homeowner" | "realtor" | "inspector" | "contractor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +454,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["homeowner", "realtor", "inspector", "contractor"],
+    },
   },
 } as const
