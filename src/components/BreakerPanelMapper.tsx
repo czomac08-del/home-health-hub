@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ElectricalPanelLocation } from "@/components/SystemLocationTracking";
 
 // --- Types ---
 interface Breaker {
@@ -241,6 +242,7 @@ const BreakerPanelMapper = () => {
   const [editingBreaker, setEditingBreaker] = useState<number | null>(null);
   const [specialNotes, setSpecialNotes] = useState("");
   const [showShare, setShowShare] = useState(false);
+  const [locationData, setLocationData] = useState<Record<string, string>>({});
 
   const isDangerousBrand = panelBrand === "Federal Pacific" || panelBrand === "Zinsco";
   const labeledCount = breakers.filter((b) => b.label).length;
@@ -331,6 +333,9 @@ const BreakerPanelMapper = () => {
           </div>
         </div>
       </div>
+
+      {/* ─── Panel Location ─── */}
+      <ElectricalPanelLocation data={locationData} onChange={setLocationData} />
 
       {/* ─── Visual Breaker Map ─── */}
       <div className="rounded-xl border border-border bg-card p-4">
