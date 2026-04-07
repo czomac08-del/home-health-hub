@@ -77,7 +77,7 @@ const ScanningScreen = () => {
     if (done && !hasNavigated.current) {
       const t = setTimeout(() => {
         hasNavigated.current = true;
-        navigate("/dashboard", { replace: true });
+        navigate("/privacy-reminder", { replace: true });
       }, COMPLETE_DELAY + 800);
       return () => clearTimeout(t);
     }
