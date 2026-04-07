@@ -189,27 +189,27 @@ const SystemConfigScreen = () => {
     // Save photos
     for (const photo of photos) {
       if (photo.storagePath) {
-        await supabase.from("system_photos").upsert({
+        await supabase.from("system_photos").insert({
           system_detail_id: systemDetailId,
           user_id: user.id,
           storage_path: photo.storagePath,
           label: photo.label,
           url: photo.url,
-        }, { onConflict: "storage_path" }).select();
+        .select();
       }
     }
 
     // Save docs
     for (const [docType, doc] of Object.entries(docs)) {
       if (doc && doc.storagePath) {
-        await supabase.from("system_documents").upsert({
+        await supabase.from("system_documents").insert({
           system_detail_id: systemDetailId,
           user_id: user.id,
           storage_path: doc.storagePath,
           doc_type: docType,
           file_name: doc.name,
           url: doc.url,
-        }, { onConflict: "storage_path" }).select();
+        .select();
       }
     }
 
