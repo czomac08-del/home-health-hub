@@ -76,13 +76,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // 1. Get the initial session — this determines loading state
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) {
+        // Fire-and-forget: don't block loading on data fetches
+        void fetchProfile(s.user.id);
+        void fetchProperties(s.user.id);
+      }
+      setLoading(false);
+    });
+
+    // 2. Listen for auth changes — never block with await
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-          await fetchProperties(session.user.id);
+      (_event, s) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          void fetchProfile(s.user.id);
+          void fetchProperties(s.user.id);
         } else {
           setProfile(null);
           setProperties([]);
@@ -91,16 +104,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchProperties(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
