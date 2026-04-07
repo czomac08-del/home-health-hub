@@ -85,6 +85,15 @@
   50% { transform: scale(1.05); opacity: 0.6; }
 }
 
+@keyframes slide-in-bottom {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.3s ease-out;
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
