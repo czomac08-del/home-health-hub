@@ -4,6 +4,7 @@ import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan
 import { systems } from "./DashboardScreen";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import BreakerPanelMapper from "@/components/BreakerPanelMapper";
 
 const iconMap: Record<string, ReactNode> = {
   hvac: <Fan className="h-6 w-6 text-primary" />,
@@ -134,6 +135,13 @@ const SystemDetailScreen = () => {
           ))}
         </div>
       </div>
+
+      {/* Breaker Panel Mapper — Electrical only */}
+      {id === "electrical" && (
+        <div className="mb-6">
+          <BreakerPanelMapper />
+        </div>
+      )}
 
       {/* Schedule a Pro */}
       <button className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong mb-4">
