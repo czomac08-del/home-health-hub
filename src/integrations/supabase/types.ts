@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string
+          id: string
+          profile_name: string
+          profile_type: Database["public"]["Enums"]["profile_type"]
+          separate_expenses: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string
+          id?: string
+          profile_name?: string
+          profile_type?: Database["public"]["Enums"]["profile_type"]
+          separate_expenses?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string
+          id?: string
+          profile_name?: string
+          profile_type?: Database["public"]["Enums"]["profile_type"]
+          separate_expenses?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           category: string
@@ -135,6 +168,7 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          profile_id: string | null
           square_footage: string | null
           updated_at: string
           user_id: string
@@ -147,6 +181,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          profile_id?: string | null
           square_footage?: string | null
           updated_at?: string
           user_id: string
@@ -159,12 +194,21 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          profile_id?: string | null
           square_footage?: string | null
           updated_at?: string
           user_id?: string
           year_built?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_details: {
         Row: {
@@ -364,6 +408,7 @@ export type Database = {
     }
     Enums: {
       app_role: "homeowner" | "realtor" | "inspector" | "contractor"
+      profile_type: "personal" | "business"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -492,6 +537,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["homeowner", "realtor", "inspector", "contractor"],
+      profile_type: ["personal", "business"],
     },
   },
 } as const
