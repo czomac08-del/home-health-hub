@@ -163,8 +163,9 @@ const SystemConfigScreen = () => {
     const path = `${user.id}/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("system-documents").upload(path, file);
     if (error) { toast.error("Document upload failed"); return; }
-    const { data: urlData } = supabase.storage.from("system-documents").getPublicUrl(path);
-    setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: urlData.publicUrl } }));
+    const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
+    if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
+    setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl } }));
   };
 
   const handleSave = async () => {
