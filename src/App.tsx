@@ -62,7 +62,7 @@ const AppContent = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
-        <Route path="/welcome" element={<ProtectedRoute><WelcomeScreen /></ProtectedRoute>} />
+        <Route path="/welcome" element={<WelcomeScreen />} />
         <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
         <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />
