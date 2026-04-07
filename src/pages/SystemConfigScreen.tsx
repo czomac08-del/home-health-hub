@@ -107,6 +107,26 @@ const SystemConfigScreen = () => {
     toast.success("All AI-sourced data confirmed!");
   };
 
+  const handleScanResult = (result: ScanResult) => {
+    setScanResult(result);
+  };
+
+  const handleScanConfirm = (fields: Record<string, string>) => {
+    if (fields.brand) setBrand(fields.brand);
+    if (fields.model) setModel(fields.model);
+    if (fields.serial) setSerial(fields.serial);
+    if (fields.manufacturer) setBrand(fields.manufacturer);
+    if (fields.voltage) setSpec("voltage", fields.voltage);
+    if (fields.amperage) setSpec("amperage", fields.amperage);
+    if (fields.btu) setSpec("btu", fields.btu);
+    if (fields.gallonCapacity) setSpec("gallonCapacity", fields.gallonCapacity);
+    if (fields.filterSize) setSpec("filterSize", fields.filterSize);
+    if (fields.serviceCompany) setServiceCompany(fields.serviceCompany);
+    if (fields.servicePhone) setServicePhone(fields.servicePhone);
+    setScanResult(null);
+    toast.success("AI scan data saved to form!");
+  };
+
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
 
   // Completeness
