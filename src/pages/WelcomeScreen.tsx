@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
+
 interface AddressSuggestion {
   matchedAddress: string;
   coordinates: { x: number; y: number };
@@ -34,22 +36,16 @@ const WelcomeScreen = () => {
   }, []);
 
   const fetchSuggestions = async (query: string) => {
-    if (query.length < 5) {
+    if (query.length < 3) {
       setSuggestions([]);
       return;
     }
     setSearching(true);
     try {
-      const url = `https://geocoding.census.gov/geocoder/addresses/onelineaddress?address=${encodeURIComponent(query)}&benchmark=Public_AR_Current&format=json`;
-      const res = await fetch(url);
+      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(query)}`);
       const data = await res.json();
-      const matches = data?.result?.addressMatches || [];
-      setSuggestions(
-        matches.map((m: any) => ({
-          matchedAddress: m.matchedAddress,
-          coordinates: m.coordinates,
-        }))
-      );
+      const matches = data?.matches || [];
+      setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
     } catch {
       setSuggestions([]);
@@ -76,13 +72,11 @@ const WelcomeScreen = () => {
     if (!address.trim() || !user) return;
 
     if (!verified) {
-      // Attempt to verify the typed address
       setLoading(true);
       try {
-        const url = `https://geocoding.census.gov/geocoder/addresses/onelineaddress?address=${encodeURIComponent(address.trim())}&benchmark=Public_AR_Current&format=json`;
-        const res = await fetch(url);
+        const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(address.trim())}`);
         const data = await res.json();
-        const matches = data?.result?.addressMatches || [];
+        const matches = data?.matches || [];
         if (matches.length === 0) {
           toast.error("We couldn't verify that address. Please select a suggestion or enter a valid US address.");
           setLoading(false);
