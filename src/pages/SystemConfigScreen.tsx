@@ -460,6 +460,31 @@ const SystemConfigScreen = () => {
           Cancel
         </button>
       </div>
+
+      {/* AI Photo Picker */}
+      <AiPhotoPicker
+        open={showAiPicker}
+        onClose={() => setShowAiPicker(false)}
+        onPhotoSelected={async (file, preview) => {
+          if (!user) return;
+          const path = `${user.id}/${Date.now()}-${file.name}`;
+          const { error } = await supabase.storage.from("system-photos").upload(path, file);
+          if (error) { toast.error("Photo upload failed"); return; }
+          const { data: urlData } = supabase.storage.from("system-photos").getPublicUrl(path);
+          setPhotos((prev) => [...prev, { url: urlData.publicUrl, label: photoLabel, storagePath: path }]);
+        }}
+        onScanComplete={handleScanResult}
+        showReceiptMode
+      />
+
+      {/* AI Scan Review */}
+      {scanResult && (
+        <AiScanReview
+          result={scanResult}
+          onConfirm={handleScanConfirm}
+          onClose={() => setScanResult(null)}
+        />
+      )}
     </div>
   );
 };
@@ -479,6 +504,21 @@ const Field = ({ label, value, onChange, placeholder, type = "text", ai = false 
     </label>
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
       className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+  </div>
+);
+
+const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, scanField }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; scanField: string;
+}) => (
+  <div>
+    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+      {label} {ai && <AiBadge />}
+    </label>
+    <div className="flex gap-2">
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+      <AiFieldScanButton fieldName={scanField} onResult={onChange} />
+    </div>
   </div>
 );
 
