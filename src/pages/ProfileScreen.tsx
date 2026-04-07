@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut } from "lucide-react";
+import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -197,6 +197,14 @@ const ProfileScreen = () => {
           <ToggleRow icon={<CalendarClock className="h-4 w-4" />} label="Maintenance Reminders" description="Get notified when service is due" enabled={reminders} onToggle={() => setReminders(!reminders)} />
         </div>
       </Section>
+
+      {/* Feedback */}
+      <button
+        onClick={() => navigate("/feedback")}
+        className="w-full rounded-xl border border-primary/30 bg-primary/10 py-3.5 font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 mt-2"
+      >
+        <MessageSquare className="h-4 w-4" /> Send Feedback
+      </button>
 
       {/* Sign Out */}
       <button
