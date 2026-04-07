@@ -14,28 +14,30 @@ serve(async (req) => {
   const address = url.searchParams.get("address");
 
   if (!address) {
-    return new Response(JSON.stringify({ error: "address param required" }), {
+    return new Response(JSON.stringify({ error: "address param required", matches: [] }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
-    const censusUrl = `https://geocoding.census.gov/geocoder/addresses/onelineaddress?address=${encodeURIComponent(address)}&benchmark=Public_AR_Current&format=json`;
-    const res = await fetch(censusUrl);
+    // Use Nominatim (OpenStreetMap) geocoder — free, no key, reliable
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&addressdetails=1&countrycodes=us&limit=5`;
+    const res = await fetch(nominatimUrl, {
+      headers: { "User-Agent": "HomePassportApp/1.0" },
+    });
     const data = await res.json();
-    const matches = data?.result?.addressMatches || [];
 
-    return new Response(
-      JSON.stringify({
-        matches: matches.map((m: any) => ({
-          matchedAddress: m.matchedAddress,
-          coordinates: m.coordinates,
-        })),
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const matches = (data || []).map((item: any) => ({
+      matchedAddress: item.display_name,
+      coordinates: { x: parseFloat(item.lon), y: parseFloat(item.lat) },
+    }));
+
+    return new Response(JSON.stringify({ matches }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
+    console.error("Geocoding error:", e);
     return new Response(JSON.stringify({ error: "Geocoding failed", matches: [] }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
