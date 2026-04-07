@@ -92,7 +92,7 @@ const HomeAIChat = () => {
             </div>
             <div className="flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-health-green" />
-              <span className="text-[10px] text-muted-foreground">Online · Ask me anything about 123 Main St</span>
+              <span className="text-[10px] text-muted-foreground">Online · Ask me anything about {addr}</span>
             </div>
           </div>
         </div>
