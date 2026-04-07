@@ -4,20 +4,26 @@ import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
 import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
-const systems = [
+const defaultSystems = [
   { id: "hvac", name: "HVAC", health: 92, status: "Excellent", flagged: false },
   { id: "plumbing", name: "Plumbing", health: 78, status: "Good", flagged: false },
   { id: "electrical", name: "Electrical", health: 65, status: "Fair — Needs Attention", flagged: true },
   { id: "roof", name: "Roof", health: 55, status: "Poor — Action Required", flagged: true },
 ];
 
-const needsAttention = systems.filter((s) => s.health < 70);
-const healthySystems = systems.filter((s) => s.health >= 70);
-
 const DashboardScreen = () => {
   const navigate = useNavigate();
   const [showSwitcher, setShowSwitcher] = useState(false);
+  const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
+
+  const systems = defaultSystems;
+  const needsAttention = systems.filter((s) => s.health < 70);
+  const healthySystems = systems.filter((s) => s.health >= 70);
+
+  const userName = profile?.full_name?.split(" ")[0] || "there";
+  const address = activeProperty?.address || "No property added";
 
   return (
     <div className="min-h-screen pb-24 max-w-lg mx-auto">
@@ -29,14 +35,14 @@ const DashboardScreen = () => {
           </div>
           <span className="text-foreground font-semibold text-sm">Home Passport</span>
         </div>
-        <p className="text-muted-foreground text-xs text-center hidden sm:block">123 Main St — Primary Residence</p>
-        <button className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+        <p className="text-muted-foreground text-xs text-center hidden sm:block">{address} — {activeProperty?.label || "Primary Residence"}</p>
+        <button onClick={() => navigate("/profile")} className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
           <User className="h-4 w-4 text-muted-foreground" />
         </button>
       </header>
 
       {/* Mobile address */}
-      <p className="text-muted-foreground text-xs text-center sm:hidden px-6">123 Main St — Primary Residence</p>
+      <p className="text-muted-foreground text-xs text-center sm:hidden px-6">{address} — {activeProperty?.label || "Primary Residence"}</p>
 
       {/* Property Switcher */}
       <div className="flex justify-center px-6 mt-2 mb-6 relative">
@@ -44,19 +50,22 @@ const DashboardScreen = () => {
           onClick={() => setShowSwitcher(!showSwitcher)}
           className="flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Primary Residence <ChevronDown className="h-3 w-3" />
+          {activeProperty?.label || "Primary Residence"} <ChevronDown className="h-3 w-3" />
         </button>
         {showSwitcher && (
           <div className="absolute top-full mt-1 rounded-xl border border-border bg-card shadow-lg py-1 z-10 min-w-[180px]">
-            <button onClick={() => setShowSwitcher(false)} className="w-full px-4 py-2 text-xs text-foreground hover:bg-secondary text-left">
-              Primary Residence
-            </button>
-            <button onClick={() => setShowSwitcher(false)} className="w-full px-4 py-2 text-xs text-muted-foreground hover:bg-secondary text-left">
-              Vacation Home
-            </button>
-            <button onClick={() => setShowSwitcher(false)} className="w-full px-4 py-2 text-xs text-muted-foreground hover:bg-secondary text-left">
-              Rental Property
-            </button>
+            {properties.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => { setActivePropertyId(p.id); setShowSwitcher(false); }}
+                className={`w-full px-4 py-2 text-xs hover:bg-secondary text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
+              >
+                {p.label} — {p.address}
+              </button>
+            ))}
+            {properties.length === 0 && (
+              <p className="px-4 py-2 text-xs text-muted-foreground italic">No properties yet</p>
+            )}
           </div>
         )}
       </div>
@@ -64,7 +73,7 @@ const DashboardScreen = () => {
       {/* Health Score */}
       <div className="flex flex-col items-center gap-2 mb-6 px-6">
         <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home Health</h2>
-        <HealthRing percentage={87} size={160} strokeWidth={10} />
+        <HealthRing percentage={activeProperty?.health_score || 87} size={160} strokeWidth={10} />
       </div>
 
       {/* This Week Summary */}
@@ -72,7 +81,7 @@ const DashboardScreen = () => {
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-foreground font-semibold">Good morning, John</p>
+              <p className="text-foreground font-semibold">Good morning, {userName}</p>
               <p className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
             </div>
             <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
@@ -109,42 +118,24 @@ const DashboardScreen = () => {
         </div>
         <div className="flex flex-col gap-3">
           {needsAttention.map((sys) => (
-            <SystemCard
-              key={sys.id}
-              id={sys.id}
-              name={sys.name}
-              health={sys.health}
-              status={sys.status}
-              flagged={sys.flagged}
-              showPulse
-              onClick={() => navigate(`/system/${sys.id}`)}
-            />
+            <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
           ))}
         </div>
       </div>
 
-      {/* All Systems (excluding ones already in Needs Attention) */}
+      {/* All Systems */}
       <div className="px-6">
         <h3 className="text-foreground font-semibold text-lg mb-4">All Systems</h3>
         <div className="flex flex-col gap-3">
           {healthySystems.map((sys) => (
-            <SystemCard
-              key={sys.id}
-              id={sys.id}
-              name={sys.name}
-              health={sys.health}
-              status={sys.status}
-              flagged={sys.flagged}
-              onClick={() => navigate(`/system/${sys.id}`)}
-            />
+            <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} onClick={() => navigate(`/system/${sys.id}`)} />
           ))}
         </div>
       </div>
-      {/* AI Chat Bubble */}
       <HomeAIChat />
     </div>
   );
 };
 
 export default DashboardScreen;
-export { systems };
+export { defaultSystems as systems };
