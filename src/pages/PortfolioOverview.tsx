@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
-import { Home, ChevronRight, AlertTriangle, DollarSign, Wrench } from "lucide-react";
+import { Home, ChevronRight, AlertTriangle, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
 
@@ -29,12 +29,12 @@ const PortfolioOverview = () => {
 
       {/* Combined Health */}
       <div className="flex items-center gap-6 rounded-xl border border-border bg-card p-5 mb-6">
-        <HealthRing score={avgHealth} size={80} />
+        <HealthRing percentage={avgHealth} size={80} />
         <div>
           <p className="text-foreground font-bold text-lg">Portfolio Health</p>
           <p className="text-sm text-muted-foreground">Average across all properties</p>
           {needsAttention.length > 0 && (
-            <p className="text-xs text-amber-400 flex items-center gap-1 mt-1">
+            <p className="text-xs text-health-amber flex items-center gap-1 mt-1">
               <AlertTriangle className="h-3 w-3" /> {needsAttention.length} properties need attention
             </p>
           )}
@@ -75,7 +75,7 @@ const PortfolioOverview = () => {
                 i < profileProperties.length - 1 ? "border-b border-border/50" : ""
               }`}
             >
-              <HealthRing score={prop.health_score || 50} size={40} />
+              <HealthRing percentage={prop.health_score || 50} size={40} />
               <div className="flex-1 min-w-0">
                 <p className="text-foreground text-sm font-medium truncate">{prop.address}</p>
                 <p className="text-xs text-muted-foreground">{prop.label}</p>
