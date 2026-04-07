@@ -104,3 +104,14 @@
 .animate-scan-rotate {
   animation: scan-rotate 3s linear infinite;
 }
+
+@keyframes scan-line-move {
+  0% { top: 10%; }
+  50% { top: 85%; }
+  100% { top: 10%; }
+}
+
+.animate-scan-line {
+  position: absolute;
+  animation: scan-line-move 2.5s ease-in-out infinite;
+}
