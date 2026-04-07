@@ -60,6 +60,7 @@ const SystemConfigScreen = () => {
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
+  const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
 
   const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
 
@@ -407,6 +408,18 @@ const SystemConfigScreen = () => {
             className={`w-full rounded-xl border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${isAiField("location") ? "border-primary/40 pr-16" : "border-border"}`} />
         </div>
       </div>
+
+      {/* === SYSTEM-SPECIFIC LOCATION TRACKING === */}
+      {displayName.toLowerCase().includes("water heater") && (
+        <div className="mb-6">
+          <WaterHeaterLocation data={locationTracking} onChange={setLocationTracking} />
+        </div>
+      )}
+      {(displayName.toLowerCase().includes("hvac") || displayName.toLowerCase().includes("heating") || displayName.toLowerCase().includes("air conditioning")) && (
+        <div className="mb-6">
+          <HvacLocation data={locationTracking} onChange={setLocationTracking} />
+        </div>
+      )}
 
       {/* === NOTES === */}
       <SectionHeader title="Notes" />
