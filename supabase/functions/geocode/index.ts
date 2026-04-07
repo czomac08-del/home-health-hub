@@ -26,7 +26,14 @@ serve(async (req) => {
     const res = await fetch(nominatimUrl, {
       headers: { "User-Agent": "HomePassportApp/1.0" },
     });
-    const data = await res.json();
+    const text = await res.text();
+    if (!res.ok || !text.startsWith("[")) {
+      console.error("Nominatim error:", res.status, text.substring(0, 200));
+      return new Response(JSON.stringify({ matches: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const data = JSON.parse(text);
 
     let matches = (data || [])
       .filter((item: any) => {
