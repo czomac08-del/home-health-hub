@@ -7,16 +7,14 @@ interface HealthRingProps {
 }
 
 const getColorClass = (percentage: number): string => {
-  if (percentage >= 85) return "text-health-green";
-  if (percentage >= 70) return "text-health-yellow";
-  if (percentage >= 60) return "text-health-amber";
+  if (percentage >= 75) return "text-health-green";
+  if (percentage >= 60) return "text-health-yellow";
   return "text-health-red";
 };
 
 const getStrokeColor = (percentage: number): string => {
-  if (percentage >= 85) return "hsl(152, 60%, 50%)";
-  if (percentage >= 70) return "hsl(45, 90%, 55%)";
-  if (percentage >= 60) return "hsl(30, 90%, 55%)";
+  if (percentage >= 75) return "hsl(152, 60%, 50%)";
+  if (percentage >= 60) return "hsl(45, 90%, 55%)";
   return "hsl(0, 72%, 51%)";
 };
 
