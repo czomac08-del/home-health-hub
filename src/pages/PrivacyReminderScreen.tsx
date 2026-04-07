@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Shield, Lock, Eye, Users } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PrivacyReminderScreen = () => {
   const navigate = useNavigate();
+  const { properties } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 max-w-md mx-auto text-center">
@@ -41,7 +43,7 @@ const PrivacyReminderScreen = () => {
       </div>
 
       <button
-        onClick={() => navigate("/home", { replace: true })}
+        onClick={() => navigate(properties.length > 0 ? "/dashboard" : "/onboarding", { replace: true })}
         className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
       >
         Continue
