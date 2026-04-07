@@ -26,7 +26,7 @@ const SystemConfigScreen = () => {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const displayName = decodeURIComponent(name || "");
-
+  const { user, activeProperty } = useAuth();
   const aiData = useMemo(() => getAiData(displayName), [displayName]);
 
   // Track which fields were filled by AI and confirmed
