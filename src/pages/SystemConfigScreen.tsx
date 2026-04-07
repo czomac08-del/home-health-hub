@@ -119,21 +119,151 @@ const SystemConfigScreen = () => {
     return total > 0 ? Math.round((filled / total) * 100) : 0;
   }, [brand, model, serial, installDate, purchaseDate, warrantyExp, warrantyProvider, lastService, nextService, serviceCompany, servicePhone, specFields, specs, photos, docs, notes, location]);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
-    setPhotos((prev) => [...prev, ...Array.from(files).map((file) => ({ url: URL.createObjectURL(file), label: photoLabel }))]);
+    if (!files || !user) return;
+    for (const file of Array.from(files)) {
+      const path = `${user.id}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("system-photos").upload(path, file);
+      if (error) { toast.error("Photo upload failed"); continue; }
+      const { data: urlData } = supabase.storage.from("system-photos").getPublicUrl(path);
+      setPhotos((prev) => [...prev, { url: urlData.publicUrl, label: photoLabel, storagePath: path }]);
+    }
   };
 
-  const handleDocUpload = (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocUpload = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString() } }));
+    if (!file || !user) return;
+    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("system-documents").upload(path, file);
+    if (error) { toast.error("Document upload failed"); return; }
+    const { data: urlData } = supabase.storage.from("system-documents").getPublicUrl(path);
+    setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: urlData.publicUrl } }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!user || !activeProperty) {
+      toast.error("No active property. Please add a property first.");
+      return;
+    }
+    const payload = {
+      property_id: activeProperty.id,
+      user_id: user.id,
+      system_name: displayName,
+      brand: brand || null,
+      model: model || null,
+      serial_number: serial || null,
+      install_date: installDate || null,
+      purchase_date: purchaseDate || null,
+      warranty_exp: warrantyExp || null,
+      warranty_provider: warrantyProvider || null,
+      extended_warranty: extendedWarranty,
+      last_service: lastService || null,
+      next_service: nextService || null,
+      service_company: serviceCompany || null,
+      service_phone: servicePhone || null,
+      specs: specs as any,
+      notes: notes || null,
+      location_in_home: location || null,
+      status: "configured",
+    };
+
+    const { data: existing } = await supabase
+      .from("system_details")
+      .select("id")
+      .eq("property_id", activeProperty.id)
+      .eq("system_name", displayName)
+      .maybeSingle();
+
+    let systemDetailId: string;
+    if (existing) {
+      const { error } = await supabase.from("system_details").update(payload).eq("id", existing.id);
+      if (error) { toast.error("Failed to save"); return; }
+      systemDetailId = existing.id;
+    } else {
+      const { data, error } = await supabase.from("system_details").insert(payload).select("id").single();
+      if (error) { toast.error("Failed to save"); return; }
+      systemDetailId = data.id;
+    }
+
+    // Save photos
+    for (const photo of photos) {
+      if (photo.storagePath) {
+        await supabase.from("system_photos").upsert({
+          system_detail_id: systemDetailId,
+          user_id: user.id,
+          storage_path: photo.storagePath,
+          label: photo.label,
+          url: photo.url,
+        }, { onConflict: "storage_path" }).select();
+      }
+    }
+
+    // Save docs
+    for (const [docType, doc] of Object.entries(docs)) {
+      if (doc && doc.storagePath) {
+        await supabase.from("system_documents").upsert({
+          system_detail_id: systemDetailId,
+          user_id: user.id,
+          storage_path: doc.storagePath,
+          doc_type: docType,
+          file_name: doc.name,
+          url: doc.url,
+        }, { onConflict: "storage_path" }).select();
+      }
+    }
+
     toast.success(`${displayName} details saved to your Home Passport!`);
     navigate("/systems");
   };
+
+  // Load existing data on mount
+  useEffect(() => {
+    if (!user || !activeProperty) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("*")
+        .eq("property_id", activeProperty.id)
+        .eq("system_name", displayName)
+        .maybeSingle();
+      if (!data) return;
+      if (data.brand) setBrand(data.brand);
+      if (data.model) setModel(data.model);
+      if (data.serial_number) setSerial(data.serial_number);
+      if (data.install_date) setInstallDate(data.install_date);
+      if (data.purchase_date) setPurchaseDate(data.purchase_date);
+      if (data.warranty_exp) setWarrantyExp(data.warranty_exp);
+      if (data.warranty_provider) setWarrantyProvider(data.warranty_provider);
+      if (data.extended_warranty) setExtendedWarranty(data.extended_warranty);
+      if (data.last_service) setLastService(data.last_service);
+      if (data.next_service) setNextService(data.next_service);
+      if (data.service_company) setServiceCompany(data.service_company);
+      if (data.service_phone) setServicePhone(data.service_phone);
+      if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      if (data.notes) setNotes(data.notes);
+      if (data.location_in_home) setLocation(data.location_in_home);
+
+      // Load photos
+      const { data: photoData } = await supabase
+        .from("system_photos")
+        .select("*")
+        .eq("system_detail_id", data.id);
+      if (photoData) setPhotos(photoData.map((p: any) => ({ url: p.url, label: p.label, storagePath: p.storage_path })));
+
+      // Load docs
+      const { data: docData } = await supabase
+        .from("system_documents")
+        .select("*")
+        .eq("system_detail_id", data.id);
+      if (docData) {
+        const docMap: Record<string, DocItem> = {};
+        docData.forEach((d: any) => { docMap[d.doc_type] = { name: d.file_name, date: new Date(d.created_at).toLocaleDateString(), storagePath: d.storage_path, url: d.url }; });
+        setDocs(docMap);
+      }
+    };
+    load();
+  }, [user, activeProperty, displayName]);
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
