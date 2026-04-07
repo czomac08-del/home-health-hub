@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      feedback: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          improvement: string
+          page_route: string
+          rating: number
+          user_id: string
+          user_role: string
+          what_happened: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          improvement?: string
+          page_route?: string
+          rating: number
+          user_id: string
+          user_role?: string
+          what_happened?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          improvement?: string
+          page_route?: string
+          rating?: number
+          user_id?: string
+          user_role?: string
+          what_happened?: string
+        }
+        Relationships: []
+      }
       maintenance_history: {
         Row: {
           action: string
