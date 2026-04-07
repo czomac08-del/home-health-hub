@@ -5,6 +5,8 @@ import { systems } from "./DashboardScreen";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import BreakerPanelMapper from "@/components/BreakerPanelMapper";
+import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "@/components/AiPhotoScanner";
+import type { ScanResult } from "@/components/AiPhotoScanner";
 
 const iconMap: Record<string, ReactNode> = {
   hvac: <Fan className="h-6 w-6 text-primary" />,
@@ -50,6 +52,9 @@ const SystemDetailScreen = () => {
   const system = systems.find((s) => s.id === id);
   const details = id ? systemDetails[id] : undefined;
   const [checked, setChecked] = useState<boolean[]>(details ? details.steps.map(() => false) : []);
+  const [showPicker, setShowPicker] = useState(false);
+  const [scanReview, setScanReview] = useState<ScanResult | null>(null);
+  const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
 
   if (!system || !details) {
     return (
@@ -61,6 +66,17 @@ const SystemDetailScreen = () => {
 
   const toggleStep = (i: number) => {
     setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+  };
+
+  const handleScanComplete = (result: ScanResult) => {
+    setScanReview(result);
+    setScanHistory(prev => [...prev, result]);
+  };
+
+  const handleConfirmScan = (fields: Record<string, string>) => {
+    // In a real implementation, this would save to the database
+    console.log("Saving scanned fields:", fields);
+    setScanReview(null);
   };
 
   return (
@@ -93,23 +109,29 @@ const SystemDetailScreen = () => {
 
       {/* Alert */}
       {details.warning && system.health < 70 && (
-        <div className="rounded-xl border-l-4 border-health-red bg-health-red/10 p-4 flex items-start gap-3 mb-6">
-          <AlertTriangle className="h-5 w-5 text-health-red shrink-0 mt-0.5" />
+        <div className="rounded-xl border-l-4 border-destructive bg-destructive/10 p-4 flex items-start gap-3 mb-6">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-health-red font-semibold text-sm mb-1">Alert</h3>
+            <h3 className="text-destructive font-semibold text-sm mb-1">Alert</h3>
             <p className="text-sm text-foreground">{details.warning}</p>
           </div>
         </div>
       )}
 
-      {/* Warning for systems above 70 */}
       {details.warning && system.health >= 70 && (
-        <div className="rounded-xl border-l-4 border-health-amber bg-health-amber/10 p-4 flex items-start gap-3 mb-6">
-          <AlertTriangle className="h-5 w-5 text-health-amber shrink-0 mt-0.5" />
+        <div className="rounded-xl border-l-4 border-[hsl(var(--health-amber))] bg-[hsl(var(--health-amber))]/10 p-4 flex items-start gap-3 mb-6">
+          <AlertTriangle className="h-5 w-5 text-[hsl(var(--health-amber))] shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-health-amber font-semibold text-sm mb-1">Warning</h3>
+            <h3 className="text-[hsl(var(--health-amber))] font-semibold text-sm mb-1">Warning</h3>
             <p className="text-sm text-foreground">{details.warning}</p>
           </div>
+        </div>
+      )}
+
+      {/* Scan History */}
+      {scanHistory.length > 0 && (
+        <div className="mb-6">
+          <ScanHistory scans={scanHistory} />
         </div>
       )}
 
@@ -144,10 +166,30 @@ const SystemDetailScreen = () => {
       )}
 
       {/* Schedule a Pro */}
-      <button className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong mb-4">
+      <button className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity shadow-lg shadow-primary/30 mb-4">
         Schedule a Pro
       </button>
 
+      {/* Floating AI Scan Button */}
+      <FloatingAiScanButton onClick={() => setShowPicker(true)} />
+
+      {/* AI Photo Picker */}
+      <AiPhotoPicker
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        onPhotoSelected={() => {}}
+        onScanComplete={handleScanComplete}
+        showReceiptMode={true}
+      />
+
+      {/* AI Scan Review */}
+      {scanReview && (
+        <AiScanReview
+          result={scanReview}
+          onConfirm={handleConfirmScan}
+          onClose={() => setScanReview(null)}
+        />
+      )}
     </div>
   );
 };
