@@ -71,42 +71,44 @@ const WelcomeScreen = () => {
 
   const handleContinue = async () => {
     if (!address.trim() || !user) return;
+    setLoading(true);
 
+    let finalAddress = address.trim();
+
+    // If not yet verified, try geocoding with a 3s timeout — never block navigation
     if (!verified && !verifyFailed) {
-      setLoading(true);
       try {
-        const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(address.trim())}`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(
+          `${GEOCODE_URL}?address=${encodeURIComponent(finalAddress)}`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeout);
         const data = await res.json();
         const matches = data?.matches || [];
-        if (matches.length === 0) {
-          setVerifyFailed(true);
-          setLoading(false);
-          return;
+        if (matches.length > 0) {
+          finalAddress = matches[0].matchedAddress;
+          setAddress(finalAddress);
         }
-        setAddress(matches[0].matchedAddress);
-        setVerified(true);
       } catch {
-        setVerifyFailed(true);
-        setLoading(false);
-        return;
+        // Timeout or error — proceed with user-entered address
       }
     }
 
-    setLoading(true);
-
-    if (properties.length === 0) {
-      const { error } = await supabase.from("properties").insert({
-        user_id: user.id,
-        address: address.trim(),
-        label: "Primary Residence",
-        is_active: true,
-      });
-      if (error) {
-        toast.error("Failed to save property");
-        setLoading(false);
-        return;
+    // Save property and navigate — always within a few seconds
+    try {
+      if (properties.length === 0) {
+        await supabase.from("properties").insert({
+          user_id: user.id,
+          address: finalAddress,
+          label: "Primary Residence",
+          is_active: true,
+        });
+        await refreshProperties();
       }
-      await refreshProperties();
+    } catch {
+      // Don't block navigation on DB errors either
     }
 
     navigate("/onboarding");
