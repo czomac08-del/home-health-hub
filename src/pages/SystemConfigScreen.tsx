@@ -151,8 +151,9 @@ const SystemConfigScreen = () => {
       const path = `${user.id}/${Date.now()}-${file.name}`;
       const { error } = await supabase.storage.from("system-photos").upload(path, file);
       if (error) { toast.error("Photo upload failed"); continue; }
-      const { data: urlData } = supabase.storage.from("system-photos").getPublicUrl(path);
-      setPhotos((prev) => [...prev, { url: urlData.publicUrl, label: photoLabel, storagePath: path }]);
+      const { data: signedData } = await supabase.storage.from("system-photos").createSignedUrl(path, 3600);
+      if (!signedData?.signedUrl) { toast.error("Failed to get photo URL"); continue; }
+      setPhotos((prev) => [...prev, { url: signedData.signedUrl, label: photoLabel, storagePath: path }]);
     }
   };
 
@@ -475,8 +476,9 @@ const SystemConfigScreen = () => {
           const path = `${user.id}/${Date.now()}-${file.name}`;
           const { error } = await supabase.storage.from("system-photos").upload(path, file);
           if (error) { toast.error("Photo upload failed"); return; }
-          const { data: urlData } = supabase.storage.from("system-photos").getPublicUrl(path);
-          setPhotos((prev) => [...prev, { url: urlData.publicUrl, label: photoLabel, storagePath: path }]);
+          const { data: signedData } = await supabase.storage.from("system-photos").createSignedUrl(path, 3600);
+          if (!signedData?.signedUrl) { toast.error("Failed to get photo URL"); return; }
+          setPhotos((prev) => [...prev, { url: signedData.signedUrl, label: photoLabel, storagePath: path }]);
         }}
         onScanComplete={handleScanResult}
         showReceiptMode
