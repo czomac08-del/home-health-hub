@@ -199,7 +199,7 @@ const InvestorDashboard = () => {
     return { mao, carrying, totalCost, profit, roi, rating, ratingColor };
   };
 
-  const projContractors = selectedProject ? contractors.filter(c => c.project_id === selectedProject.id) : [];
+  const projContractors = selectedProject ? effectiveContractors.filter(c => c.project_id === selectedProject.id) : [];
 
   const statuses = ["acquisition", "demo", "renovation", "punch list", "listed", "sold"];
 
