@@ -7,6 +7,7 @@ import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import PrivacyBadge from "@/components/PrivacyBadge";
+import UtilityContactsCard from "@/components/UtilityContactsCard";
 
 const defaultSystems = [
   { id: "hvac", name: "HVAC", health: 92, status: "Excellent", flagged: false },
@@ -134,6 +135,11 @@ const DashboardScreen = () => {
             <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} onClick={() => navigate(`/system/${sys.id}`)} />
           ))}
         </div>
+      </div>
+
+      {/* Utility Contacts */}
+      <div className="px-6 mt-6">
+        <UtilityContactsCard />
       </div>
       <HomeAIChat />
     </div>
