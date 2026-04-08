@@ -103,6 +103,7 @@ const OnboardingWizard = () => {
   }, []);
 
   const progress = Math.round((step / TOTAL_STEPS) * 100);
+  const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
     if (step === 2) return !!data.homeType && !!data.homeAge;
@@ -440,7 +441,7 @@ const OnboardingWizard = () => {
       {step < TOTAL_STEPS && (
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Step {step} of 6</span>
+            <span className="text-xs text-muted-foreground">Step {step} of {displayStepCount}</span>
             <span className="text-xs text-muted-foreground">{progress}%</span>
           </div>
           <Progress value={progress} className="h-1.5" />
@@ -473,7 +474,7 @@ const OnboardingWizard = () => {
               </button>
               <button onClick={next} disabled={!canNext() || saving}
                 className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40">
-                {saving ? "Saving..." : step === 6 ? "Finish Setup" : "Continue"} {!saving && step < 6 && <ChevronRight className="h-4 w-4" />}
+                {saving ? "Saving..." : step === 7 ? "Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
               </button>
             </div>
           )}
