@@ -51,9 +51,6 @@ const ageRanges = [
   "Built before 1950", "1950–1970", "1970–1990", "1990–2010", "2010–2020", "2020 or newer",
 ];
 
-const ageRanges = [
-  "Built before 1950", "1950–1970", "1970–1990", "1990–2010", "2010–2020", "2020 or newer",
-];
 
 const hvacTypes = [
   { id: "central", label: "Central HVAC", icon: ThermometerSun },
@@ -407,7 +404,7 @@ const OnboardingWizard = () => {
 
             <h1 className="text-2xl font-bold text-foreground">Your Home Passport is Ready!</h1>
             <p className="text-muted-foreground text-sm max-w-sm">
-              Your {data.homeAge || ""} {homeTypes.find(h => h.id === data.homeType)?.label || "home"} at{" "}
+              Your {data.homeAge || ""} {propertyTypes.find(h => h.id === data.homeType)?.label || "home"} at{" "}
               <span className="text-foreground font-medium">{activeProperty?.address || "your address"}</span> is set up and ready.
             </p>
 
