@@ -155,6 +155,131 @@ export type Database = {
         }
         Relationships: []
       }
+      flip_contractors: {
+        Row: {
+          amount_paid: number | null
+          company: string | null
+          completion_pct: number | null
+          contract_amount: number | null
+          created_at: string
+          id: string
+          license_number: string | null
+          lien_waiver_received: boolean | null
+          name: string
+          project_id: string
+          quality_rating: number | null
+          specialty: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          company?: string | null
+          completion_pct?: number | null
+          contract_amount?: number | null
+          created_at?: string
+          id?: string
+          license_number?: string | null
+          lien_waiver_received?: boolean | null
+          name: string
+          project_id: string
+          quality_rating?: number | null
+          specialty?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          company?: string | null
+          completion_pct?: number | null
+          contract_amount?: number | null
+          created_at?: string
+          id?: string
+          license_number?: string | null
+          lien_waiver_received?: boolean | null
+          name?: string
+          project_id?: string
+          quality_rating?: number | null
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flip_contractors_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "flip_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flip_projects: {
+        Row: {
+          budget_categories: Json | null
+          carrying_costs: Json | null
+          completion_pct: number | null
+          created_at: string
+          current_spend: number | null
+          id: string
+          notes: string | null
+          photo_url: string | null
+          projected_arv: number | null
+          property_address: string
+          purchase_date: string | null
+          purchase_price: number | null
+          renovation_budget: number | null
+          sold_date: string | null
+          sold_price: number | null
+          status: string
+          target_flip_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_categories?: Json | null
+          carrying_costs?: Json | null
+          completion_pct?: number | null
+          created_at?: string
+          current_spend?: number | null
+          id?: string
+          notes?: string | null
+          photo_url?: string | null
+          projected_arv?: number | null
+          property_address: string
+          purchase_date?: string | null
+          purchase_price?: number | null
+          renovation_budget?: number | null
+          sold_date?: string | null
+          sold_price?: number | null
+          status?: string
+          target_flip_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_categories?: Json | null
+          carrying_costs?: Json | null
+          completion_pct?: number | null
+          created_at?: string
+          current_spend?: number | null
+          id?: string
+          notes?: string | null
+          photo_url?: string | null
+          projected_arv?: number | null
+          property_address?: string
+          purchase_date?: string | null
+          purchase_price?: number | null
+          renovation_budget?: number | null
+          sold_date?: string | null
+          sold_price?: number | null
+          status?: string
+          target_flip_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       household_profiles: {
         Row: {
           activity_level: string | null
@@ -684,7 +809,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "homeowner" | "realtor" | "inspector" | "contractor"
+      app_role:
+        | "homeowner"
+        | "realtor"
+        | "inspector"
+        | "contractor"
+        | "investor"
       profile_type: "personal" | "business"
     }
     CompositeTypes: {
@@ -813,7 +943,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["homeowner", "realtor", "inspector", "contractor"],
+      app_role: ["homeowner", "realtor", "inspector", "contractor", "investor"],
       profile_type: ["personal", "business"],
     },
   },
