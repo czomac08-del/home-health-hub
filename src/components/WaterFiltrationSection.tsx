@@ -99,9 +99,12 @@ const AffiliateNote = () => (
 /* ───────── main component ───────── */
 interface Props {
   waterType: "city" | "well";
+  householdFactors?: string[];
 }
 
-export const WaterFiltrationSection = ({ waterType }: Props) => {
+export const WaterFiltrationSection = ({ waterType, householdFactors = [] }: Props) => {
+  const hasVulnerable = householdFactors.some(f => ["allergies", "asthma", "young_children", "immunocompromised"].includes(f));
+  const hasPets = householdFactors.some(f => ["dogs", "cats", "multiple_pets"].includes(f));
   const [hasFiltration, setHasFiltration] = useState<"yes" | "no" | "">("");
   const [systemType, setSystemType] = useState<FiltrationSystemType | "">("");
   const [brand, setBrand] = useState("");
@@ -210,6 +213,27 @@ export const WaterFiltrationSection = ({ waterType }: Props) => {
               </div>
             </div>
           </div>
+
+          {/* Household-aware upgrade suggestion */}
+          {hasVulnerable && (
+            <div className="rounded-xl border-2 border-primary/40 bg-primary/5 p-4 animate-fade-in">
+              <div className="flex items-start gap-3">
+                <Droplets className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground mb-1">Enhanced Filtration Recommended</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Your household includes {hasPets ? "pets, " : ""}allergy sufferers, young children, or immunocompromised members.
+                    A <strong>Reverse Osmosis</strong> or multi-stage filtration system provides the highest level of drinking water protection.
+                  </p>
+                </div>
+              </div>
+              <a href={amazonLink("reverse osmosis water filter system under sink")}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full mt-3 rounded-lg bg-primary text-primary-foreground py-2.5 text-xs font-semibold hover:bg-primary/90 transition-colors">
+                <ShoppingCart className="h-3.5 w-3.5" /> Shop Reverse Osmosis Systems
+              </a>
+            </div>
+          )}
 
           <a href={amazonLink(waterType === "well" ? "whole house well water filter system" : "whole house water filter city water")}
             target="_blank" rel="noopener noreferrer"
