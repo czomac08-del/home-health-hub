@@ -363,8 +363,19 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 6 — To-Do list */
+      /* STEP 6 — Household Profile */
       case 6:
+        return (
+          <div className="animate-fade-in">
+            <HouseholdProfileEditor
+              mode="onboarding"
+              onComplete={() => setStep(7)}
+            />
+          </div>
+        );
+
+      /* STEP 7 — To-Do list */
+      case 7:
         return (
           <div className="flex flex-col gap-5 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground">Your First To-Do List</h2>
@@ -385,8 +396,8 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 7 — Final celebration */
-      case 7:
+      /* STEP 8 — Final celebration */
+      case 8:
         return (
           <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
             <div className="relative h-32 w-32">
