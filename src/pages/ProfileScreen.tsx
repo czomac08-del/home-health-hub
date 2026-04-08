@@ -130,6 +130,14 @@ const ProfileScreen = () => {
         </div>
       </Section>
 
+      {/* Utilities & Services */}
+      <Section title="Utilities & Services">
+        <button onClick={() => navigate("/utilities")}
+          className="w-full rounded-xl border border-border bg-card py-3.5 font-medium text-foreground hover:bg-secondary/50 transition-colors flex items-center justify-center gap-2 text-sm">
+          <Zap className="h-4 w-4 text-primary" /> Manage My Utilities & Services
+        </button>
+      </Section>
+
       {/* Subscription */}
       <Section title="Subscription">
         <div className="rounded-xl border border-border bg-card p-4">
