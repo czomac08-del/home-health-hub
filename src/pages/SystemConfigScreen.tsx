@@ -14,6 +14,7 @@ import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStat
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
+import { HvacFilterSection } from "@/components/HvacFilterSection";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -456,6 +457,14 @@ const SystemConfigScreen = () => {
           {/* ── Water Filtration Section ── */}
           {isWaterSource && waterType && (
             <WaterFiltrationSection waterType={waterType as "city" | "well"} />
+          )}
+
+          {/* ── HVAC Filter & Air Quality Section ── */}
+          {displayName.toLowerCase().includes("hvac") && (
+            <HvacFilterSection
+              filterSize={(specs["filterSize"] as string) || ""}
+              onFilterSizeChange={(size) => setSpec("filterSize", size)}
+            />
           )}
 
           {/* ── Specifications (contextual fields based on type) ── */}
