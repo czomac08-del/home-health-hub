@@ -57,7 +57,15 @@ const RealtorDashboard = () => {
   const [newPrice, setNewPrice] = useState("");
   const [newMLS, setNewMLS] = useState("");
 
-  const { showDemo, dismissDemo } = useDemoData("realtor");
+  const [disclosed, setDisclosed] = useState<Set<number>>(new Set());
+
+  const disclosureItems = [
+    { system: "Roof", issue: "Shingle wear on south-facing slope", severity: "moderate" },
+    { system: "Electrical", issue: "Panel is original — recommend upgrade", severity: "advisory" },
+    { system: "Plumbing", issue: "Slow drain in master bath", severity: "minor" },
+    { system: "HVAC", issue: "Filter last changed 4 months ago", severity: "minor" },
+  ];
+
 
   const demoListings: Listing[] = useMemo(() => [
     { id: "demo-1", property_address: "742 Evergreen Terrace, Springfield", list_price: "$425,000", days_on_market: 12, passport_status: "complete", homeowner_email: "homer@example.com", request_status: "complete", health_score: 82, isDemo: true },
