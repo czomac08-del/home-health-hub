@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { WaterHeaterLocation, HvacLocation, WaterSystemLocation } from "@/components/SystemLocationTracking";
 import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
+import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
+import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -68,6 +70,15 @@ const SystemConfigScreen = () => {
   const [manualResult, setManualResult] = useState<ManualSearchResult | null>(null);
   const [warrantyInfo, setWarrantyInfo] = useState<WarrantyInfo | null>(null);
   const [recallInfo, setRecallInfo] = useState<RecallInfo | null>(null);
+
+  // Water/Sewer type selection state
+  const isWaterSource = displayName.toLowerCase().includes("water source");
+  const isSewerWaste = displayName.toLowerCase().includes("sewer");
+  const [waterType, setWaterType] = useState<"city" | "well" | "">("");
+  const [sewerType, setSewerType] = useState<"city" | "septic" | "">("");
+  const [additionalWaterSources, setAdditionalWaterSources] = useState<Array<{ type: string; location: string; pumpDetails: string; serviceContact: string }>>([]);
+  const [septicSystems, setSepticSystems] = useState<SepticSystem[]>([{ name: "Main Septic", tankSize: "", tankMaterial: "", lastPumped: "", accessLocation: "", pumpCompany: "", pumpPhone: "", location: "", notes: "" }]);
+  const [utilityContacts, setUtilityContacts] = useState<Record<string, string>>({});
 
   const { searching: manualSearching, search: searchManual } = useManualSearch({
     brand, model, onResult: setManualResult,
