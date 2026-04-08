@@ -342,7 +342,8 @@ const ContractorDashboard = () => {
           ) : (
             <div className="space-y-3 mb-6">
               {todayJobs.map(job => (
-                <div key={job.id} className="rounded-xl border border-border bg-card p-4">
+                <div key={job.id} className="rounded-xl border border-border bg-card p-4 relative">
+                  {job.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{job.homeowner_name}</p>
@@ -384,12 +385,12 @@ const ContractorDashboard = () => {
           {/* Client List */}
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">My Clients</h2>
           <div className="rounded-xl border border-border bg-card p-4">
-            {new Set(jobs.map(j => j.homeowner_name)).size === 0 ? (
+            {new Set(effectiveJobs.map(j => j.homeowner_name)).size === 0 ? (
               <p className="text-xs text-muted-foreground italic">Complete jobs to build your client list</p>
             ) : (
               <div className="space-y-2">
-                {[...new Set(jobs.map(j => j.homeowner_name))].map(name => {
-                  const clientJobs = jobs.filter(j => j.homeowner_name === name);
+                {[...new Set(effectiveJobs.map(j => j.homeowner_name))].map(name => {
+                  const clientJobs = effectiveJobs.filter(j => j.homeowner_name === name);
                   return (
                     <div key={name} className="flex items-center justify-between py-1">
                       <div>
