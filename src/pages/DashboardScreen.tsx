@@ -139,7 +139,7 @@ const DashboardScreen = () => {
 
       {/* Utility Contacts */}
       <div className="px-6 mt-6">
-        <UtilityContactsCard />
+        <UtilityContactsCard onViewAll={() => navigate("/utilities")} />
       </div>
       <HomeAIChat />
     </div>

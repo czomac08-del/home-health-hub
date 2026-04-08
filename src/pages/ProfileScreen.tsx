@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare } from "lucide-react";
+import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -128,6 +128,14 @@ const ProfileScreen = () => {
             </button>
           )}
         </div>
+      </Section>
+
+      {/* Utilities & Services */}
+      <Section title="Utilities & Services">
+        <button onClick={() => navigate("/utilities")}
+          className="w-full rounded-xl border border-border bg-card py-3.5 font-medium text-foreground hover:bg-secondary/50 transition-colors flex items-center justify-center gap-2 text-sm">
+          <Zap className="h-4 w-4 text-primary" /> Manage My Utilities & Services
+        </button>
       </Section>
 
       {/* Subscription */}
