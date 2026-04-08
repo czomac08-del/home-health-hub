@@ -1,64 +1,52 @@
-import { useState } from "react";
-import { Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send, Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
+  Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
+  X, FileText
+} from "lucide-react";
 
 interface Job {
-  id: number;
-  homeowner: string;
-  address: string;
-  system: string;
-  issue: string;
-  time: string;
-  date: string;
-  status: "today" | "upcoming" | "completed";
+  id: string;
+  homeowner_name: string;
+  property_address: string;
+  system_type: string;
+  issue_description: string | null;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  status: string;
+  work_performed: string | null;
+  parts_replaced: string | null;
+  part_models: string | null;
+  labor_hours: string | null;
+  next_service_rec: string | null;
+  invoice_amount: string | null;
+  quote_description: string | null;
+  quote_amount: string | null;
+  quote_notes: string | null;
+  quote_status: string | null;
 }
 
-const jobs: Job[] = [
-  { id: 1, homeowner: "Robert Chen", address: "456 Oak Street", system: "HVAC", issue: "AC not cooling — low refrigerant suspected", time: "9:00 AM", date: "Today", status: "today" },
-  { id: 2, homeowner: "Jennifer Walsh", address: "221 Maple Dr", system: "Plumbing", issue: "Water heater pilot light keeps going out", time: "1:30 PM", date: "Today", status: "today" },
-  { id: 3, homeowner: "Lisa Chen", address: "123 Main St", system: "HVAC", issue: "Annual tune-up completed", time: "—", date: "Apr 4, 2026", status: "completed" },
-  { id: 4, homeowner: "Tom Brewer", address: "789 Pine Rd", system: "Electrical", issue: "Panel breaker replacement", time: "—", date: "Apr 2, 2026", status: "completed" },
-];
-
-const systemDetails: Record<string, {
-  brand: string; model: string; serial: string; installed: string;
-  lastService: string; serviceBy: string; warranty: string;
-  notes: string; history: { date: string; work: string; by: string }[];
-}> = {
-  HVAC: {
-    brand: "Trane", model: "XR15", serial: "2921G12345", installed: "June 2019",
-    lastService: "Mar 15, 2024", serviceBy: "CoolAir HVAC Solutions", warranty: "Expires Dec 2029",
-    notes: "Filter size: 16x25x1. Owner reports slight clicking noise on startup. Filter replaced 2 months ago.",
-    history: [
-      { date: "Mar 2024", work: "Filter replacement & system tune-up", by: "CoolAir HVAC" },
-      { date: "Sep 2023", work: "Capacitor replaced — unit not starting", by: "CoolAir HVAC" },
-      { date: "Mar 2023", work: "Annual maintenance", by: "CoolAir HVAC" },
-      { date: "Jun 2022", work: "Refrigerant top-off — minor leak sealed", by: "Arctic Air Services" },
-    ],
-  },
-  Plumbing: {
-    brand: "Rheem", model: "Performance Plus", serial: "RH-2017-88432", installed: "Nov 2017",
-    lastService: "Jan 10, 2024", serviceBy: "Reliable Plumbing Co", warranty: "Expired Aug 2023",
-    notes: "50-gallon gas water heater. Anode rod replaced Jun 2023. Pilot light has been going out intermittently for 2 weeks.",
-    history: [
-      { date: "Jan 2024", work: "Annual plumbing inspection — all OK", by: "Reliable Plumbing" },
-      { date: "Jun 2023", work: "Anode rod replacement", by: "Owner (DIY)" },
-      { date: "Nov 2021", work: "Thermocouple replacement", by: "Reliable Plumbing" },
-    ],
-  },
-};
-
-const leads = [
-  { homeowner: "Amy Nguyen", address: "330 Birch Ct", system: "HVAC", lastService: "18 months ago", health: 62 },
-  { homeowner: "Carlos Diaz", address: "88 Willow Way", system: "Plumbing", lastService: "2+ years ago", health: 48 },
-  { homeowner: "Sarah Kim", address: "510 Cedar Ln", system: "HVAC", lastService: "14 months ago", health: 71 },
-];
-
 const ContractorDashboard = () => {
-  const [searchAddr, setSearchAddr] = useState("");
+  const { user, profile } = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"dashboard" | "job" | "complete" | "quote">("dashboard");
   const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [searchAddr, setSearchAddr] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
 
+  // New job form
+  const [newHomeowner, setNewHomeowner] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newSystem, setNewSystem] = useState("");
+  const [newIssue, setNewIssue] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+
+  // Job completion form
   const [workDone, setWorkDone] = useState("");
   const [partsReplaced, setPartsReplaced] = useState("");
   const [partModels, setPartModels] = useState("");
@@ -66,37 +54,99 @@ const ContractorDashboard = () => {
   const [nextServiceRec, setNextServiceRec] = useState("");
   const [cost, setCost] = useState("");
 
+  // Quote form
   const [quoteDesc, setQuoteDesc] = useState("");
   const [quoteCost, setQuoteCost] = useState("");
   const [quoteNotes, setQuoteNotes] = useState("");
 
-  const sysInfo = activeJob ? systemDetails[activeJob.system] || systemDetails.HVAC : systemDetails.HVAC;
+  const fetchJobs = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("contractor_jobs")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (data) setJobs(data as Job[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchJobs(); }, [user]);
+
+  const addJob = async () => {
+    if (!user || !newHomeowner.trim() || !newAddress.trim() || !newSystem.trim()) return;
+    const { error } = await supabase.from("contractor_jobs").insert({
+      user_id: user.id,
+      homeowner_name: newHomeowner.trim(),
+      property_address: newAddress.trim(),
+      system_type: newSystem.trim(),
+      issue_description: newIssue.trim() || null,
+      scheduled_date: newDate || null,
+      scheduled_time: newTime || null,
+    });
+    if (!error) {
+      toast.success("Job added!");
+      setNewHomeowner(""); setNewAddress(""); setNewSystem(""); setNewIssue(""); setNewDate(""); setNewTime("");
+      setShowAdd(false);
+      fetchJobs();
+    }
+  };
+
+  const completeJob = async () => {
+    if (!activeJob) return;
+    await supabase.from("contractor_jobs").update({
+      status: "completed",
+      work_performed: workDone,
+      parts_replaced: partsReplaced,
+      part_models: partModels,
+      labor_hours: laborTime,
+      next_service_rec: nextServiceRec,
+      invoice_amount: cost,
+    }).eq("id", activeJob.id);
+    toast.success("Job completed! Service record pushed to Home Passport.");
+    setView("dashboard");
+    fetchJobs();
+  };
+
+  const sendQuote = async () => {
+    if (!activeJob) return;
+    await supabase.from("contractor_jobs").update({
+      quote_description: quoteDesc,
+      quote_amount: quoteCost,
+      quote_notes: quoteNotes,
+      quote_status: "sent",
+    }).eq("id", activeJob.id);
+    toast.success("Quote sent to homeowner!");
+    setView("dashboard");
+    fetchJobs();
+  };
+
+  const todayJobs = jobs.filter(j => j.status === "scheduled");
+  const completedJobs = jobs.filter(j => j.status === "completed");
+  const filtered = jobs.filter(j => j.property_address.toLowerCase().includes(searchAddr.toLowerCase()) || j.homeowner_name.toLowerCase().includes(searchAddr.toLowerCase()));
 
   /* ── Quote Screen ── */
   if (view === "quote" && activeJob) {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-        <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back to Job</button>
+        <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Generate Quote</h1>
-        <p className="text-xs text-muted-foreground mb-6">{activeJob.address} — {activeJob.system}</p>
+        <p className="text-xs text-muted-foreground mb-6">{activeJob.property_address} — {activeJob.system_type}</p>
 
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mb-6">
-          <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">System Info (From Passport)</h3>
+          <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">System Info</h3>
           <div className="grid grid-cols-2 gap-1.5 text-xs">
-            <div><span className="text-muted-foreground">Brand:</span> <span className="text-foreground">{sysInfo.brand}</span></div>
-            <div><span className="text-muted-foreground">Model:</span> <span className="text-foreground">{sysInfo.model}</span></div>
-            <div><span className="text-muted-foreground">Installed:</span> <span className="text-foreground">{sysInfo.installed}</span></div>
-            <div><span className="text-muted-foreground">Warranty:</span> <span className="text-foreground">{sysInfo.warranty}</span></div>
+            <div><span className="text-muted-foreground">System:</span> <span className="text-foreground">{activeJob.system_type}</span></div>
+            <div><span className="text-muted-foreground">Client:</span> <span className="text-foreground">{activeJob.homeowner_name}</span></div>
           </div>
         </div>
 
         <div className="space-y-3 mb-6">
           <Field label="Work Description" value={quoteDesc} onChange={setQuoteDesc} placeholder="Describe the work needed..." multiline />
           <Field label="Estimated Cost" value={quoteCost} onChange={setQuoteCost} placeholder="$0.00" />
-          <Field label="Additional Notes" value={quoteNotes} onChange={setQuoteNotes} placeholder="Warranty info, timeline, etc." />
+          <Field label="Additional Notes" value={quoteNotes} onChange={setQuoteNotes} placeholder="Timeline, warranty info, etc." />
         </div>
 
-        <button onClick={() => { toast.success("Quote sent to homeowner!"); setView("dashboard"); }}
+        <button onClick={sendQuote}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 glow-teal-strong flex items-center justify-center gap-2">
           <Send className="h-5 w-5" /> Send Quote to Homeowner
         </button>
@@ -108,24 +158,24 @@ const ContractorDashboard = () => {
   if (view === "complete" && activeJob) {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-        <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back to Job</button>
-        <h1 className="text-xl font-bold text-foreground mb-1">Complete This Job</h1>
-        <p className="text-xs text-muted-foreground mb-6">{activeJob.homeowner} · {activeJob.address} — {activeJob.system}</p>
+        <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
+        <h1 className="text-xl font-bold text-foreground mb-1">Complete Job</h1>
+        <p className="text-xs text-muted-foreground mb-6">{activeJob.homeowner_name} · {activeJob.property_address}</p>
 
         <div className="space-y-3 mb-6">
           <Field label="Work Performed" value={workDone} onChange={setWorkDone} placeholder="Describe what was done..." multiline />
           <Field label="Parts Replaced" value={partsReplaced} onChange={setPartsReplaced} placeholder="e.g. Capacitor, thermocouple" />
           <Field label="Part Model Numbers" value={partModels} onChange={setPartModels} placeholder="e.g. Titan Pro TRCF45" />
           <Field label="Labor Time" value={laborTime} onChange={setLaborTime} placeholder="e.g. 2.5 hours" />
-          <Field label="Next Service Recommendation" value={nextServiceRec} onChange={setNextServiceRec} placeholder="e.g. 6 months or before next summer" />
+          <Field label="Next Service Recommendation" value={nextServiceRec} onChange={setNextServiceRec} placeholder="e.g. 6 months" />
           <Field label="Invoice Amount" value={cost} onChange={setCost} placeholder="$0.00" />
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Photos of Completed Work</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Photos</label>
             <label className="cursor-pointer block">
               <input type="file" accept="image/*" multiple className="hidden" />
               <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-6 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
                 <Camera className="h-6 w-6 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Tap to add photos</span>
+                <span className="text-xs text-muted-foreground">Before & after photos</span>
               </div>
             </label>
           </div>
@@ -133,10 +183,10 @@ const ContractorDashboard = () => {
 
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 mb-4 flex items-center gap-2">
           <Shield className="h-4 w-4 text-primary shrink-0" />
-          <p className="text-[10px] text-primary">This record will be pushed to the Home Passport with a "Verified Pro Service Record" badge.</p>
+          <p className="text-[10px] text-primary">This record will be pushed with a "Verified Pro Service Record" badge.</p>
         </div>
 
-        <button onClick={() => { toast.success("Job completed! Service record pushed to Home Passport."); setView("dashboard"); }}
+        <button onClick={completeJob}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 glow-teal-strong flex items-center justify-center gap-2">
           <Shield className="h-5 w-5" /> Push to Home Passport
         </button>
@@ -144,97 +194,76 @@ const ContractorDashboard = () => {
     );
   }
 
-  /* ── Job Detail with Full System History ── */
+  /* ── Job Detail ── */
   if (view === "job" && activeJob) {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-        <button onClick={() => setView("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back to Dashboard</button>
-
-        <h1 className="text-xl font-bold text-foreground mb-0.5">{activeJob.homeowner}</h1>
-        <p className="text-xs text-muted-foreground mb-1">{activeJob.address}</p>
-        <p className="text-xs text-muted-foreground mb-4">{activeJob.system} — {activeJob.issue}</p>
+        <button onClick={() => setView("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
+        <h1 className="text-xl font-bold text-foreground mb-0.5">{activeJob.homeowner_name}</h1>
+        <p className="text-xs text-muted-foreground mb-1">{activeJob.property_address}</p>
+        <p className="text-xs text-muted-foreground mb-4">{activeJob.system_type} — {activeJob.issue_description || "General service"}</p>
 
         <div className="flex items-center gap-2 mb-6">
-          <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">{activeJob.time}</span>
-          <span className="text-[10px] text-muted-foreground">{activeJob.date}</span>
+          {activeJob.scheduled_time && <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">{activeJob.scheduled_time}</span>}
+          {activeJob.scheduled_date && <span className="text-[10px] text-muted-foreground">{new Date(activeJob.scheduled_date).toLocaleDateString()}</span>}
         </div>
 
-        {/* Full System Intel */}
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 mb-4">
           <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <Shield className="h-3.5 w-3.5" /> {activeJob.system} — Full System History
+            <Shield className="h-3.5 w-3.5" /> Job Details
           </h3>
           <div className="space-y-1.5 text-xs">
             {[
-              ["Brand / Model", `${sysInfo.brand} ${sysInfo.model}`],
-              ["Serial Number", sysInfo.serial],
-              ["Installed", sysInfo.installed],
-              ["Warranty", sysInfo.warranty],
-              ["Last Service", sysInfo.lastService],
-              ["Last Serviced By", sysInfo.serviceBy],
+              ["System", activeJob.system_type],
+              ["Issue", activeJob.issue_description || "General service"],
+              ["Status", activeJob.status],
             ].map(([label, val]) => (
               <div key={label} className="flex justify-between">
                 <span className="text-muted-foreground">{label}:</span>
-                <span className="text-foreground font-medium">{val}</span>
+                <span className="text-foreground font-medium capitalize">{val}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Owner Notes */}
-        <div className="rounded-xl border border-border bg-card p-4 mb-4">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Owner Notes & Known Issues</h3>
-          <p className="text-xs text-foreground">{sysInfo.notes}</p>
-        </div>
-
-        {/* Service History */}
-        <div className="rounded-xl border border-border bg-card p-4 mb-6">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Previous Service Records</h3>
-          <div className="relative">
-            <div className="absolute left-[5px] top-1 bottom-1 w-px bg-border" />
-            <div className="space-y-3">
-              {sysInfo.history.map((h, i) => (
-                <div key={i} className="flex gap-3 relative">
-                  <div className="h-3 w-3 rounded-full bg-primary mt-0.5 shrink-0 z-10" />
-                  <div>
-                    <p className="text-xs font-medium text-foreground">{h.work}</p>
-                    <p className="text-[10px] text-muted-foreground">{h.date} · {h.by}</p>
-                  </div>
-                </div>
-              ))}
+        {activeJob.status === "completed" && (
+          <div className="rounded-xl border border-border bg-card p-4 mb-4">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Completed Work</h3>
+            <div className="space-y-1 text-xs">
+              {activeJob.work_performed && <p><span className="text-muted-foreground">Work:</span> <span className="text-foreground">{activeJob.work_performed}</span></p>}
+              {activeJob.parts_replaced && <p><span className="text-muted-foreground">Parts:</span> <span className="text-foreground">{activeJob.parts_replaced}</span></p>}
+              {activeJob.invoice_amount && <p><span className="text-muted-foreground">Invoice:</span> <span className="text-foreground">{activeJob.invoice_amount}</span></p>}
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="space-y-2">
-          <button onClick={() => setView("complete")}
-            className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:opacity-90 flex items-center justify-center gap-2">
-            <Check className="h-4 w-4" /> Complete This Job
-          </button>
-          <button onClick={() => setView("quote")}
-            className="w-full rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground hover:bg-secondary/80 flex items-center justify-center gap-2">
-            <DollarSign className="h-4 w-4" /> Generate Quote
-          </button>
-        </div>
+        {activeJob.status !== "completed" && (
+          <div className="space-y-2">
+            <button onClick={() => { setView("complete"); setWorkDone(""); setPartsReplaced(""); setPartModels(""); setLaborTime(""); setNextServiceRec(""); setCost(""); }}
+              className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:opacity-90 flex items-center justify-center gap-2">
+              <Check className="h-4 w-4" /> Complete This Job
+            </button>
+            <button onClick={() => { setView("quote"); setQuoteDesc(""); setQuoteCost(""); setQuoteNotes(""); }}
+              className="w-full rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground hover:bg-secondary/80 flex items-center justify-center gap-2">
+              <DollarSign className="h-4 w-4" /> Generate Quote
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   /* ── Dashboard ── */
-  const todayJobs = jobs.filter(j => j.status === "today");
-  const recentJobs = jobs.filter(j => j.status === "completed");
-
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, Dave Miller</h1>
-      <p className="text-xs text-muted-foreground mb-6">Miller Plumbing & HVAC · License #C-28841</p>
+      <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Contractor"}</h1>
+      <p className="text-xs text-muted-foreground mb-6">Licensed Contractor</p>
 
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[
-          { value: "23", label: "This Month", icon: <Wrench className="h-3.5 w-3.5 text-primary" /> },
-          { value: "47", label: "Clients", icon: <Users className="h-3.5 w-3.5 text-primary" /> },
-          { value: "41", label: "5-Star", icon: <Star className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(jobs.length), label: "Total Jobs", icon: <Wrench className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(new Set(jobs.map(j => j.homeowner_name)).size), label: "Clients", icon: <Users className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(completedJobs.length), label: "Completed", icon: <Star className="h-3.5 w-3.5 text-primary" /> },
           { value: "98%", label: "Response", icon: <TrendingUp className="h-3.5 w-3.5 text-primary" /> },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-2.5 text-center">
@@ -246,90 +275,135 @@ const ContractorDashboard = () => {
       </div>
 
       {/* Search */}
-      <div className="relative mb-6">
+      <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input type="text" value={searchAddr} onChange={(e) => setSearchAddr(e.target.value)}
-          placeholder="Search client properties..."
+        <input type="text" value={searchAddr} onChange={e => setSearchAddr(e.target.value)}
+          placeholder="Search clients or properties..."
           className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
       </div>
 
-      {/* Today's Jobs */}
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Today's Jobs</h2>
-      <div className="space-y-3 mb-6">
-        {todayJobs.map(job => (
-          <div key={job.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{job.homeowner}</p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1"><MapPin className="h-2.5 w-2.5" /> {job.address}</p>
-                <p className="text-[10px] text-muted-foreground">{job.system} — {job.issue}</p>
-              </div>
-              <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-full shrink-0">{job.time}</span>
-            </div>
-            <button onClick={() => { setActiveJob(job); setView("job"); }}
-              className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5">
-              <Eye className="h-3.5 w-3.5" /> View Home Details
-            </button>
-          </div>
-        ))}
+      {/* Add Job */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Jobs</h2>
+        <button onClick={() => setShowAdd(true)} className="text-xs text-primary font-medium flex items-center gap-1">
+          <Plus className="h-3 w-3" /> Add Job
+        </button>
       </div>
 
-      {/* Recently Completed */}
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recently Completed</h2>
-      <div className="space-y-2 mb-6">
-        {recentJobs.map(job => (
-          <div key={job.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{job.homeowner}</p>
-              <p className="text-[10px] text-muted-foreground">{job.system} — {job.date}</p>
-            </div>
-            <span className="text-[9px] font-medium text-health-green bg-health-green/15 px-2 py-1 rounded-full">Done</span>
+      {showAdd && (
+        <div className="rounded-xl border border-primary/30 bg-card p-4 mb-4 animate-fade-in space-y-3">
+          <input value={newHomeowner} onChange={e => setNewHomeowner(e.target.value)} placeholder="Homeowner name..."
+            className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+          <input value={newAddress} onChange={e => setNewAddress(e.target.value)} placeholder="Property address..."
+            className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+          <input value={newSystem} onChange={e => setNewSystem(e.target.value)} placeholder="System type (HVAC, Plumbing, etc)..."
+            className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+          <input value={newIssue} onChange={e => setNewIssue(e.target.value)} placeholder="Issue description (optional)..."
+            className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+          <div className="flex gap-2">
+            <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+              className="flex-1 rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+            <input value={newTime} onChange={e => setNewTime(e.target.value)} placeholder="Time"
+              className="w-24 rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
           </div>
-        ))}
-      </div>
+          <div className="flex gap-2">
+            <button onClick={addJob} className="flex-1 rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground">Add Job</button>
+            <button onClick={() => setShowAdd(false)} className="rounded-lg bg-secondary py-2.5 px-4 text-xs font-semibold text-secondary-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
 
-      {/* Get New Clients */}
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Get New Clients</h2>
-      <p className="text-[10px] text-muted-foreground mb-3">Nearby homes with systems due for service matching your specialty</p>
-      <div className="space-y-2">
-        {leads.map(lead => (
-          <div key={lead.address} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">{lead.homeowner}</p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1"><MapPin className="h-2.5 w-2.5" /> {lead.address}</p>
-              </div>
-              <div className="text-right">
-                <span className={`text-sm font-bold ${lead.health >= 70 ? "text-health-amber" : "text-health-red"}`}>{lead.health}%</span>
-                <p className="text-[9px] text-muted-foreground">{lead.system}</p>
-              </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+      ) : (
+        <>
+          {todayJobs.length === 0 && !showAdd ? (
+            <div className="rounded-xl border border-border bg-card p-6 text-center mb-6">
+              <Calendar className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">No active jobs. Add one above.</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-health-amber">Last service: {lead.lastService}</span>
-              <button onClick={() => toast.success(`Quote request sent to ${lead.homeowner}!`)}
-                className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-1.5 text-[10px] font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center gap-1">
-                <Send className="h-3 w-3" /> Send Quote
-              </button>
+          ) : (
+            <div className="space-y-3 mb-6">
+              {todayJobs.map(job => (
+                <div key={job.id} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{job.homeowner_name}</p>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1"><MapPin className="h-2.5 w-2.5" /> {job.property_address}</p>
+                      <p className="text-[10px] text-muted-foreground">{job.system_type} — {job.issue_description || "Service"}</p>
+                    </div>
+                    {job.scheduled_time && <span className="text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded-full shrink-0">{job.scheduled_time}</span>}
+                  </div>
+                  <button onClick={() => { setActiveJob(job); setView("job"); }}
+                    className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:opacity-90 flex items-center justify-center gap-1.5">
+                    <Eye className="h-3.5 w-3.5" /> View Details
+                  </button>
+                </div>
+              ))}
             </div>
+          )}
+
+          {completedJobs.length > 0 && (
+            <>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recently Completed</h2>
+              <div className="space-y-2 mb-6">
+                {completedJobs.slice(0, 5).map(job => (
+                  <div key={job.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between cursor-pointer hover:border-primary/30 transition-colors"
+                    onClick={() => { setActiveJob(job); setView("job"); }}>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{job.homeowner_name}</p>
+                      <p className="text-[10px] text-muted-foreground">{job.system_type} · {job.property_address}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] font-medium text-health-green bg-health-green/15 px-2 py-1 rounded-full">Done</span>
+                      {job.invoice_amount && <p className="text-[10px] text-foreground font-medium mt-1">{job.invoice_amount}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Client List */}
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">My Clients</h2>
+          <div className="rounded-xl border border-border bg-card p-4">
+            {new Set(jobs.map(j => j.homeowner_name)).size === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Complete jobs to build your client list</p>
+            ) : (
+              <div className="space-y-2">
+                {[...new Set(jobs.map(j => j.homeowner_name))].map(name => {
+                  const clientJobs = jobs.filter(j => j.homeowner_name === name);
+                  return (
+                    <div key={name} className="flex items-center justify-between py-1">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{name}</p>
+                        <p className="text-[10px] text-muted-foreground">{clientJobs.length} job{clientJobs.length !== 1 ? "s" : ""}</p>
+                      </div>
+                      <button onClick={() => toast.success(`Reminder sent to ${name}!`)}
+                        className="text-[10px] text-primary font-medium hover:underline">Send Reminder</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 };
 
-/* ── Reusable Field ── */
 const Field = ({ label, value, onChange, placeholder, multiline }: {
   label: string; value: string; onChange: (v: string) => void; placeholder: string; multiline?: boolean;
 }) => (
   <div>
     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
     {multiline ? (
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        rows={3} className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+      <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3}
+        className="w-full rounded-xl border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none" />
     ) : (
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full rounded-xl border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
     )}
   </div>
 );

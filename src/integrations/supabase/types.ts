@@ -47,6 +47,78 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_jobs: {
+        Row: {
+          created_at: string
+          homeowner_name: string
+          id: string
+          invoice_amount: string | null
+          issue_description: string | null
+          labor_hours: string | null
+          next_service_rec: string | null
+          part_models: string | null
+          parts_replaced: string | null
+          property_address: string
+          quote_amount: string | null
+          quote_description: string | null
+          quote_notes: string | null
+          quote_status: string | null
+          scheduled_date: string | null
+          scheduled_time: string | null
+          status: string
+          system_type: string
+          updated_at: string
+          user_id: string
+          work_performed: string | null
+        }
+        Insert: {
+          created_at?: string
+          homeowner_name: string
+          id?: string
+          invoice_amount?: string | null
+          issue_description?: string | null
+          labor_hours?: string | null
+          next_service_rec?: string | null
+          part_models?: string | null
+          parts_replaced?: string | null
+          property_address: string
+          quote_amount?: string | null
+          quote_description?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: string
+          system_type: string
+          updated_at?: string
+          user_id: string
+          work_performed?: string | null
+        }
+        Update: {
+          created_at?: string
+          homeowner_name?: string
+          id?: string
+          invoice_amount?: string | null
+          issue_description?: string | null
+          labor_hours?: string | null
+          next_service_rec?: string | null
+          part_models?: string | null
+          parts_replaced?: string | null
+          property_address?: string
+          quote_amount?: string | null
+          quote_description?: string | null
+          quote_notes?: string | null
+          quote_status?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: string
+          system_type?: string
+          updated_at?: string
+          user_id?: string
+          work_performed?: string | null
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           category: string
@@ -151,6 +223,57 @@ export type Database = {
           },
         ]
       }
+      inspections: {
+        Row: {
+          checklist_data: Json | null
+          client_name: string | null
+          created_at: string
+          findings: Json | null
+          has_passport: boolean | null
+          id: string
+          inspection_date: string | null
+          notes_data: Json | null
+          overall_score: number | null
+          property_address: string
+          report_generated: boolean | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_data?: Json | null
+          client_name?: string | null
+          created_at?: string
+          findings?: Json | null
+          has_passport?: boolean | null
+          id?: string
+          inspection_date?: string | null
+          notes_data?: Json | null
+          overall_score?: number | null
+          property_address: string
+          report_generated?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_data?: Json | null
+          client_name?: string | null
+          created_at?: string
+          findings?: Json | null
+          has_passport?: boolean | null
+          id?: string
+          inspection_date?: string | null
+          notes_data?: Json | null
+          overall_score?: number | null
+          property_address?: string
+          report_generated?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       maintenance_history: {
         Row: {
           action: string
@@ -188,6 +311,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "maintenance_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          property_id: string | null
+          read: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          read?: boolean | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          read?: boolean | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -277,6 +438,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      realtor_listings: {
+        Row: {
+          created_at: string
+          days_on_market: number | null
+          health_score: number | null
+          homeowner_email: string | null
+          id: string
+          list_price: string | null
+          notes: string | null
+          passport_status: string
+          photo_url: string | null
+          property_address: string
+          request_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_on_market?: number | null
+          health_score?: number | null
+          homeowner_email?: string | null
+          id?: string
+          list_price?: string | null
+          notes?: string | null
+          passport_status?: string
+          photo_url?: string | null
+          property_address: string
+          request_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_on_market?: number | null
+          health_score?: number | null
+          homeowner_email?: string | null
+          id?: string
+          list_price?: string | null
+          notes?: string | null
+          passport_status?: string
+          photo_url?: string | null
+          property_address?: string
+          request_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       system_details: {
         Row: {
