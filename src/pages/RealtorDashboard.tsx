@@ -67,6 +67,8 @@ const RealtorDashboard = () => {
   ];
 
 
+  const { showDemo, dismissDemo } = useDemoData("realtor");
+
   const demoListings: Listing[] = useMemo(() => [
     { id: "demo-1", property_address: "742 Evergreen Terrace, Springfield", list_price: "$425,000", days_on_market: 12, passport_status: "complete", homeowner_email: "homer@example.com", request_status: "complete", health_score: 82, isDemo: true },
     { id: "demo-2", property_address: "1600 Pennsylvania Ave NW", list_price: "$890,000", days_on_market: 5, passport_status: "in_progress", homeowner_email: "owner@example.com", request_status: "sent", health_score: null, isDemo: true },
