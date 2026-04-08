@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Droplets, ShoppingCart, Plus, X, Calendar, AlertTriangle, Check, ChevronRight, Sparkles, ExternalLink, Star, Filter, Beaker, TestTube } from "lucide-react";
+import { Droplets, ShoppingCart, X, AlertTriangle, Check, ChevronRight, ExternalLink, Filter, TestTube } from "lucide-react";
 
 /* ───────── types ───────── */
 interface FilterStage {
@@ -120,7 +120,7 @@ export const WaterFiltrationSection = ({ waterType }: Props) => {
 
   // Collapsible sections
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const toggle = (k: string) => setExpanded(p => { const n = new Set(p); if (n.has(k)) { n.delete(k); } else { n.add(k); } return n; });
 
   const updateStageCount = (count: number) => {
     setStageCount(count);
