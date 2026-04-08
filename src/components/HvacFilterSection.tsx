@@ -304,7 +304,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">How often do you want to change your filter?</p>
-            <button onClick={() => setHouseholdFactors([])} className="text-[10px] text-primary hover:underline">← Back</button>
+            <button onClick={() => { setHouseholdConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
           </div>
           <div className="space-y-2">
             {FREQUENCY_OPTIONS.map(opt => (
