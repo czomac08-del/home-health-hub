@@ -251,9 +251,9 @@ const RealtorDashboard = () => {
       ) : (
         <div className="space-y-2 mb-6">
           {filtered.map(l => (
-            <div key={l.id} className="rounded-xl border border-border bg-card p-4">
+            <div key={l.id} className="rounded-xl border border-border bg-card p-4 relative">
               <div className="flex items-center justify-between mb-2">
-                {l.isDemo && <div className="absolute top-2 right-2"><DemoTag /></div>}
+                {l.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                 <div>
                   <p className="text-sm font-medium text-foreground">{l.property_address}</p>
                   <p className="text-[10px] text-muted-foreground">
