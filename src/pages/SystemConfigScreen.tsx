@@ -342,6 +342,36 @@ const SystemConfigScreen = () => {
       <h1 className="text-xl font-bold text-foreground mb-1">{displayName}</h1>
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
 
+      {/* Water Source Type Selector */}
+      {isWaterSource && !waterType && (
+        <div className="mb-6">
+          <WaterSourceTypeSelector onSelect={setWaterType} selected={waterType || undefined} />
+        </div>
+      )}
+      {isWaterSource && waterType && (
+        <div className="mb-4">
+          <button onClick={() => setWaterType("")} className="text-xs text-primary hover:underline mb-2">← Change water source type</button>
+          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
+            {waterType === "city" ? "City / Municipal Water" : "Well Water"}
+          </div>
+        </div>
+      )}
+
+      {/* Sewer Type Selector */}
+      {isSewerWaste && !sewerType && (
+        <div className="mb-6">
+          <SewerTypeSelector onSelect={setSewerType} selected={sewerType || undefined} />
+        </div>
+      )}
+      {isSewerWaste && sewerType && (
+        <div className="mb-4">
+          <button onClick={() => setSewerType("")} className="text-xs text-primary hover:underline mb-2">← Change sewer type</button>
+          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
+            {sewerType === "city" ? "City / Municipal Sewer" : "Septic System"}
+          </div>
+        </div>
+      )}
+
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
