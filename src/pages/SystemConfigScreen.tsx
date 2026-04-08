@@ -557,7 +557,27 @@ const SystemConfigScreen = () => {
           className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
       </div>
 
-      {/* === BUTTONS === */}
+      {/* Additional Water Sources */}
+      {isWaterSource && waterType && (
+        <div className="mb-6">
+          <AdditionalWaterSources sources={additionalWaterSources} onChange={setAdditionalWaterSources} />
+          {waterType === "city" && (
+            <UtilityContactCard title="Water Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+          )}
+        </div>
+      )}
+
+      {/* Multiple Septic Systems */}
+      {isSewerWaste && sewerType === "septic" && (
+        <div className="mb-6">
+          <MultipleSepticSystems systems={septicSystems} onChange={setSepticSystems} />
+        </div>
+      )}
+      {isSewerWaste && sewerType === "city" && (
+        <div className="mb-6">
+          <UtilityContactCard title="Sewer Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+        </div>
+      )}
       <div className="space-y-3">
         <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
           <Save className="h-5 w-5" /> Save to Passport
