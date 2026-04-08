@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
   BarChart3, Calculator, Star, FileText, Users, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, AlertTriangle, X
+  CheckCircle2, AlertTriangle, X, ChevronDown, ChevronUp, Download
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -55,17 +55,23 @@ const statusColors: Record<string, string> = {
 };
 
 const defaultCategories: Record<string, { budget: number; spent: number }> = {
+  "Foundation & Structure": { budget: 0, spent: 0 },
   Roof: { budget: 0, spent: 0 },
-  HVAC: { budget: 0, spent: 0 },
   Electrical: { budget: 0, spent: 0 },
   Plumbing: { budget: 0, spent: 0 },
+  HVAC: { budget: 0, spent: 0 },
   Kitchen: { budget: 0, spent: 0 },
   Bathrooms: { budget: 0, spent: 0 },
   Flooring: { budget: 0, spent: 0 },
-  Paint: { budget: 0, spent: 0 },
+  "Windows & Doors": { budget: 0, spent: 0 },
+  "Paint Interior": { budget: 0, spent: 0 },
+  "Paint Exterior": { budget: 0, spent: 0 },
   Landscaping: { budget: 0, spent: 0 },
-  Other: { budget: 0, spent: 0 },
+  "Permits & Fees": { budget: 0, spent: 0 },
+  Contingency: { budget: 0, spent: 0 },
 };
+
+const renoCategories = Object.keys(defaultCategories);
 
 const InvestorDashboard = () => {
   const { user, profile } = useAuth();
@@ -79,8 +85,22 @@ const InvestorDashboard = () => {
   const [newProject, setNewProject] = useState({ property_address: "", purchase_price: "", renovation_budget: "", projected_arv: "" });
   const [newContractor, setNewContractor] = useState({ name: "", company: "", specialty: "", contract_amount: "" });
 
-  // Flip Analyzer state
-  const [analyzer, setAnalyzer] = useState({ address: "", asking: "", reno: "", arv: "", rate: "10", hold: "6" });
+  // Flip Analyzer state — 5 steps
+  const [analyzerStep, setAnalyzerStep] = useState(1);
+  const [az, setAz] = useState({
+    address: "", purchasePrice: "", closingCostPct: "3", closingCostDollar: "", closingCostMode: "pct" as "pct" | "dollar",
+    arv: "", arvMethod: "comps",
+    // Reno budgets per category
+    reno: {} as Record<string, string>,
+    // Financing
+    financeType: "cash",
+    loanAmount: "", interestRate: "10", loanTerm: "12", points: "2",
+    // Timeline
+    renoDuration: "4", marketTime: "2",
+    propertyTax: "300", insurance: "150", utilities: "200", hoa: "",
+  });
+  const [savedDeals, setSavedDeals] = useState<any[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const { showDemo, dismissDemo } = useDemoData("investor");
 
@@ -92,9 +112,11 @@ const InvestorDashboard = () => {
     budget_categories: {
       Roof: { budget: 12000, spent: 12000 }, Kitchen: { budget: 18000, spent: 14500 },
       Bathrooms: { budget: 10000, spent: 6000 }, Flooring: { budget: 8000, spent: 4000 },
-      Paint: { budget: 5000, spent: 2000 }, Landscaping: { budget: 4000, spent: 0 },
+      "Paint Interior": { budget: 5000, spent: 2000 }, Landscaping: { budget: 4000, spent: 0 },
       HVAC: { budget: 0, spent: 0 }, Electrical: { budget: 3000, spent: 0 },
-      Plumbing: { budget: 5000, spent: 0 }, Other: { budget: 0, spent: 0 },
+      Plumbing: { budget: 5000, spent: 0 }, "Foundation & Structure": { budget: 0, spent: 0 },
+      "Windows & Doors": { budget: 0, spent: 0 }, "Paint Exterior": { budget: 0, spent: 0 },
+      "Permits & Fees": { budget: 0, spent: 0 }, Contingency: { budget: 0, spent: 0 },
     },
     carrying_costs: { mortgage: 1200, insurance: 150, taxes: 280, utilities: 200 },
     photo_url: null, notes: "Full gut rehab — kitchen and baths nearly complete", sold_price: null, sold_date: null,
@@ -106,12 +128,7 @@ const InvestorDashboard = () => {
     { id: "demo-fc2", project_id: "demo-fp1", name: "Premier Kitchens", company: "Premier Kitchen & Bath", license_number: "GC-8834", specialty: "Kitchen", contract_amount: 18000, amount_paid: 14500, completion_pct: 80, quality_rating: 4, lien_waiver_received: false },
   ], []);
 
-  useEffect(() => {
-    if (user) {
-      loadProjects();
-      loadContractors();
-    }
-  }, [user]);
+  useEffect(() => { if (user) { loadProjects(); loadContractors(); } }, [user]);
 
   const loadProjects = async () => {
     const { data } = await supabase.from("flip_projects").select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
@@ -146,10 +163,8 @@ const InvestorDashboard = () => {
   const addContractor = async () => {
     if (!newContractor.name.trim() || !selectedProject) return;
     const { error } = await supabase.from("flip_contractors").insert({
-      user_id: user!.id,
-      project_id: selectedProject.id,
-      name: newContractor.name,
-      company: newContractor.company || null,
+      user_id: user!.id, project_id: selectedProject.id,
+      name: newContractor.name, company: newContractor.company || null,
       specialty: newContractor.specialty || null,
       contract_amount: parseFloat(newContractor.contract_amount) || 0,
     });
@@ -179,31 +194,80 @@ const InvestorDashboard = () => {
     : 0;
   const portfolioROI = totalInvested > 0 ? ((totalProfit / totalInvested) * 100).toFixed(1) : "0";
 
-  // Flip analyzer calculations
+  // ─── ANALYZER CALCULATIONS ───
   const analyzerCalc = () => {
-    const arv = parseFloat(analyzer.arv) || 0;
-    const reno = parseFloat(analyzer.reno) || 0;
-    const asking = parseFloat(analyzer.asking) || 0;
-    const rate = (parseFloat(analyzer.rate) || 10) / 100;
-    const hold = parseFloat(analyzer.hold) || 6;
-    const mao = arv * 0.7 - reno;
-    const carrying = (asking * rate / 12) * hold;
-    const totalCost = asking + reno + carrying;
-    const profit = arv - totalCost;
-    const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0;
-    let rating = "Pass";
-    let ratingColor = "text-destructive";
-    if (roi > 25) { rating = "Great Deal"; ratingColor = "text-green-400"; }
-    else if (roi > 15) { rating = "Fair Deal"; ratingColor = "text-yellow-400"; }
-    else if (roi > 5) { rating = "Risky Deal"; ratingColor = "text-amber-400"; }
-    return { mao, carrying, totalCost, profit, roi, rating, ratingColor };
+    const purchase = parseFloat(az.purchasePrice) || 0;
+    const arv = parseFloat(az.arv) || 0;
+    const renoTotal = renoCategories.reduce((s, c) => s + (parseFloat(az.reno[c] || "0") || 0), 0);
+    const closingBuy = az.closingCostMode === "pct"
+      ? purchase * ((parseFloat(az.closingCostPct) || 3) / 100)
+      : (parseFloat(az.closingCostDollar) || 0);
+    const closingSellPct = 7;
+    const closingSell = arv * (closingSellPct / 100);
+
+    const holdMonths = (parseFloat(az.renoDuration) || 4) + (parseFloat(az.marketTime) || 2);
+
+    // Loan calculations
+    let monthlyLoan = 0;
+    let totalInterest = 0;
+    let pointsCost = 0;
+    if (az.financeType !== "cash") {
+      const loanAmt = parseFloat(az.loanAmount) || purchase;
+      const rate = (parseFloat(az.interestRate) || 10) / 100 / 12;
+      monthlyLoan = rate > 0 ? (loanAmt * rate) / (1 - Math.pow(1 + rate, -(parseFloat(az.loanTerm) || 12))) : loanAmt / (parseFloat(az.loanTerm) || 12);
+      totalInterest = monthlyLoan * holdMonths - (parseFloat(az.loanAmount) || purchase) * (holdMonths / (parseFloat(az.loanTerm) || 12));
+      if (az.financeType === "hard_money") {
+        pointsCost = (parseFloat(az.loanAmount) || purchase) * ((parseFloat(az.points) || 2) / 100);
+      }
+    }
+
+    const monthlyCarrying = monthlyLoan + (parseFloat(az.propertyTax) || 0) + (parseFloat(az.insurance) || 0) + (parseFloat(az.utilities) || 0) + (parseFloat(az.hoa) || 0);
+    const totalCarrying = monthlyCarrying * holdMonths + pointsCost;
+
+    const totalProjectCost = purchase + renoTotal + closingBuy + totalCarrying + closingSell;
+    const profit = arv - totalProjectCost;
+    const roi = totalProjectCost > 0 ? (profit / totalProjectCost) * 100 : 0;
+    const annualizedRoi = holdMonths > 0 ? roi * (12 / holdMonths) : 0;
+    const mao = arv * 0.7 - renoTotal;
+    const maoPass = purchase <= mao;
+
+    // Sensitivity
+    const sensitivity = [-10, -5, 0, 5].map(pct => {
+      const adjArv = arv * (1 + pct / 100);
+      const adjCloseSell = adjArv * (closingSellPct / 100);
+      const adjProfit = adjArv - (purchase + renoTotal + closingBuy + totalCarrying + adjCloseSell);
+      return { pct, arv: adjArv, profit: adjProfit };
+    });
+
+    // Deal rating
+    let rating = "Pass"; let ratingColor = "text-destructive"; let ratingBg = "border-destructive/40 bg-destructive/5";
+    if (roi > 20) { rating = "Home Run 🏠"; ratingColor = "text-green-400"; ratingBg = "border-green-500/40 bg-green-500/5"; }
+    else if (roi > 15) { rating = "Good Deal"; ratingColor = "text-emerald-400"; ratingBg = "border-emerald-500/40 bg-emerald-500/5"; }
+    else if (roi > 10) { rating = "Thin Margin"; ratingColor = "text-amber-400"; ratingBg = "border-amber-500/40 bg-amber-500/5"; }
+    else if (roi > 0) { rating = "Risky"; ratingColor = "text-orange-400"; ratingBg = "border-orange-500/40 bg-orange-500/5"; }
+
+    return { purchase, arv, renoTotal, closingBuy, closingSell, totalCarrying, monthlyCarrying, monthlyLoan, holdMonths, totalProjectCost, profit, roi, annualizedRoi, mao, maoPass, sensitivity, rating, ratingColor, ratingBg, pointsCost };
+  };
+
+  const saveDeal = () => {
+    const calc = analyzerCalc();
+    setSavedDeals(prev => [...prev, { address: az.address, ...calc, timestamp: Date.now() }]);
+    toast.success("Deal saved for comparison!");
   };
 
   const projContractors = selectedProject ? effectiveContractors.filter(c => c.project_id === selectedProject.id) : [];
-
   const statuses = ["acquisition", "demo", "renovation", "punch list", "listed", "sold"];
 
-  // Project detail view
+  const InputField = ({ label, value, onChange, placeholder, helper }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; helper?: string }) => (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+      {helper && <p className="text-[9px] text-muted-foreground/70 mt-0.5">{helper}</p>}
+    </div>
+  );
+
+  // ── Project detail view ──
   if (selectedProject) {
     const p = selectedProject;
     const totalBudget = p.renovation_budget || 0;
@@ -214,9 +278,7 @@ const InvestorDashboard = () => {
 
     return (
       <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
-        <button onClick={() => setSelectedProject(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-          ← Back to Projects
-        </button>
+        <button onClick={() => setSelectedProject(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">← Back to Projects</button>
 
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-start justify-between mb-3">
@@ -224,15 +286,12 @@ const InvestorDashboard = () => {
               <h2 className="text-lg font-bold text-foreground">{p.property_address}</h2>
               <p className="text-xs text-muted-foreground">{daysSince} days since purchase</p>
             </div>
-            <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${statusColors[p.status] || "bg-secondary text-muted-foreground"}`}>
-              {p.status}
-            </span>
+            <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${statusColors[p.status] || "bg-secondary text-muted-foreground"}`}>{p.status}</span>
           </div>
           <Progress value={p.completion_pct || 0} className="h-2 mb-2" />
           <p className="text-[10px] text-muted-foreground">{p.completion_pct || 0}% complete</p>
         </div>
 
-        {/* Status changer */}
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {statuses.map(s => (
             <button key={s} onClick={() => updateProjectStatus(p.id, s)}
@@ -242,7 +301,6 @@ const InvestorDashboard = () => {
           ))}
         </div>
 
-        {/* Detail Tabs */}
         <div className="flex gap-1 bg-secondary/50 rounded-xl p-1">
           {(["overview", "financials", "contractors", "timeline", "documents"] as const).map(t => (
             <button key={t} onClick={() => setDetailTab(t)}
@@ -255,22 +313,17 @@ const InvestorDashboard = () => {
         {detailTab === "overview" && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-border bg-card p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">Purchase Price</p>
-                <p className="text-lg font-bold text-foreground">{fmt(p.purchase_price)}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">Projected ARV</p>
-                <p className="text-lg font-bold text-primary">{fmt(p.projected_arv)}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">Reno Budget</p>
-                <p className="text-lg font-bold text-foreground">{fmt(p.renovation_budget)}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">Current Spend</p>
-                <p className="text-lg font-bold text-amber-400">{fmt(p.current_spend)}</p>
-              </div>
+              {[
+                { label: "Purchase Price", value: fmt(p.purchase_price), color: "text-foreground" },
+                { label: "Projected ARV", value: fmt(p.projected_arv), color: "text-primary" },
+                { label: "Reno Budget", value: fmt(p.renovation_budget), color: "text-foreground" },
+                { label: "Current Spend", value: fmt(p.current_spend), color: "text-amber-400" },
+              ].map(s => (
+                <div key={s.label} className="rounded-xl border border-border bg-card p-3">
+                  <p className="text-[10px] text-muted-foreground mb-1">{s.label}</p>
+                  <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                </div>
+              ))}
             </div>
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
               <p className="text-xs font-semibold text-primary mb-1">Projected Profit</p>
@@ -279,7 +332,7 @@ const InvestorDashboard = () => {
             </div>
             {p.status === "listed" && (
               <button className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                <FileText className="h-4 w-4" /> Convert to Home Passport for Sale
+                <FileText className="h-4 w-4" /> Convert to Home Passport
               </button>
             )}
           </div>
@@ -291,6 +344,7 @@ const InvestorDashboard = () => {
             {Object.entries(p.budget_categories || defaultCategories).map(([cat, vals]) => {
               const v = vals as { budget: number; spent: number };
               const pct = v.budget > 0 ? Math.min((v.spent / v.budget) * 100, 100) : 0;
+              if (v.budget === 0 && v.spent === 0) return null;
               return (
                 <div key={cat} className="rounded-xl border border-border bg-card p-3">
                   <div className="flex justify-between mb-1">
@@ -302,12 +356,11 @@ const InvestorDashboard = () => {
               );
             })}
             <div className="rounded-xl border border-border bg-card p-3">
-              <h4 className="text-xs font-semibold text-foreground mb-2">Carrying Costs</h4>
+              <h4 className="text-xs font-semibold text-foreground mb-2">Monthly Carrying Costs</h4>
               <div className="space-y-1.5 text-xs text-muted-foreground">
-                <div className="flex justify-between"><span>Interest/month</span><span>{fmt(p.carrying_costs?.interest || 0)}</span></div>
-                <div className="flex justify-between"><span>Insurance/month</span><span>{fmt(p.carrying_costs?.insurance || 0)}</span></div>
-                <div className="flex justify-between"><span>Taxes/month</span><span>{fmt(p.carrying_costs?.taxes || 0)}</span></div>
-                <div className="flex justify-between"><span>Utilities/month</span><span>{fmt(p.carrying_costs?.utilities || 0)}</span></div>
+                {Object.entries(p.carrying_costs || {}).map(([k, v]) => (
+                  <div key={k} className="flex justify-between"><span className="capitalize">{k}</span><span>{fmt(Number(v) || 0)}/mo</span></div>
+                ))}
                 <div className="flex justify-between font-semibold text-foreground border-t border-border pt-1.5 mt-1.5">
                   <span>Total ({daysSince} days)</span>
                   <span>{fmt(Object.values(p.carrying_costs || {}).reduce((s: number, v) => s + (Number(v) || 0), 0) * (daysSince / 30))}</span>
@@ -321,9 +374,7 @@ const InvestorDashboard = () => {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-foreground">Contractors</h3>
-              <button onClick={() => setShowAddContractor(true)} className="text-xs font-semibold text-primary flex items-center gap-1">
-                <Plus className="h-3.5 w-3.5" /> Add
-              </button>
+              <button onClick={() => setShowAddContractor(true)} className="text-xs font-semibold text-primary flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Add</button>
             </div>
             {projContractors.length === 0 && <p className="text-xs text-muted-foreground text-center py-6">No contractors added yet</p>}
             {projContractors.map(c => (
@@ -353,7 +404,6 @@ const InvestorDashboard = () => {
                 )}
               </div>
             ))}
-
             {showAddContractor && (
               <div className="rounded-xl border border-primary/30 bg-card p-4 space-y-3">
                 <div className="flex justify-between items-center">
@@ -418,9 +468,9 @@ const InvestorDashboard = () => {
     );
   }
 
+  // ── MAIN DASHBOARD ──
   return (
     <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-5">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Investor Dashboard</h1>
         <p className="text-sm text-muted-foreground">{profile?.full_name || "Investor"} · Portfolio Summary</p>
@@ -428,7 +478,6 @@ const InvestorDashboard = () => {
 
       {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Active Projects", value: activeProjects.length.toString(), icon: Building2, color: "text-primary" },
@@ -444,7 +493,6 @@ const InvestorDashboard = () => {
         ))}
       </div>
 
-      {/* Main Tabs */}
       <div className="flex gap-1 bg-secondary/50 rounded-xl p-1">
         {(["projects", "analyzer", "portfolio"] as const).map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -454,13 +502,12 @@ const InvestorDashboard = () => {
         ))}
       </div>
 
+      {/* ── PROJECTS TAB ── */}
       {activeTab === "projects" && (
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <h2 className="text-sm font-bold text-foreground">Active Projects</h2>
-            <button onClick={() => setShowAddProject(true)} className="text-xs font-semibold text-primary flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> New Flip
-            </button>
+            <button onClick={() => setShowAddProject(true)} className="text-xs font-semibold text-primary flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> New Flip</button>
           </div>
 
           {showAddProject && (
@@ -503,26 +550,12 @@ const InvestorDashboard = () => {
                     <p className="text-sm font-semibold text-foreground">{p.property_address}</p>
                     <p className="text-[10px] text-muted-foreground">{days > 0 ? `${days} days` : "Just acquired"}</p>
                   </div>
-                  <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${statusColors[p.status] || "bg-secondary text-muted-foreground"}`}>
-                    {p.status}
-                  </span>
+                  <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${statusColors[p.status] || "bg-secondary text-muted-foreground"}`}>{p.status}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Purchase</p>
-                    <p className="text-xs font-semibold text-foreground">{fmt(p.purchase_price)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Spent</p>
-                    <p className="text-xs font-semibold text-amber-400">{fmt(p.current_spend)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Proj. Profit</p>
-                    <p className={`text-xs font-semibold flex items-center gap-0.5 ${profit >= 0 ? "text-green-400" : "text-destructive"}`}>
-                      {profit >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                      {fmt(Math.abs(profit))}
-                    </p>
-                  </div>
+                  <div><p className="text-[10px] text-muted-foreground">Purchase</p><p className="text-xs font-semibold text-foreground">{fmt(p.purchase_price)}</p></div>
+                  <div><p className="text-[10px] text-muted-foreground">Spent</p><p className="text-xs font-semibold text-amber-400">{fmt(p.current_spend)}</p></div>
+                  <div><p className="text-[10px] text-muted-foreground">Proj. Profit</p><p className={`text-xs font-semibold flex items-center gap-0.5 ${profit >= 0 ? "text-green-400" : "text-destructive"}`}>{profit >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}{fmt(Math.abs(profit))}</p></div>
                 </div>
                 <Progress value={p.completion_pct || 0} className="h-1.5" />
                 <div className="flex justify-between mt-1">
@@ -557,70 +590,348 @@ const InvestorDashboard = () => {
         </div>
       )}
 
-      {activeTab === "analyzer" && (
+      {/* ── FLIP ANALYZER TAB — 5 STEPS ── */}
+      {activeTab === "analyzer" && !showCompare && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Calculator className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Flip Analyzer</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">Analyze a potential deal before buying</p>
-            {[
-              { placeholder: "Property address", key: "address" },
-              { placeholder: "Asking price ($)", key: "asking" },
-              { placeholder: "Estimated renovation ($)", key: "reno" },
-              { placeholder: "Comparable sales ARV ($)", key: "arv" },
-              { placeholder: "Interest rate (%)", key: "rate" },
-              { placeholder: "Expected hold time (months)", key: "hold" },
-            ].map(f => (
-              <input key={f.key} placeholder={f.placeholder} value={(analyzer as any)[f.key]}
-                onChange={e => setAnalyzer({ ...analyzer, [f.key]: e.target.value })}
-                className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground" />
+          {/* Step indicator */}
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map(s => (
+              <button key={s} onClick={() => setAnalyzerStep(s)}
+                className={`flex-1 h-1.5 rounded-full transition-all ${s <= analyzerStep ? "bg-primary" : "bg-secondary"}`} />
             ))}
           </div>
+          <p className="text-[10px] text-muted-foreground">Step {analyzerStep} of 5 — {["Property Info", "Renovation Budget", "Financing", "Timeline & Carrying", "Deal Analysis"][analyzerStep - 1]}</p>
 
-          {(parseFloat(analyzer.arv) > 0) && (() => {
-            const calc = analyzerCalc();
+          {/* STEP 1 — Property Info */}
+          {analyzerStep === 1 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Calculator className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-bold text-foreground">Property Info</h3>
+              </div>
+              <InputField label="Property Address" value={az.address} onChange={v => setAz({ ...az, address: v })} placeholder="123 Main St, City, State" />
+              <InputField label="Purchase Price" value={az.purchasePrice} onChange={v => setAz({ ...az, purchasePrice: v })} placeholder="$250,000" />
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Estimated Closing Costs</label>
+                <div className="flex gap-2 mb-1.5">
+                  {(["pct", "dollar"] as const).map(m => (
+                    <button key={m} onClick={() => setAz({ ...az, closingCostMode: m })}
+                      className={`flex-1 rounded-lg py-2 text-[10px] font-semibold transition-all ${az.closingCostMode === m ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
+                      {m === "pct" ? "Percentage" : "Dollar Amount"}
+                    </button>
+                  ))}
+                </div>
+                {az.closingCostMode === "pct" ? (
+                  <input value={az.closingCostPct} onChange={e => setAz({ ...az, closingCostPct: e.target.value })} placeholder="3"
+                    className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground" />
+                ) : (
+                  <input value={az.closingCostDollar} onChange={e => setAz({ ...az, closingCostDollar: e.target.value })} placeholder="$7,500"
+                    className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground" />
+                )}
+                <p className="text-[9px] text-muted-foreground/70 mt-0.5">Typical closing costs are 2–5% of purchase price</p>
+              </div>
+
+              <InputField label="After Repair Value (ARV)" value={az.arv} onChange={v => setAz({ ...az, arv: v })} placeholder="$350,000" />
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">How was ARV determined?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "comps", label: "Comparable Sales" },
+                    { id: "appraisal", label: "Appraisal" },
+                    { id: "agent", label: "Agent Opinion" },
+                    { id: "own", label: "Own Estimate" },
+                  ].map(m => (
+                    <button key={m.id} onClick={() => setAz({ ...az, arvMethod: m.id })}
+                      className={`rounded-lg py-2.5 text-[10px] font-semibold transition-all border ${az.arvMethod === m.id ? "bg-primary/10 border-primary/40 text-primary" : "bg-secondary border-border text-muted-foreground"}`}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={() => setAnalyzerStep(2)} disabled={!az.purchasePrice || !az.arv}
+                className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40 mt-2">
+                Continue to Renovation Budget →
+              </button>
+            </div>
+          )}
+
+          {/* STEP 2 — Renovation Budget */}
+          {analyzerStep === 2 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-sm font-bold text-foreground">Renovation Budget</h3>
+              <p className="text-[10px] text-muted-foreground">Enter estimated costs per category. Leave blank for N/A.</p>
+
+              {renoCategories.map(cat => (
+                <div key={cat} className="flex items-center gap-2">
+                  <span className="text-xs text-foreground w-36 shrink-0">{cat}</span>
+                  <input value={az.reno[cat] || ""} onChange={e => setAz({ ...az, reno: { ...az.reno, [cat]: e.target.value } })}
+                    placeholder="$0" className="flex-1 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground text-right" />
+                </div>
+              ))}
+
+              {(() => {
+                const total = renoCategories.reduce((s, c) => s + (parseFloat(az.reno[c] || "0") || 0), 0);
+                const contingencyPct = total > 0 && parseFloat(az.reno["Contingency"] || "0") > 0
+                  ? ((parseFloat(az.reno["Contingency"] || "0") / (total - (parseFloat(az.reno["Contingency"] || "0")))) * 100).toFixed(0) : "0";
+                return (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <div className="flex justify-between text-sm font-bold text-foreground">
+                      <span>Total Renovation</span>
+                      <span className="text-primary">{fmt(total)}</span>
+                    </div>
+                    {!az.reno["Contingency"] && total > 0 && (
+                      <button onClick={() => setAz({ ...az, reno: { ...az.reno, Contingency: Math.round(total * 0.12).toString() } })}
+                        className="text-[9px] text-primary mt-1 underline">Auto-add 12% contingency (${Math.round(total * 0.12).toLocaleString()})</button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="flex gap-2">
+                <button onClick={() => setAnalyzerStep(1)} className="flex-1 rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground">← Back</button>
+                <button onClick={() => setAnalyzerStep(3)} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90">Financing →</button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Financing */}
+          {analyzerStep === 3 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-sm font-bold text-foreground">Financing</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "cash", label: "💵 Cash" },
+                  { id: "conventional", label: "🏦 Conventional" },
+                  { id: "hard_money", label: "💰 Hard Money" },
+                  { id: "private", label: "🤝 Private Money" },
+                  { id: "heloc", label: "🏠 HELOC" },
+                  { id: "partnership", label: "👥 Partnership" },
+                ].map(f => (
+                  <button key={f.id} onClick={() => setAz({ ...az, financeType: f.id })}
+                    className={`rounded-xl py-3 text-xs font-semibold transition-all border ${az.financeType === f.id ? "bg-primary/10 border-primary/40 text-primary" : "bg-secondary border-border text-muted-foreground"}`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {az.financeType !== "cash" && (
+                <div className="space-y-3 mt-2 rounded-xl border border-border bg-secondary/20 p-3">
+                  <InputField label="Loan Amount" value={az.loanAmount} onChange={v => setAz({ ...az, loanAmount: v })} placeholder={az.purchasePrice || "$250,000"} helper="Defaults to purchase price if left blank" />
+                  <InputField label="Interest Rate (%)" value={az.interestRate} onChange={v => setAz({ ...az, interestRate: v })} placeholder="10" />
+                  <InputField label="Loan Term (months)" value={az.loanTerm} onChange={v => setAz({ ...az, loanTerm: v })} placeholder="12" />
+                  {az.financeType === "hard_money" && (
+                    <InputField label="Points (%)" value={az.points} onChange={v => setAz({ ...az, points: v })} placeholder="2" helper="Upfront fee charged as percentage of loan" />
+                  )}
+                  {(() => {
+                    const loanAmt = parseFloat(az.loanAmount) || parseFloat(az.purchasePrice) || 0;
+                    const rate = (parseFloat(az.interestRate) || 10) / 100 / 12;
+                    const term = parseFloat(az.loanTerm) || 12;
+                    const payment = rate > 0 ? (loanAmt * rate) / (1 - Math.pow(1 + rate, -term)) : loanAmt / term;
+                    return (
+                      <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5">
+                        <p className="text-[10px] text-muted-foreground">Estimated Monthly Payment</p>
+                        <p className="text-lg font-bold text-primary">{fmt(Math.round(payment))}/mo</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={() => setAnalyzerStep(2)} className="flex-1 rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground">← Back</button>
+                <button onClick={() => setAnalyzerStep(4)} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90">Timeline →</button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4 — Timeline & Carrying */}
+          {analyzerStep === 4 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h3 className="text-sm font-bold text-foreground">Timeline & Carrying Costs</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField label="Renovation (months)" value={az.renoDuration} onChange={v => setAz({ ...az, renoDuration: v })} placeholder="4" />
+                <InputField label="Time on Market (months)" value={az.marketTime} onChange={v => setAz({ ...az, marketTime: v })} placeholder="2" />
+              </div>
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5">
+                <p className="text-[10px] text-muted-foreground">Total Hold Time</p>
+                <p className="text-lg font-bold text-primary">{(parseFloat(az.renoDuration) || 4) + (parseFloat(az.marketTime) || 2)} months</p>
+              </div>
+
+              <p className="text-xs font-semibold text-foreground mt-2">Monthly Carrying Costs</p>
+              <div className="grid grid-cols-2 gap-3">
+                <InputField label="Property Taxes" value={az.propertyTax} onChange={v => setAz({ ...az, propertyTax: v })} placeholder="$300" />
+                <InputField label="Insurance" value={az.insurance} onChange={v => setAz({ ...az, insurance: v })} placeholder="$150" />
+                <InputField label="Utilities" value={az.utilities} onChange={v => setAz({ ...az, utilities: v })} placeholder="$200" />
+                <InputField label="HOA (if any)" value={az.hoa} onChange={v => setAz({ ...az, hoa: v })} placeholder="$0" />
+              </div>
+
+              {(() => {
+                const calc = analyzerCalc();
+                return (
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-1.5 text-xs">
+                    {az.financeType !== "cash" && <div className="flex justify-between text-muted-foreground"><span>Loan Payment</span><span>{fmt(Math.round(calc.monthlyLoan))}/mo</span></div>}
+                    <div className="flex justify-between text-muted-foreground"><span>Taxes + Insurance + Utilities + HOA</span><span>{fmt((parseFloat(az.propertyTax) || 0) + (parseFloat(az.insurance) || 0) + (parseFloat(az.utilities) || 0) + (parseFloat(az.hoa) || 0))}/mo</span></div>
+                    {calc.pointsCost > 0 && <div className="flex justify-between text-muted-foreground"><span>Points (upfront)</span><span>{fmt(calc.pointsCost)}</span></div>}
+                    <div className="flex justify-between font-bold text-foreground border-t border-border pt-1.5">
+                      <span>Total Carrying ({calc.holdMonths} mo)</span>
+                      <span className="text-amber-400">{fmt(Math.round(calc.totalCarrying))}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex gap-2">
+                <button onClick={() => setAnalyzerStep(3)} className="flex-1 rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground">← Back</button>
+                <button onClick={() => setAnalyzerStep(5)} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90">See Results →</button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5 — Deal Analysis Results */}
+          {analyzerStep === 5 && (() => {
+            const c = analyzerCalc();
             return (
-              <div className="space-y-3">
-                <div className={`rounded-xl border-2 p-4 text-center ${calc.rating === "Great Deal" ? "border-green-500/40 bg-green-500/5" : calc.rating === "Fair Deal" ? "border-yellow-500/40 bg-yellow-500/5" : calc.rating === "Risky Deal" ? "border-amber-500/40 bg-amber-500/5" : "border-destructive/40 bg-destructive/5"}`}>
-                  <p className="text-xs text-muted-foreground mb-1">Deal Rating</p>
-                  <p className={`text-2xl font-bold ${calc.ratingColor}`}>{calc.rating}</p>
+              <div className="space-y-4">
+                {/* Deal Rating */}
+                <div className={`rounded-xl border-2 p-4 text-center ${c.ratingBg}`}>
+                  <p className="text-[10px] text-muted-foreground mb-1">Deal Rating</p>
+                  <p className={`text-2xl font-bold ${c.ratingColor}`}>{c.rating}</p>
                 </div>
+
+                {/* Cost Breakdown */}
+                <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-xs">
+                  <h4 className="text-sm font-bold text-foreground mb-2">Cost Breakdown</h4>
+                  {[
+                    ["Purchase Price", c.purchase],
+                    ["Renovation Budget", c.renoTotal],
+                    ["Closing Costs (Buy)", c.closingBuy],
+                    ["Carrying Costs", c.totalCarrying],
+                    ["Closing Costs (Sell ~7%)", c.closingSell],
+                  ].map(([label, val]) => (
+                    <div key={label as string} className="flex justify-between text-muted-foreground">
+                      <span>{label as string}</span><span>{fmt(Math.round(val as number))}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-2 text-sm">
+                    <span>Total Project Cost</span><span>{fmt(Math.round(c.totalProjectCost))}</span>
+                  </div>
+                </div>
+
+                {/* Profit & ROI */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-border bg-card p-3">
-                    <p className="text-[10px] text-muted-foreground">Max Allowable Offer (70%)</p>
-                    <p className="text-lg font-bold text-foreground">{fmt(calc.mao)}</p>
+                  <div className="rounded-xl border border-border bg-card p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground mb-1">Projected Profit</p>
+                    <p className={`text-xl font-bold ${c.profit >= 0 ? "text-green-400" : "text-destructive"}`}>{fmt(Math.round(c.profit))}</p>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-3">
-                    <p className="text-[10px] text-muted-foreground">Carrying Costs</p>
-                    <p className="text-lg font-bold text-amber-400">{fmt(calc.carrying)}</p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-card p-3">
-                    <p className="text-[10px] text-muted-foreground">Total All-In Cost</p>
-                    <p className="text-lg font-bold text-foreground">{fmt(calc.totalCost)}</p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-card p-3">
-                    <p className="text-[10px] text-muted-foreground">Projected Profit</p>
-                    <p className={`text-lg font-bold ${calc.profit >= 0 ? "text-green-400" : "text-destructive"}`}>{fmt(calc.profit)}</p>
+                  <div className="rounded-xl border border-border bg-card p-3 text-center">
+                    <p className="text-[10px] text-muted-foreground mb-1">ROI</p>
+                    <p className="text-xl font-bold text-primary">{c.roi.toFixed(1)}%</p>
+                    <p className="text-[9px] text-muted-foreground">Annualized: {c.annualizedRoi.toFixed(1)}%</p>
                   </div>
                 </div>
-                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Projected ROI</p>
-                  <p className="text-3xl font-bold text-primary">{calc.roi.toFixed(1)}%</p>
+
+                {/* 70% Rule */}
+                <div className={`rounded-xl border-2 p-3 ${c.maoPass ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">70% Rule — Max Allowable Offer</p>
+                      <p className="text-lg font-bold text-foreground">{fmt(Math.round(c.mao))}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${c.maoPass ? "bg-green-500/20 text-green-400" : "bg-destructive/20 text-destructive"}`}>
+                      {c.maoPass ? "✓ PASS" : "✗ OVER"}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1">(ARV × 70%) − Renovation = {fmt(Math.round(c.mao))}</p>
                 </div>
+
+                {/* Sensitivity Table */}
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <h4 className="text-xs font-bold text-foreground mb-3">Sensitivity Analysis</h4>
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-3 text-[9px] text-muted-foreground font-semibold pb-1 border-b border-border">
+                      <span>ARV Scenario</span><span className="text-right">ARV</span><span className="text-right">Profit</span>
+                    </div>
+                    {c.sensitivity.map(s => (
+                      <div key={s.pct} className={`grid grid-cols-3 text-xs py-1 ${s.pct === 0 ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                        <span>{s.pct >= 0 ? "+" : ""}{s.pct}%</span>
+                        <span className="text-right">{fmt(Math.round(s.arv))}</span>
+                        <span className={`text-right ${s.profit >= 0 ? "text-green-400" : "text-destructive"}`}>{fmt(Math.round(s.profit))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <button onClick={saveDeal} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground text-sm flex items-center justify-center gap-2">
+                    <Download className="h-4 w-4" /> Save Deal
+                  </button>
+                  {savedDeals.length > 0 && (
+                    <button onClick={() => setShowCompare(true)} className="flex-1 rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground text-sm flex items-center justify-center gap-2">
+                      <BarChart3 className="h-4 w-4" /> Compare ({savedDeals.length})
+                    </button>
+                  )}
+                </div>
+
+                <button onClick={() => setAnalyzerStep(4)} className="w-full rounded-xl bg-secondary py-2.5 font-semibold text-secondary-foreground text-sm">← Edit Inputs</button>
               </div>
             );
           })()}
         </div>
       )}
 
+      {/* ── COMPARE DEALS ── */}
+      {activeTab === "analyzer" && showCompare && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground">Compare Deals</h3>
+            <button onClick={() => setShowCompare(false)} className="text-xs text-muted-foreground">← Back to Analyzer</button>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px]">
+              <div className="grid gap-1" style={{ gridTemplateColumns: `140px repeat(${savedDeals.length}, 1fr)` }}>
+                <div className="text-[9px] text-muted-foreground font-semibold py-2">Metric</div>
+                {savedDeals.map((d, i) => (
+                  <div key={i} className="text-[9px] text-foreground font-bold py-2 truncate">{d.address || `Deal ${i + 1}`}</div>
+                ))}
+                {[
+                  { label: "Purchase", key: "purchase" },
+                  { label: "Renovation", key: "renoTotal" },
+                  { label: "Total Cost", key: "totalProjectCost" },
+                  { label: "ARV", key: "arv" },
+                  { label: "Profit", key: "profit" },
+                  { label: "ROI", key: "roi" },
+                  { label: "MAO (70%)", key: "mao" },
+                ].map(row => (
+                  <React.Fragment key={row.label}>
+                    <div className="text-[10px] text-muted-foreground py-1.5 border-t border-border">{row.label}</div>
+                    {savedDeals.map((d, i) => (
+                      <div key={i} className={`text-[10px] font-semibold py-1.5 border-t border-border text-right ${row.key === "profit" ? (d[row.key] >= 0 ? "text-green-400" : "text-destructive") : "text-foreground"}`}>
+                        {row.key === "roi" ? `${d[row.key].toFixed(1)}%` : fmt(Math.round(d[row.key]))}
+                      </div>
+                    ))}
+                  </React.Fragment>
+                ))}
+                <div className="text-[10px] text-muted-foreground py-1.5 border-t border-border">Rating</div>
+                {savedDeals.map((d, i) => (
+                  <div key={i} className={`text-[10px] font-bold py-1.5 border-t border-border text-right ${d.ratingColor}`}>{d.rating}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button onClick={() => { setSavedDeals([]); setShowCompare(false); }} className="text-xs text-destructive">Clear All Saved Deals</button>
+        </div>
+      )}
+
+      {/* ── PORTFOLIO TAB ── */}
       {activeTab === "portfolio" && (
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-sm font-bold text-foreground mb-3">Portfolio Summary</h3>
             <div className="grid grid-cols-2 gap-3">
-              <div><p className="text-[10px] text-muted-foreground">Total Properties</p><p className="text-lg font-bold text-foreground">{projects.length}</p></div>
+              <div><p className="text-[10px] text-muted-foreground">Total Properties</p><p className="text-lg font-bold text-foreground">{effectiveProjects.length}</p></div>
               <div><p className="text-[10px] text-muted-foreground">Active Flips</p><p className="text-lg font-bold text-primary">{activeProjects.length}</p></div>
               <div><p className="text-[10px] text-muted-foreground">Total Invested</p><p className="text-lg font-bold text-foreground">{fmt(totalInvested)}</p></div>
               <div><p className="text-[10px] text-muted-foreground">Total Profit</p><p className="text-lg font-bold text-green-400">{fmt(totalProfit)}</p></div>
@@ -651,32 +962,13 @@ const InvestorDashboard = () => {
               </div>
             )}
           </div>
-
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Market Intelligence</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">Local market data for your active areas</p>
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="rounded-lg bg-secondary/50 p-2 text-center">
-                <p className="text-lg font-bold text-foreground">32</p>
-                <p className="text-[10px] text-muted-foreground">Avg Days on Market</p>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-2 text-center">
-                <p className="text-lg font-bold text-foreground">$285K</p>
-                <p className="text-[10px] text-muted-foreground">Median Price</p>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-2 text-center">
-                <p className="text-lg font-bold text-foreground">$165</p>
-                <p className="text-[10px] text-muted-foreground">Price/sq ft</p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
   );
 };
+
+// Need React import for Fragment
+import React from "react";
 
 export default InvestorDashboard;
