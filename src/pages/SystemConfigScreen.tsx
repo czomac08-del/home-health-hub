@@ -464,7 +464,7 @@ const SystemConfigScreen = () => {
 
           {/* ── Water Filtration Section ── */}
           {isWaterSource && waterType && (
-            <WaterFiltrationSection waterType={waterType as "city" | "well"} />
+            <WaterFiltrationSection waterType={waterType as "city" | "well"} householdFactors={hvacHouseholdFactors} />
           )}
 
           {/* ── HVAC Filter & Air Quality Section ── */}
@@ -472,6 +472,7 @@ const SystemConfigScreen = () => {
             <HvacFilterSection
               filterSize={(specs["filterSize"] as string) || ""}
               onFilterSizeChange={(size) => setSpec("filterSize", size)}
+              onHouseholdFactorsChange={setHvacHouseholdFactors}
             />
           )}
 
