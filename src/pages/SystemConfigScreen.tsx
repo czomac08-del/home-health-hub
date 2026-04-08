@@ -81,6 +81,7 @@ const SystemConfigScreen = () => {
   const [additionalWaterSources, setAdditionalWaterSources] = useState<Array<{ type: string; location: string; pumpDetails: string; serviceContact: string }>>([]);
   const [septicSystems, setSepticSystems] = useState<SepticSystem[]>([{ name: "Main Septic", tankSize: "", tankMaterial: "", lastPumped: "", accessLocation: "", pumpCompany: "", pumpPhone: "", location: "", notes: "" }]);
   const [utilityContacts, setUtilityContacts] = useState<Record<string, string>>({});
+  const [hvacHouseholdFactors, setHvacHouseholdFactors] = useState<string[]>([]);
 
   const { searching: manualSearching, search: searchManual } = useManualSearch({
     brand, model, onResult: setManualResult,
@@ -311,6 +312,11 @@ const SystemConfigScreen = () => {
       if (data.service_company) setServiceCompany(data.service_company);
       if (data.service_phone) setServicePhone(data.service_phone);
       if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      // Restore water type from specs if saved
+      if (displayName.toLowerCase().includes("water source")) {
+        const s = data.specs as Record<string, any>;
+        if (s?.waterType) setWaterType(s.waterType);
+      }
       if (data.notes) setNotes(data.notes);
       if (data.location_in_home) setLocation(data.location_in_home);
 
@@ -353,12 +359,14 @@ const SystemConfigScreen = () => {
   const CollapsibleSection = ({ id, title, children, defaultOpen }: { id: string; title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
     const isOpen = expandedSections.has(id);
     return (
-      <div className="mb-4">
+      <div className="mb-4 overflow-hidden">
         <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between py-2 mb-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
+          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
         </button>
-        {isOpen && <div className="animate-fade-in">{children}</div>}
+        <div className={`transition-all duration-300 ease-out ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
+          {children}
+        </div>
       </div>
     );
   };
@@ -456,7 +464,7 @@ const SystemConfigScreen = () => {
 
           {/* ── Water Filtration Section ── */}
           {isWaterSource && waterType && (
-            <WaterFiltrationSection waterType={waterType as "city" | "well"} />
+            <WaterFiltrationSection waterType={waterType as "city" | "well"} householdFactors={hvacHouseholdFactors} />
           )}
 
           {/* ── HVAC Filter & Air Quality Section ── */}
@@ -464,11 +472,12 @@ const SystemConfigScreen = () => {
             <HvacFilterSection
               filterSize={(specs["filterSize"] as string) || ""}
               onFilterSizeChange={(size) => setSpec("filterSize", size)}
+              onHouseholdFactorsChange={setHvacHouseholdFactors}
             />
           )}
 
-          {/* ── Specifications (contextual fields based on type) ── */}
-          {specFields.length > 0 && (
+          {/* ── Specifications (contextual fields based on type) — hidden for city water ── */}
+          {specFields.length > 0 && !(isWaterSource && waterType === "city") && (
             <CollapsibleSection id="specs" title="Specifications">
               <div className="space-y-3">
                 {specFields.map((field) => (

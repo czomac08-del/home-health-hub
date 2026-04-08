@@ -144,24 +144,27 @@ const AffiliateNote = () => (
 interface Props {
   filterSize?: string;
   onFilterSizeChange?: (size: string) => void;
+  onHouseholdFactorsChange?: (factors: string[]) => void;
 }
 
-export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props) => {
+export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange }: Props) => {
   // Progressive disclosure steps
   const [knowsSize, setKnowsSize] = useState<"yes" | "no" | "">("");
   const [localFilterSize, setLocalFilterSize] = useState(filterSize);
   const [householdFactors, setHouseholdFactors] = useState<HouseholdFactor[]>([]);
+  const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
+  const sizeReady = !!localFilterSize || knowsSize === "no";
+
   const step = useMemo(() => {
-    if (!localFilterSize && knowsSize !== "no") return 1; // ask filter size
-    if (localFilterSize && householdFactors.length === 0) return 2; // ask household
-    if (householdFactors.length > 0 && !changeFreq) return 3; // ask frequency
-    if (changeFreq) return 4; // show results
-    return 1;
-  }, [localFilterSize, knowsSize, householdFactors, changeFreq]);
+    if (!sizeReady) return 1; // ask filter size
+    if (!householdConfirmed) return 2; // ask household
+    if (!changeFreq) return 3; // ask frequency
+    return 4; // show results
+  }, [sizeReady, householdConfirmed, changeFreq]);
 
   const recommendation = useMemo(() => {
     if (householdFactors.length === 0) return null;
@@ -245,7 +248,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props
         </div>
       )}
 
-      {step === 1 && knowsSize === "no" && (
+      {step === 1 && knowsSize === "no" && !localFilterSize && (
         <div className="animate-fade-in space-y-3">
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
             <p className="text-xs font-semibold text-foreground mb-2">How to find your filter size</p>
@@ -263,12 +266,10 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props
             placeholder="Enter size once you find it, e.g. 16x25x1"
             className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          {localFilterSize && (
-            <button onClick={() => handleSizeEntered(localFilterSize)}
-              className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors">
-              Continue
-            </button>
-          )}
+          <button onClick={() => { setLocalFilterSize("unknown"); }}
+            className="w-full rounded-xl border border-border text-muted-foreground py-2.5 text-xs font-medium hover:border-primary/40 transition-colors">
+            Skip — I'll measure later
+          </button>
         </div>
       )}
 
@@ -291,7 +292,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props
             ))}
           </div>
           {householdFactors.length > 0 && (
-            <button onClick={() => {}} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
+            <button onClick={() => { setHouseholdConfirmed(true); onHouseholdFactorsChange?.(householdFactors); }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
           )}
@@ -303,7 +304,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props
         <div className="animate-fade-in space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">How often do you want to change your filter?</p>
-            <button onClick={() => setHouseholdFactors([])} className="text-[10px] text-primary hover:underline">← Back</button>
+            <button onClick={() => { setHouseholdConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
           </div>
           <div className="space-y-2">
             {FREQUENCY_OPTIONS.map(opt => (
