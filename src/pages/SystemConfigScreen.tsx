@@ -94,7 +94,13 @@ const SystemConfigScreen = () => {
     }
   }, [brand, model, searchManual]);
 
-  const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
+  const specFields = useMemo(() => {
+    if (isWaterSource && waterType === "city") return getSpecFields("city water");
+    if (isWaterSource && waterType === "well") return getSpecFields("well");
+    if (isSewerWaste && sewerType === "city") return getSpecFields("sewer");
+    if (isSewerWaste && sewerType === "septic") return getSpecFields("septic");
+    return getSpecFields(displayName);
+  }, [displayName, isWaterSource, isSewerWaste, waterType, sewerType]);
 
   const setSpec = (key: string, value: string | boolean | string[]) => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
