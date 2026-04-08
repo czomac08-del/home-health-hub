@@ -188,15 +188,6 @@ const RealtorDashboard = () => {
 
   /* ── Digital Disclosure ── */
   if (showDisclosure) {
-    const disclosureItems = [
-      { system: "Roof", issue: "Shingle wear on south-facing slope", severity: "moderate" },
-      { system: "Electrical", issue: "Panel is original — recommend upgrade", severity: "advisory" },
-      { system: "Plumbing", issue: "Slow drain in master bath", severity: "minor" },
-      { system: "HVAC", issue: "Filter last changed 4 months ago", severity: "minor" },
-    ];
-  const [disclosed, setDisclosed] = useState<Set<number>>(new Set());
-
-  if (showDisclosure) {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
         <button onClick={() => setShowDisclosure(null)} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
