@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -333,6 +333,34 @@ const SystemConfigScreen = () => {
     load();
   }, [user, activeProperty, displayName]);
 
+  // Whether we need a type selection first (progressive disclosure)
+  const needsTypeSelection = isWaterSource || isSewerWaste;
+  const typeSelected = (isWaterSource && !!waterType) || (isSewerWaste && !!sewerType) || !needsTypeSelection;
+  const hideBasicInfo = isWaterSource || isSewerWaste;
+
+  // Collapsible section state
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["specs"]));
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => {
+      const n = new Set(prev);
+      n.has(key) ? n.delete(key) : n.add(key);
+      return n;
+    });
+  };
+
+  const CollapsibleSection = ({ id, title, children, defaultOpen }: { id: string; title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
+    const isOpen = expandedSections.has(id);
+    return (
+      <div className="mb-4">
+        <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between py-2 mb-2">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
+          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
+        </button>
+        {isOpen && <div className="animate-fade-in">{children}</div>}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
       <button onClick={() => navigate("/systems")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
@@ -342,37 +370,7 @@ const SystemConfigScreen = () => {
       <h1 className="text-xl font-bold text-foreground mb-1">{displayName}</h1>
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
 
-      {/* Water Source Type Selector */}
-      {isWaterSource && !waterType && (
-        <div className="mb-6">
-          <WaterSourceTypeSelector onSelect={setWaterType} selected={waterType || undefined} />
-        </div>
-      )}
-      {isWaterSource && waterType && (
-        <div className="mb-4">
-          <button onClick={() => setWaterType("")} className="text-xs text-primary hover:underline mb-2">← Change water source type</button>
-          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
-            {waterType === "city" ? "City / Municipal Water" : "Well Water"}
-          </div>
-        </div>
-      )}
-
-      {/* Sewer Type Selector */}
-      {isSewerWaste && !sewerType && (
-        <div className="mb-6">
-          <SewerTypeSelector onSelect={setSewerType} selected={sewerType || undefined} />
-        </div>
-      )}
-      {isSewerWaste && sewerType && (
-        <div className="mb-4">
-          <button onClick={() => setSewerType("")} className="text-xs text-primary hover:underline mb-2">← Change sewer type</button>
-          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
-            {sewerType === "city" ? "City / Municipal Sewer" : "Septic System"}
-          </div>
-        </div>
-      )}
-
-      {/* Progress Bar */}
+      {/* Progress Bar — always visible */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Profile Completeness</span>
@@ -383,7 +381,7 @@ const SystemConfigScreen = () => {
         </div>
       </div>
 
-      {/* AI Auto-Fill Banner */}
+      {/* AI Auto-Fill Banner — always visible */}
       {aiData && !aiApplied && (
         <button onClick={applyAiData} className="w-full mb-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-center gap-3 hover:bg-primary/15 transition-colors text-left">
           <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
@@ -407,185 +405,222 @@ const SystemConfigScreen = () => {
         <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
       )}
 
-      {/* === PHOTOS === */}
-      <SectionHeader title="Photos" />
-      <div className="mb-2">
-        <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)}
-          className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
-          {PHOTO_LABELS.map((l) => <option key={l} value={l}>{l}</option>)}
-        </select>
-        <button onClick={() => setShowAiPicker(true)} className="w-full">
-          <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-8 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors">
-            <Camera className="h-8 w-8 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Add Photos</span>
-            <span className="text-xs text-primary/70 flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Scan available — tap to identify product</span>
-          </div>
-        </button>
-      </div>
-      {photos.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {photos.map((p, i) => (
-            <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-border">
-              <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-              <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5">
-                <X className="h-3 w-3 text-foreground" />
-              </button>
-              <span className="absolute bottom-0 inset-x-0 bg-background/80 text-[9px] text-center text-foreground truncate px-1">{p.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* === BASIC INFO === */}
-      <SectionHeader title="Basic Info" />
-      <div className="space-y-3 mb-6">
-        <FieldWithScan label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} scanField="brand" />
-        <FieldWithScan label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} scanField="model" />
-        <FieldWithScan label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} scanField="serial" />
-        <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
-        <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
-        {/* Find Manual button */}
-        {(brand || model) && (
-          <button onClick={triggerManualSearch} disabled={manualSearching}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 py-2.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors disabled:opacity-50">
-            <Sparkles className="h-3.5 w-3.5" /> {manualSearching ? "Searching..." : "Find Manual & Check Recalls"}
-          </button>
-        )}
-        <ManualSearchIndicator searching={manualSearching} />
-      </div>
-
-      {/* Manual Search Result */}
-      {manualResult && (
+      {/* ═══ WATER SOURCE — TYPE SELECTOR ═══ */}
+      {isWaterSource && (
         <div className="mb-6">
-          <ManualFoundBanner
-            result={manualResult}
-            onView={() => { if (manualResult.manualUrl) window.open(manualResult.manualUrl, "_blank"); }}
-            onDownload={() => toast.success("Manual saved to your document vault!")}
-          />
-        </div>
-      )}
-
-      {/* Recall Alert */}
-      {recallInfo && (
-        <div className="mb-6">
-          <RecallAlertBanner info={recallInfo} />
-        </div>
-      )}
-
-      {/* === SERVICE & WARRANTY === */}
-      <SectionHeader title="Service & Warranty" />
-      <div className="space-y-3 mb-6">
-        <Field label="Warranty Expiration Date" value={warrantyExp} onChange={setWarrantyExp} type="date" ai={isAiField("warrantyExp")} />
-        <Field label="Warranty Provider" value={warrantyProvider} onChange={setWarrantyProvider} ai={isAiField("warrantyProvider")} />
-        <ToggleRow label="Extended Warranty" checked={extendedWarranty} onChange={setExtendedWarranty} />
-        <Field label="Last Service Date" value={lastService} onChange={setLastService} type="date" ai={isAiField("lastService")} />
-        <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" ai={isAiField("nextService")} />
-        <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} ai={isAiField("serviceCompany")} />
-        <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
-        <WarrantyStatusBadge warrantyExp={warrantyExp} />
-      </div>
-
-      {/* AI Warranty Info */}
-      {warrantyInfo && (
-        <div className="mb-6">
-          <WarrantyInfoCard info={warrantyInfo} />
-        </div>
-      )}
-
-      {/* === SPECIFICATIONS === */}
-      <SectionHeader title="Specifications" />
-      <div className="space-y-3 mb-6">
-        {specFields.map((field) => (
-          <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
-        ))}
-      </div>
-
-      {/* === DOCUMENTS === */}
-      <SectionHeader title="Documents & Manuals" />
-      <div className="space-y-2 mb-6">
-        {DOC_TYPES.map((docType) => {
-          const doc = docs[docType];
-          return (
-            <div key={docType} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{docType}</p>
-                {doc ? <p className="text-xs text-muted-foreground truncate">{doc.name} — {doc.date}</p> : <p className="text-xs text-muted-foreground/50 italic">No file uploaded</p>}
-              </div>
-              <label className="cursor-pointer shrink-0">
-                <input type="file" accept=".pdf,.jpg,.png" className="hidden" onChange={(e) => handleDocUpload(docType, e)} />
-                <Upload className="h-4 w-4 text-primary hover:text-primary/80 transition-colors" />
-              </label>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* === LOCATION === */}
-      <SectionHeader title="Location in Home" />
-      <div className="mb-6">
-        <div className="relative">
-          {isAiField("location") && <div className="absolute right-3 top-1/2 -translate-y-1/2"><AiBadge /></div>}
-          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. Northeast corner of basement behind water heater"
-            className={`w-full rounded-xl border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${isAiField("location") ? "border-primary/40 pr-16" : "border-border"}`} />
-        </div>
-      </div>
-
-      {/* === SYSTEM-SPECIFIC LOCATION TRACKING === */}
-      {displayName.toLowerCase().includes("water heater") && (
-        <div className="mb-6">
-          <WaterHeaterLocation data={locationTracking} onChange={setLocationTracking} />
-        </div>
-      )}
-      {(displayName.toLowerCase().includes("hvac") || displayName.toLowerCase().includes("heating") || displayName.toLowerCase().includes("air conditioning")) && (
-        <div className="mb-6">
-          <HvacLocation data={locationTracking} onChange={setLocationTracking} />
-        </div>
-      )}
-      {(displayName.toLowerCase().includes("well") || displayName.toLowerCase().includes("water source") || displayName.toLowerCase().includes("plumbing")) && (
-        <div className="mb-6">
-          <WaterSystemLocation data={locationTracking} onChange={setLocationTracking} />
-        </div>
-      )}
-
-      {/* === NOTES === */}
-      <SectionHeader title="Notes" />
-      <div className="mb-8">
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any additional details, service provider info, etc." rows={4}
-          className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
-      </div>
-
-      {/* Additional Water Sources */}
-      {isWaterSource && waterType && (
-        <div className="mb-6">
-          <AdditionalWaterSources sources={additionalWaterSources} onChange={setAdditionalWaterSources} />
-          {waterType === "city" && (
-            <UtilityContactCard title="Water Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+          <WaterSourceTypeSelector onSelect={(t) => { setWaterType(t); setExpandedSections(new Set(["specs"])); }} selected={waterType || undefined} />
+          {waterType && (
+            <button onClick={() => setWaterType("")} className="text-xs text-primary hover:underline mt-3 flex items-center gap-1">
+              <ArrowLeft className="h-3 w-3" /> Change water source type
+            </button>
           )}
         </div>
       )}
 
-      {/* Multiple Septic Systems */}
-      {isSewerWaste && sewerType === "septic" && (
+      {/* ═══ SEWER — TYPE SELECTOR ═══ */}
+      {isSewerWaste && (
         <div className="mb-6">
-          <MultipleSepticSystems systems={septicSystems} onChange={setSepticSystems} />
+          <SewerTypeSelector onSelect={(t) => { setSewerType(t); setExpandedSections(new Set(["specs"])); }} selected={sewerType || undefined} />
+          {sewerType && (
+            <button onClick={() => setSewerType("")} className="text-xs text-primary hover:underline mt-3 flex items-center gap-1">
+              <ArrowLeft className="h-3 w-3" /> Change sewer type
+            </button>
+          )}
         </div>
       )}
-      {isSewerWaste && sewerType === "city" && (
-        <div className="mb-6">
-          <UtilityContactCard title="Sewer Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+
+      {/* ═══ ALL FIELDS — ONLY SHOWN AFTER TYPE SELECTION (or for non-water/sewer systems) ═══ */}
+      {typeSelected && (
+        <div className="animate-fade-in">
+
+          {/* ── Water Source: type-specific content ── */}
+          {isWaterSource && waterType === "city" && (
+            <div className="mb-6">
+              <UtilityContactCard title="Water Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+            </div>
+          )}
+
+          {/* ── Sewer: type-specific content ── */}
+          {isSewerWaste && sewerType === "city" && (
+            <div className="mb-6">
+              <UtilityContactCard title="Sewer Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+            </div>
+          )}
+          {isSewerWaste && sewerType === "septic" && (
+            <div className="mb-6">
+              <MultipleSepticSystems systems={septicSystems} onChange={setSepticSystems} />
+            </div>
+          )}
+
+          {/* ── Specifications (contextual fields based on type) ── */}
+          {specFields.length > 0 && (
+            <CollapsibleSection id="specs" title="Specifications">
+              <div className="space-y-3">
+                {specFields.map((field) => (
+                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* ── Photos ── */}
+          <CollapsibleSection id="photos" title="Photos">
+            <div className="mb-2">
+              <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)}
+                className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                {PHOTO_LABELS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <button onClick={() => setShowAiPicker(true)} className="w-full">
+                <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-8 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors">
+                  <Camera className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Add Photos</span>
+                  <span className="text-xs text-primary/70 flex items-center gap-1"><Sparkles className="h-3 w-3" /> AI Scan available — tap to identify product</span>
+                </div>
+              </button>
+            </div>
+            {photos.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {photos.map((p, i) => (
+                  <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-border">
+                    <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                    <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5">
+                      <X className="h-3 w-3 text-foreground" />
+                    </button>
+                    <span className="absolute bottom-0 inset-x-0 bg-background/80 text-[9px] text-center text-foreground truncate px-1">{p.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CollapsibleSection>
+
+          {/* ── Basic Info — hidden for Water/Sewer ── */}
+          {!hideBasicInfo && (
+            <CollapsibleSection id="basic" title="Basic Info">
+              <div className="space-y-3">
+                <FieldWithScan label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} scanField="brand" />
+                <FieldWithScan label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} scanField="model" />
+                <FieldWithScan label="Serial Number" value={serial} onChange={setSerial} placeholder="e.g. 2921G12345" ai={isAiField("serial")} scanField="serial" />
+                <Field label="Install Date" value={installDate} onChange={setInstallDate} type="date" ai={isAiField("installDate")} />
+                <Field label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} type="date" ai={isAiField("purchaseDate")} />
+                {(brand || model) && (
+                  <button onClick={triggerManualSearch} disabled={manualSearching}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 py-2.5 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors disabled:opacity-50">
+                    <Sparkles className="h-3.5 w-3.5" /> {manualSearching ? "Searching..." : "Find Manual & Check Recalls"}
+                  </button>
+                )}
+                <ManualSearchIndicator searching={manualSearching} />
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Manual Search Result */}
+          {manualResult && (
+            <div className="mb-6">
+              <ManualFoundBanner
+                result={manualResult}
+                onView={() => { if (manualResult.manualUrl) window.open(manualResult.manualUrl, "_blank"); }}
+                onDownload={() => toast.success("Manual saved to your document vault!")}
+              />
+            </div>
+          )}
+
+          {/* Recall Alert */}
+          {recallInfo && (
+            <div className="mb-6">
+              <RecallAlertBanner info={recallInfo} />
+            </div>
+          )}
+
+          {/* ── Service & Warranty ── */}
+          <CollapsibleSection id="service" title="Service & Warranty">
+            <div className="space-y-3">
+              <Field label="Warranty Expiration Date" value={warrantyExp} onChange={setWarrantyExp} type="date" ai={isAiField("warrantyExp")} />
+              <Field label="Warranty Provider" value={warrantyProvider} onChange={setWarrantyProvider} ai={isAiField("warrantyProvider")} />
+              <ToggleRow label="Extended Warranty" checked={extendedWarranty} onChange={setExtendedWarranty} />
+              <Field label="Last Service Date" value={lastService} onChange={setLastService} type="date" ai={isAiField("lastService")} />
+              <Field label="Next Service Due" value={nextService} onChange={setNextService} type="date" ai={isAiField("nextService")} />
+              <Field label="Service Company Name" value={serviceCompany} onChange={setServiceCompany} ai={isAiField("serviceCompany")} />
+              <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
+              <WarrantyStatusBadge warrantyExp={warrantyExp} />
+            </div>
+          </CollapsibleSection>
+
+          {/* AI Warranty Info */}
+          {warrantyInfo && (
+            <div className="mb-6">
+              <WarrantyInfoCard info={warrantyInfo} />
+            </div>
+          )}
+
+          {/* ── Documents ── */}
+          <CollapsibleSection id="docs" title="Documents & Manuals">
+            <div className="space-y-2">
+              {DOC_TYPES.map((docType) => {
+                const doc = docs[docType];
+                return (
+                  <div key={docType} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{docType}</p>
+                      {doc ? <p className="text-xs text-muted-foreground truncate">{doc.name} — {doc.date}</p> : <p className="text-xs text-muted-foreground/50 italic">No file uploaded</p>}
+                    </div>
+                    <label className="cursor-pointer shrink-0">
+                      <input type="file" accept=".pdf,.jpg,.png" className="hidden" onChange={(e) => handleDocUpload(docType, e)} />
+                      <Upload className="h-4 w-4 text-primary hover:text-primary/80 transition-colors" />
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
+
+          {/* ── Location ── */}
+          <CollapsibleSection id="location" title="Location in Home">
+            <div>
+              <div className="relative">
+                {isAiField("location") && <div className="absolute right-3 top-1/2 -translate-y-1/2"><AiBadge /></div>}
+                <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Northeast corner of basement behind water heater"
+                  className={`w-full rounded-xl border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${isAiField("location") ? "border-primary/40 pr-16" : "border-border"}`} />
+              </div>
+            </div>
+            {displayName.toLowerCase().includes("water heater") && <WaterHeaterLocation data={locationTracking} onChange={setLocationTracking} />}
+            {(displayName.toLowerCase().includes("hvac") || displayName.toLowerCase().includes("heating")) && <HvacLocation data={locationTracking} onChange={setLocationTracking} />}
+            {(displayName.toLowerCase().includes("well") || displayName.toLowerCase().includes("water source") || displayName.toLowerCase().includes("plumbing")) && <WaterSystemLocation data={locationTracking} onChange={setLocationTracking} />}
+          </CollapsibleSection>
+
+          {/* ── Notes ── */}
+          <CollapsibleSection id="notes" title="Notes">
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Any additional details, service provider info, etc." rows={3}
+              className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+          </CollapsibleSection>
+
+          {/* ── Additional Water Sources (collapsed by default) ── */}
+          {isWaterSource && waterType && (
+            <CollapsibleSection id="additional-water" title="Additional Water Sources">
+              <AdditionalWaterSources sources={additionalWaterSources} onChange={setAdditionalWaterSources} />
+            </CollapsibleSection>
+          )}
+
+          {/* ═══ SAVE BUTTONS ═══ */}
+          <div className="space-y-3 mt-6">
+            <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
+              <Save className="h-5 w-5" /> Save to Passport
+            </button>
+            <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
+              Cancel
+            </button>
+          </div>
         </div>
       )}
-      <div className="space-y-3">
-        <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
-          <Save className="h-5 w-5" /> Save to Passport
-        </button>
-        <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
-          Cancel
-        </button>
-      </div>
+
+      {/* Type not selected yet — show prompt */}
+      {needsTypeSelection && !typeSelected && (
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">Select a type above to configure your {displayName.toLowerCase()}.</p>
+        </div>
+      )}
 
       {/* AI Photo Picker */}
       <AiPhotoPicker
