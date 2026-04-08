@@ -496,7 +496,8 @@ const InvestorDashboard = () => {
             const days = p.purchase_date ? Math.round((Date.now() - new Date(p.purchase_date).getTime()) / 86400000) : 0;
             return (
               <button key={p.id} onClick={() => { setSelectedProject(p); setDetailTab("overview"); }}
-                className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-colors">
+                className="w-full rounded-xl border border-border bg-card p-4 text-left hover:border-primary/30 transition-colors relative">
+                {p.isDemo && <div className="absolute top-2.5 right-2.5 z-10"><DemoTag /></div>}
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">{p.property_address}</p>
