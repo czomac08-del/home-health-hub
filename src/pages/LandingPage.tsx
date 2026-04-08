@@ -174,6 +174,22 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Integration Partners */}
+      <section className="max-w-5xl mx-auto px-6 pb-16">
+        <h2 className="text-lg font-bold text-foreground text-center mb-2">Integration Partners</h2>
+        <p className="text-xs text-muted-foreground text-center mb-6">Works with tools you already use</p>
+        <div className="flex items-center justify-center gap-6 flex-wrap opacity-60">
+          {["QuickBooks", "DocuSign", "Zillow", "Spectora", "ServiceTitan", "Jobber", "CompanyCam", "PropStream"].map(p => (
+            <div key={p} className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">{p}</div>
+          ))}
+        </div>
+        <div className="text-center mt-4">
+          <button onClick={() => navigate("/api-docs")} className="text-xs text-primary font-medium hover:underline">
+            Want to integrate? View our API →
+          </button>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center">
         <p className="text-xs text-muted-foreground">© 2026 Home Passport. All rights reserved.</p>
