@@ -25,6 +25,7 @@ import ClaimHomeScreen from "./pages/ClaimHomeScreen";
 import RealtorDashboard from "./pages/RealtorDashboard";
 import InspectorDashboard from "./pages/InspectorDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
+import InvestorDashboard from "./pages/InvestorDashboard";
 import ScoreReportPage from "./pages/ScoreReportPage";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import DocumentVaultScreen from "./pages/DocumentVaultScreen";
@@ -76,6 +77,7 @@ const RoleRedirect = () => {
     realtor: "/realtor",
     inspector: "/inspector",
     contractor: "/contractor",
+    investor: "/investor",
   };
   return <Navigate to={dest[role] || "/dashboard"} replace />;
 };
@@ -108,6 +110,7 @@ const AppContent = () => {
         <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
         <Route path="/inspector" element={<ProtectedRoute><InspectorDashboard /></ProtectedRoute>} />
         <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
+        <Route path="/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
         <Route path="/report/:id" element={<ScoreReportPage />} />
         <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />

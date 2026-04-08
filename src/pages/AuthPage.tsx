@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Home, Briefcase, ClipboardList, Wrench, Eye, EyeOff } from "lucide-react";
+import { Home, Briefcase, ClipboardList, Wrench, Building2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string
   { key: "realtor", icon: Briefcase, title: "Realtor", desc: "Add value to your listings" },
   { key: "inspector", icon: ClipboardList, title: "Home Inspector", desc: "Streamline your inspections" },
   { key: "contractor", icon: Wrench, title: "Pro Contractor", desc: "Arrive prepared to every job" },
+  { key: "investor", icon: Building2, title: "Real Estate Investor", desc: "Track flips, manage renovations, maximize ROI" },
 ];
 
 const AuthPage = () => {
