@@ -33,6 +33,7 @@ import BottomNav from "./components/BottomNav";
 import HelpButton from "./components/HelpButton";
 import CreateProfileScreen from "./pages/CreateProfileScreen";
 import PortfolioOverview from "./pages/PortfolioOverview";
+import UtilityServicesScreen from "./pages/UtilityServicesScreen";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,7 @@ const AppContent = () => {
         <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
         <Route path="/create-profile" element={<ProtectedRoute><CreateProfileScreen /></ProtectedRoute>} />
         <Route path="/portfolio" element={<ProtectedRoute><PortfolioOverview /></ProtectedRoute>} />
+        <Route path="/utilities" element={<ProtectedRoute><UtilityServicesScreen /></ProtectedRoute>} />
         <Route path="/report" element={<ScoreReportPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
