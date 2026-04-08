@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoData } from "@/hooks/useDemoData";
+import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import {
   Home, TrendingUp, FileText, Send, Plus, Clock, Eye, Download, Share2, Mail,
@@ -18,6 +20,7 @@ interface Listing {
   homeowner_email: string | null;
   request_status: string | null;
   health_score: number | null;
+  isDemo?: boolean;
 }
 
 const statusColor = (s: string) => {
@@ -50,6 +53,14 @@ const RealtorDashboard = () => {
   const [newAddress, setNewAddress] = useState("");
   const [newPrice, setNewPrice] = useState("");
 
+  const { showDemo, dismissDemo } = useDemoData("realtor");
+
+  const demoListings: Listing[] = useMemo(() => [
+    { id: "demo-1", property_address: "742 Evergreen Terrace, Springfield", list_price: "$425,000", days_on_market: 12, passport_status: "complete", homeowner_email: "homer@example.com", request_status: "complete", health_score: 82, isDemo: true },
+    { id: "demo-2", property_address: "1600 Pennsylvania Ave NW", list_price: "$890,000", days_on_market: 5, passport_status: "in_progress", homeowner_email: "owner@example.com", request_status: "sent", health_score: null, isDemo: true },
+    { id: "demo-3", property_address: "221B Baker Street, London", list_price: "$675,000", days_on_market: 28, passport_status: "not_started", homeowner_email: null, request_status: null, health_score: null, isDemo: true },
+  ], []);
+
   const fetchListings = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -62,6 +73,8 @@ const RealtorDashboard = () => {
   };
 
   useEffect(() => { fetchListings(); }, [user]);
+
+  const effectiveListings = listings.length === 0 && showDemo ? demoListings : listings;
 
   const addListing = async () => {
     if (!user || !newAddress.trim()) return;
@@ -98,17 +111,17 @@ const RealtorDashboard = () => {
     fetchListings();
   };
 
-  const filtered = listings.filter(l =>
+  const filtered = effectiveListings.filter(l =>
     l.property_address.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
-    active: listings.length,
-    passports: listings.filter(l => l.passport_status === "complete" || l.passport_status === "verified").length,
-    avgHealth: listings.filter(l => l.health_score).length > 0
-      ? Math.round(listings.filter(l => l.health_score).reduce((a, l) => a + (l.health_score || 0), 0) / listings.filter(l => l.health_score).length)
+    active: effectiveListings.length,
+    passports: effectiveListings.filter(l => l.passport_status === "complete" || l.passport_status === "verified").length,
+    avgHealth: effectiveListings.filter(l => l.health_score).length > 0
+      ? Math.round(effectiveListings.filter(l => l.health_score).reduce((a, l) => a + (l.health_score || 0), 0) / effectiveListings.filter(l => l.health_score).length)
       : 0,
-    pending: listings.filter(l => l.request_status === "sent").length,
+    pending: effectiveListings.filter(l => l.request_status === "sent").length,
   };
 
   /* ── Open House Mode ── */
@@ -194,6 +207,8 @@ const RealtorDashboard = () => {
         ))}
       </div>
 
+      {listings.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
+
       {/* Search */}
       <div className="relative mb-4">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -236,8 +251,9 @@ const RealtorDashboard = () => {
       ) : (
         <div className="space-y-2 mb-6">
           {filtered.map(l => (
-            <div key={l.id} className="rounded-xl border border-border bg-card p-4">
+            <div key={l.id} className="rounded-xl border border-border bg-card p-4 relative">
               <div className="flex items-center justify-between mb-2">
+                {l.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                 <div>
                   <p className="text-sm font-medium text-foreground">{l.property_address}</p>
                   <p className="text-[10px] text-muted-foreground">

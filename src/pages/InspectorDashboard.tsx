@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoData } from "@/hooks/useDemoData";
+import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import {
   Search, ClipboardList, CheckCircle2, AlertTriangle, Shield, Home, FileText,
@@ -19,6 +21,7 @@ interface Inspection {
   notes_data: Record<string, string>;
   has_passport: boolean;
   report_generated: boolean;
+  isDemo?: boolean;
 }
 
 const roomChecklist = [
@@ -44,6 +47,16 @@ const InspectorDashboard = () => {
   const [newClient, setNewClient] = useState("");
   const [newDate, setNewDate] = useState("");
 
+  const { showDemo, dismissDemo } = useDemoData("inspector");
+
+  const demoInspections: Inspection[] = useMemo(() => [
+    { id: "demo-s1", property_address: "456 Oak Drive, Portland", client_name: "Sarah Johnson", inspection_date: new Date(Date.now() + 86400000 * 3).toISOString(), status: "scheduled", overall_score: null, findings: [], checklist_data: {}, notes_data: {}, has_passport: true, report_generated: false, isDemo: true },
+    { id: "demo-s2", property_address: "789 Pine Lane, Seattle", client_name: "Mike Chen", inspection_date: new Date(Date.now() + 86400000 * 7).toISOString(), status: "scheduled", overall_score: null, findings: [], checklist_data: {}, notes_data: {}, has_passport: false, report_generated: false, isDemo: true },
+    { id: "demo-c1", property_address: "123 Maple Street, Denver", client_name: "Emily Rodriguez", inspection_date: new Date(Date.now() - 86400000 * 5).toISOString(), status: "completed", overall_score: 87, findings: [{ area: "Exterior", note: "Minor siding damage on south side" }], checklist_data: {}, notes_data: {}, has_passport: true, report_generated: true, isDemo: true },
+    { id: "demo-c2", property_address: "321 Elm Court, Austin", client_name: "David Park", inspection_date: new Date(Date.now() - 86400000 * 12).toISOString(), status: "completed", overall_score: 72, findings: [{ area: "Basement", note: "Water staining near foundation" }], checklist_data: {}, notes_data: {}, has_passport: false, report_generated: true, isDemo: true },
+    { id: "demo-c3", property_address: "555 Cedar Blvd, Nashville", client_name: "Lisa Wang", inspection_date: new Date(Date.now() - 86400000 * 20).toISOString(), status: "completed", overall_score: 94, findings: [], checklist_data: {}, notes_data: {}, has_passport: true, report_generated: true, isDemo: true },
+  ], []);
+
   const fetchInspections = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -61,6 +74,8 @@ const InspectorDashboard = () => {
   };
 
   useEffect(() => { fetchInspections(); }, [user]);
+
+  const effectiveInspections = inspections.length === 0 && showDemo ? demoInspections : inspections;
 
   const addInspection = async () => {
     if (!user || !newAddr.trim()) return;
@@ -101,8 +116,8 @@ const InspectorDashboard = () => {
   const toggleCheck = (key: string) => setChecks(p => ({ ...p, [key]: !p[key] }));
   const healthColor = (h: number) => h >= 75 ? "text-health-green" : h >= 60 ? "text-health-amber" : "text-health-red";
 
-  const scheduled = inspections.filter(i => i.status === "scheduled");
-  const completed = inspections.filter(i => i.status === "completed");
+  const scheduled = effectiveInspections.filter(i => i.status === "scheduled");
+  const completed = effectiveInspections.filter(i => i.status === "completed");
   const thisMonth = completed.filter(i => {
     if (!i.inspection_date) return false;
     const d = new Date(i.inspection_date);
@@ -228,7 +243,7 @@ const InspectorDashboard = () => {
           { value: String(thisMonth.length), label: "This Month", icon: <ClipboardList className="h-3.5 w-3.5 text-primary" /> },
           { value: String(completed.length), label: "Reports", icon: <FileText className="h-3.5 w-3.5 text-primary" /> },
           { value: "2.3 hrs", label: "Avg Saved", icon: <Clock className="h-3.5 w-3.5 text-primary" /> },
-          { value: String(inspections.filter(i => i.has_passport).length), label: "w/ Passport", icon: <Shield className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(effectiveInspections.filter(i => i.has_passport).length), label: "w/ Passport", icon: <Shield className="h-3.5 w-3.5 text-primary" /> },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-border bg-card p-2.5 text-center">
             <div className="flex items-center justify-center mb-1">{s.icon}</div>
@@ -237,6 +252,8 @@ const InspectorDashboard = () => {
           </div>
         ))}
       </div>
+
+      {inspections.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
       {/* Search */}
       <div className="relative mb-4">
@@ -281,13 +298,14 @@ const InspectorDashboard = () => {
           ) : (
             <div className="space-y-2 mb-6">
               {scheduled.map(insp => (
-                <div key={insp.id} className="rounded-xl border border-border bg-card p-4">
+                <div key={insp.id} className="rounded-xl border border-border bg-card p-4 relative">
+                  {insp.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{insp.property_address}</p>
                       <p className="text-[10px] text-muted-foreground">{insp.client_name || "Client TBD"} · {insp.inspection_date ? new Date(insp.inspection_date).toLocaleDateString() : "Date TBD"}</p>
                     </div>
-                    {insp.has_passport && (
+                    {insp.has_passport && !insp.isDemo && (
                       <span className="text-[9px] font-semibold bg-primary/15 text-primary border border-primary/30 px-2 py-1 rounded-full">Passport</span>
                     )}
                   </div>
@@ -306,7 +324,8 @@ const InspectorDashboard = () => {
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Completed</h2>
               <div className="space-y-2 mb-6">
                 {completed.map(insp => (
-                  <div key={insp.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between">
+                  <div key={insp.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between relative">
+                    {insp.isDemo && <div className="absolute top-2 right-2"><DemoTag /></div>}
                     <div>
                       <p className="text-sm font-medium text-foreground">{insp.property_address}</p>
                       <p className="text-[10px] text-muted-foreground">{insp.client_name} · {insp.inspection_date ? new Date(insp.inspection_date).toLocaleDateString() : ""}</p>

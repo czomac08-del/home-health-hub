@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap, Users, Wifi } from "lucide-react";
+import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap, Users, Wifi, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PhotoPrivacySettings, { type PrivacySettings } from "@/components/PhotoPrivacySettings";
 import { HouseholdProfileEditor } from "@/components/HouseholdProfileEditor";
 import { SmartHomeIntegrations } from "@/components/SmartHomeIntegrations";
+import { dismissAllDemoData } from "@/hooks/useDemoData";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -216,6 +217,17 @@ const ProfileScreen = () => {
           <div className="border-t border-border/50 my-3" />
           <ToggleRow icon={<CalendarClock className="h-4 w-4" />} label="Maintenance Reminders" description="Get notified when service is due" enabled={reminders} onToggle={() => setReminders(!reminders)} />
         </div>
+      </Section>
+
+      {/* Demo Data */}
+      <Section title="Demo Data">
+        <button
+          onClick={() => { dismissAllDemoData(); toast.success("Demo data cleared from all dashboards"); }}
+          className="w-full rounded-xl border border-border bg-card py-3.5 font-medium text-foreground hover:bg-secondary/50 transition-colors flex items-center justify-center gap-2 text-sm"
+        >
+          <Trash2 className="h-4 w-4 text-muted-foreground" /> Clear Demo Data
+        </button>
+        <p className="text-[10px] text-muted-foreground mt-2 text-center">Removes sample data from all professional role dashboards</p>
       </Section>
 
       {/* Feedback */}

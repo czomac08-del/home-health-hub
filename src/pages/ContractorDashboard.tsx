@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoData } from "@/hooks/useDemoData";
+import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
@@ -27,6 +29,7 @@ interface Job {
   quote_amount: string | null;
   quote_notes: string | null;
   quote_status: string | null;
+  isDemo?: boolean;
 }
 
 const ContractorDashboard = () => {
@@ -59,6 +62,16 @@ const ContractorDashboard = () => {
   const [quoteCost, setQuoteCost] = useState("");
   const [quoteNotes, setQuoteNotes] = useState("");
 
+  const { showDemo, dismissDemo } = useDemoData("contractor");
+
+  const demoJobs: Job[] = useMemo(() => [
+    { id: "demo-j1", homeowner_name: "James Wilson", property_address: "123 Birch Lane, Charlotte", system_type: "HVAC", issue_description: "AC not cooling properly", scheduled_date: new Date(Date.now() + 86400000).toISOString(), scheduled_time: "10:00 AM", status: "scheduled", work_performed: null, parts_replaced: null, part_models: null, labor_hours: null, next_service_rec: null, invoice_amount: null, quote_description: null, quote_amount: null, quote_notes: null, quote_status: null, isDemo: true },
+    { id: "demo-j2", homeowner_name: "Maria Garcia", property_address: "456 Walnut Ave, Raleigh", system_type: "Plumbing", issue_description: "Water heater leak", scheduled_date: new Date(Date.now() + 86400000 * 3).toISOString(), scheduled_time: "2:00 PM", status: "scheduled", work_performed: null, parts_replaced: null, part_models: null, labor_hours: null, next_service_rec: null, invoice_amount: null, quote_description: null, quote_amount: null, quote_notes: null, quote_status: null, isDemo: true },
+    { id: "demo-j3", homeowner_name: "Tom Baker", property_address: "789 Spruce St, Durham", system_type: "Electrical", issue_description: "Panel upgrade", scheduled_date: new Date(Date.now() - 86400000 * 2).toISOString(), scheduled_time: "9:00 AM", status: "completed", work_performed: "Upgraded to 200A panel", parts_replaced: "Main breaker panel", part_models: "Square D HOM2040M200PC", labor_hours: "6", next_service_rec: "12 months", invoice_amount: "$2,400", quote_description: null, quote_amount: null, quote_notes: null, quote_status: null, isDemo: true },
+    { id: "demo-j4", homeowner_name: "James Wilson", property_address: "123 Birch Lane, Charlotte", system_type: "HVAC", issue_description: "Annual maintenance", scheduled_date: new Date(Date.now() - 86400000 * 30).toISOString(), scheduled_time: "11:00 AM", status: "completed", work_performed: "Cleaned coils, replaced filter", parts_replaced: "Air filter", part_models: "MERV 13 20x25x1", labor_hours: "1.5", next_service_rec: "6 months", invoice_amount: "$185", quote_description: null, quote_amount: null, quote_notes: null, quote_status: null, isDemo: true },
+    { id: "demo-j5", homeowner_name: "Linda Thompson", property_address: "321 Cedar Rd, Asheville", system_type: "Plumbing", issue_description: "Faucet replacement", scheduled_date: new Date(Date.now() - 86400000 * 15).toISOString(), scheduled_time: "3:00 PM", status: "completed", work_performed: "Replaced kitchen faucet", parts_replaced: "Kitchen faucet", part_models: "Moen Arbor 7594", labor_hours: "1", next_service_rec: null, invoice_amount: "$320", quote_description: null, quote_amount: null, quote_notes: null, quote_status: null, isDemo: true },
+  ], []);
+
   const fetchJobs = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -71,6 +84,8 @@ const ContractorDashboard = () => {
   };
 
   useEffect(() => { fetchJobs(); }, [user]);
+
+  const effectiveJobs = jobs.length === 0 && showDemo ? demoJobs : jobs;
 
   const addJob = async () => {
     if (!user || !newHomeowner.trim() || !newAddress.trim() || !newSystem.trim()) return;
@@ -120,9 +135,9 @@ const ContractorDashboard = () => {
     fetchJobs();
   };
 
-  const todayJobs = jobs.filter(j => j.status === "scheduled");
-  const completedJobs = jobs.filter(j => j.status === "completed");
-  const filtered = jobs.filter(j => j.property_address.toLowerCase().includes(searchAddr.toLowerCase()) || j.homeowner_name.toLowerCase().includes(searchAddr.toLowerCase()));
+  const todayJobs = effectiveJobs.filter(j => j.status === "scheduled");
+  const completedJobs = effectiveJobs.filter(j => j.status === "completed");
+  const filtered = effectiveJobs.filter(j => j.property_address.toLowerCase().includes(searchAddr.toLowerCase()) || j.homeowner_name.toLowerCase().includes(searchAddr.toLowerCase()));
 
   /* ── Quote Screen ── */
   if (view === "quote" && activeJob) {
@@ -261,8 +276,8 @@ const ContractorDashboard = () => {
 
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[
-          { value: String(jobs.length), label: "Total Jobs", icon: <Wrench className="h-3.5 w-3.5 text-primary" /> },
-          { value: String(new Set(jobs.map(j => j.homeowner_name)).size), label: "Clients", icon: <Users className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(effectiveJobs.length), label: "Total Jobs", icon: <Wrench className="h-3.5 w-3.5 text-primary" /> },
+          { value: String(new Set(effectiveJobs.map(j => j.homeowner_name)).size), label: "Clients", icon: <Users className="h-3.5 w-3.5 text-primary" /> },
           { value: String(completedJobs.length), label: "Completed", icon: <Star className="h-3.5 w-3.5 text-primary" /> },
           { value: "98%", label: "Response", icon: <TrendingUp className="h-3.5 w-3.5 text-primary" /> },
         ].map(s => (
@@ -273,6 +288,8 @@ const ContractorDashboard = () => {
           </div>
         ))}
       </div>
+
+      {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
       {/* Search */}
       <div className="relative mb-4">
@@ -325,7 +342,8 @@ const ContractorDashboard = () => {
           ) : (
             <div className="space-y-3 mb-6">
               {todayJobs.map(job => (
-                <div key={job.id} className="rounded-xl border border-border bg-card p-4">
+                <div key={job.id} className="rounded-xl border border-border bg-card p-4 relative">
+                  {job.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{job.homeowner_name}</p>
@@ -367,12 +385,12 @@ const ContractorDashboard = () => {
           {/* Client List */}
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">My Clients</h2>
           <div className="rounded-xl border border-border bg-card p-4">
-            {new Set(jobs.map(j => j.homeowner_name)).size === 0 ? (
+            {new Set(effectiveJobs.map(j => j.homeowner_name)).size === 0 ? (
               <p className="text-xs text-muted-foreground italic">Complete jobs to build your client list</p>
             ) : (
               <div className="space-y-2">
-                {[...new Set(jobs.map(j => j.homeowner_name))].map(name => {
-                  const clientJobs = jobs.filter(j => j.homeowner_name === name);
+                {[...new Set(effectiveJobs.map(j => j.homeowner_name))].map(name => {
+                  const clientJobs = effectiveJobs.filter(j => j.homeowner_name === name);
                   return (
                     <div key={name} className="flex items-center justify-between py-1">
                       <div>
