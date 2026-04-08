@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
@@ -6,8 +6,8 @@ import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
-  BarChart3, Calculator, Star, FileText, Users, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, AlertTriangle, X, ChevronDown, ChevronUp, Download
+  BarChart3, Calculator, Star, FileText, ArrowUpRight, ArrowDownRight,
+  CheckCircle2, AlertTriangle, X, Download
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 

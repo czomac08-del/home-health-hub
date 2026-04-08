@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Plug2, Check, Search, Building2, Calculator, Wrench as WrenchIcon,
-  Home, ShoppingCart, Shield, ChevronRight, X, ExternalLink, Smartphone,
-  ClipboardList, Mail, Globe, ArrowRight, ArrowLeftRight, ArrowRightCircle
+  Home, ShoppingCart, Shield, Smartphone,
+  ClipboardList, Globe, ArrowRight, ArrowLeftRight, ArrowRightCircle
 } from "lucide-react";
 
 type Integration = {
