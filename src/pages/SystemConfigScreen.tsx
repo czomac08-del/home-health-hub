@@ -13,6 +13,7 @@ import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from 
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
+import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -450,6 +451,11 @@ const SystemConfigScreen = () => {
             <div className="mb-6">
               <MultipleSepticSystems systems={septicSystems} onChange={setSepticSystems} />
             </div>
+          )}
+
+          {/* ── Water Filtration Section ── */}
+          {isWaterSource && waterType && (
+            <WaterFiltrationSection waterType={waterType as "city" | "well"} />
           )}
 
           {/* ── Specifications (contextual fields based on type) ── */}
