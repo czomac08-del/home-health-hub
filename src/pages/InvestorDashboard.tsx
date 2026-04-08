@@ -167,8 +167,8 @@ const InvestorDashboard = () => {
   };
 
   const fmt = (n: number | null | undefined) => n != null ? `$${n.toLocaleString()}` : "—";
-  const activeProjects = projects.filter(p => p.status !== "sold");
-  const completedProjects = projects.filter(p => p.status === "sold");
+  const activeProjects = effectiveProjects.filter(p => p.status !== "sold");
+  const completedProjects = effectiveProjects.filter(p => p.status === "sold");
   const totalInvested = activeProjects.reduce((s, p) => s + (p.purchase_price || 0) + (p.current_spend || 0), 0);
   const totalProfit = completedProjects.reduce((s, p) => s + ((p.sold_price || 0) - (p.purchase_price || 0) - (p.current_spend || 0)), 0);
   const avgDays = completedProjects.length > 0
