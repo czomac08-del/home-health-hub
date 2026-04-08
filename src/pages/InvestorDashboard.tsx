@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemoData } from "@/hooks/useDemoData";
+import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
@@ -79,6 +81,30 @@ const InvestorDashboard = () => {
   // Flip Analyzer state
   const [analyzer, setAnalyzer] = useState({ address: "", asking: "", reno: "", arv: "", rate: "10", hold: "6" });
 
+  const { showDemo, dismissDemo } = useDemoData("investor");
+
+  const demoProjects: FlipProject[] = useMemo(() => [{
+    id: "demo-fp1", property_address: "1847 Magnolia Drive, Savannah", status: "renovation",
+    purchase_price: 185000, renovation_budget: 65000, current_spend: 38500,
+    projected_arv: 320000, purchase_date: new Date(Date.now() - 86400000 * 45).toISOString(),
+    target_flip_date: new Date(Date.now() + 86400000 * 75).toISOString(), completion_pct: 55,
+    budget_categories: {
+      Roof: { budget: 12000, spent: 12000 }, Kitchen: { budget: 18000, spent: 14500 },
+      Bathrooms: { budget: 10000, spent: 6000 }, Flooring: { budget: 8000, spent: 4000 },
+      Paint: { budget: 5000, spent: 2000 }, Landscaping: { budget: 4000, spent: 0 },
+      HVAC: { budget: 0, spent: 0 }, Electrical: { budget: 3000, spent: 0 },
+      Plumbing: { budget: 5000, spent: 0 }, Other: { budget: 0, spent: 0 },
+    },
+    carrying_costs: { mortgage: 1200, insurance: 150, taxes: 280, utilities: 200 },
+    photo_url: null, notes: "Full gut rehab — kitchen and baths nearly complete", sold_price: null, sold_date: null,
+    isDemo: true
+  }], []);
+
+  const demoContractors: FlipContractor[] = useMemo(() => [
+    { id: "demo-fc1", project_id: "demo-fp1", name: "Mike's Roofing", company: "Mike's Roofing Co", license_number: "RC-4521", specialty: "Roofing", contract_amount: 12000, amount_paid: 12000, completion_pct: 100, quality_rating: 5, lien_waiver_received: true },
+    { id: "demo-fc2", project_id: "demo-fp1", name: "Premier Kitchens", company: "Premier Kitchen & Bath", license_number: "GC-8834", specialty: "Kitchen", contract_amount: 18000, amount_paid: 14500, completion_pct: 80, quality_rating: 4, lien_waiver_received: false },
+  ], []);
+
   useEffect(() => {
     if (user) {
       loadProjects();
@@ -95,6 +121,9 @@ const InvestorDashboard = () => {
     const { data } = await supabase.from("flip_contractors").select("*").eq("user_id", user!.id);
     if (data) setContractors(data as FlipContractor[]);
   };
+
+  const effectiveProjects = projects.length === 0 && showDemo ? demoProjects : projects;
+  const effectiveContractors = contractors.length === 0 && showDemo ? demoContractors : contractors;
 
   const addProject = async () => {
     if (!newProject.property_address.trim()) return;
