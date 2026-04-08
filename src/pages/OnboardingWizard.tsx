@@ -8,13 +8,14 @@ import {
   Droplets, Waves, Flame, Zap, Wind, Sun, Shield, Wifi,
   ChevronLeft, ChevronRight, Check, Sparkles, PartyPopper,
   Car, CircleDot, ThermometerSun, Fan, AirVent, Heater,
-  Fuel, PlugZap, Droplet, Truck, Store,
+  Fuel, PlugZap, Droplet, Truck, Store, Users,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
+import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 interface WizardData {
   homeType: string;
@@ -102,6 +103,7 @@ const OnboardingWizard = () => {
   }, []);
 
   const progress = Math.round((step / TOTAL_STEPS) * 100);
+  const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
     if (step === 2) return !!data.homeType && !!data.homeAge;
@@ -190,7 +192,8 @@ const OnboardingWizard = () => {
   }, [step, activeProperty]);
 
   const next = () => {
-    if (step === 6) { saveOnboarding(); return; }
+    if (step === 7) { saveOnboarding(); return; }
+    if (step === 6) { setStep(7); return; } // household profile handles its own save
     setStep(s => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep(s => Math.max(s - 1, 1));
@@ -361,8 +364,19 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 6 — To-Do list */
+      /* STEP 6 — Household Profile */
       case 6:
+        return (
+          <div className="animate-fade-in">
+            <HouseholdProfileEditor
+              mode="onboarding"
+              onComplete={() => setStep(7)}
+            />
+          </div>
+        );
+
+      /* STEP 7 — To-Do list */
+      case 7:
         return (
           <div className="flex flex-col gap-5 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground">Your First To-Do List</h2>
@@ -383,8 +397,8 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 7 — Final celebration */
-      case 7:
+      /* STEP 8 — Final celebration */
+      case 8:
         return (
           <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
             <div className="relative h-32 w-32">
@@ -427,7 +441,7 @@ const OnboardingWizard = () => {
       {step < TOTAL_STEPS && (
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Step {step} of 6</span>
+            <span className="text-xs text-muted-foreground">Step {step} of {displayStepCount}</span>
             <span className="text-xs text-muted-foreground">{progress}%</span>
           </div>
           <Progress value={progress} className="h-1.5" />
@@ -460,7 +474,7 @@ const OnboardingWizard = () => {
               </button>
               <button onClick={next} disabled={!canNext() || saving}
                 className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40">
-                {saving ? "Saving..." : step === 6 ? "Finish Setup" : "Continue"} {!saving && step < 6 && <ChevronRight className="h-4 w-4" />}
+                {saving ? "Saving..." : step === 7 ? "Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
               </button>
             </div>
           )}

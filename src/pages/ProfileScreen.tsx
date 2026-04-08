@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap } from "lucide-react";
+import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap, Users, Wifi } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PhotoPrivacySettings, { type PrivacySettings } from "@/components/PhotoPrivacySettings";
+import { HouseholdProfileEditor } from "@/components/HouseholdProfileEditor";
+import { SmartHomeIntegrations } from "@/components/SmartHomeIntegrations";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -188,6 +190,16 @@ const ProfileScreen = () => {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* Household Profile */}
+      <Section title="Household Profile">
+        <HouseholdProfileEditor mode="settings" />
+      </Section>
+
+      {/* Connected Devices */}
+      <Section title="Connected Devices">
+        <SmartHomeIntegrations />
       </Section>
 
       {/* Photo Privacy */}

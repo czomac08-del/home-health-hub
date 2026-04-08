@@ -83,6 +83,74 @@ export type Database = {
         }
         Relationships: []
       }
+      household_profiles: {
+        Row: {
+          activity_level: string | null
+          bedrooms: number | null
+          cooking_frequency: string | null
+          created_at: string
+          dusty_hobbies: boolean | null
+          guest_frequency: string | null
+          health_factors: string[] | null
+          id: string
+          people_count: number | null
+          pets: Json | null
+          property_id: string
+          recommended_filter_days: number | null
+          recommended_filter_merv: number | null
+          smart_integrations: Json | null
+          updated_at: string
+          user_id: string
+          work_from_home: string | null
+        }
+        Insert: {
+          activity_level?: string | null
+          bedrooms?: number | null
+          cooking_frequency?: string | null
+          created_at?: string
+          dusty_hobbies?: boolean | null
+          guest_frequency?: string | null
+          health_factors?: string[] | null
+          id?: string
+          people_count?: number | null
+          pets?: Json | null
+          property_id: string
+          recommended_filter_days?: number | null
+          recommended_filter_merv?: number | null
+          smart_integrations?: Json | null
+          updated_at?: string
+          user_id: string
+          work_from_home?: string | null
+        }
+        Update: {
+          activity_level?: string | null
+          bedrooms?: number | null
+          cooking_frequency?: string | null
+          created_at?: string
+          dusty_hobbies?: boolean | null
+          guest_frequency?: string | null
+          health_factors?: string[] | null
+          id?: string
+          people_count?: number | null
+          pets?: Json | null
+          property_id?: string
+          recommended_filter_days?: number | null
+          recommended_filter_merv?: number | null
+          smart_integrations?: Json | null
+          updated_at?: string
+          user_id?: string
+          work_from_home?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_profiles_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_history: {
         Row: {
           action: string
