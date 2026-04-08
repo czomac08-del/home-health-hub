@@ -353,12 +353,14 @@ const SystemConfigScreen = () => {
   const CollapsibleSection = ({ id, title, children, defaultOpen }: { id: string; title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
     const isOpen = expandedSections.has(id);
     return (
-      <div className="mb-4">
+      <div className="mb-4 overflow-hidden">
         <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between py-2 mb-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-90" : ""}`} />
+          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
         </button>
-        {isOpen && <div className="animate-fade-in">{children}</div>}
+        <div className={`transition-all duration-300 ease-out ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
+          {children}
+        </div>
       </div>
     );
   };
@@ -467,8 +469,8 @@ const SystemConfigScreen = () => {
             />
           )}
 
-          {/* ── Specifications (contextual fields based on type) ── */}
-          {specFields.length > 0 && (
+          {/* ── Specifications (contextual fields based on type) — hidden for city water ── */}
+          {specFields.length > 0 && !(isWaterSource && waterType === "city") && (
             <CollapsibleSection id="specs" title="Specifications">
               <div className="space-y-3">
                 {specFields.map((field) => (

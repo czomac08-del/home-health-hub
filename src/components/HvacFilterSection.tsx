@@ -144,24 +144,27 @@ const AffiliateNote = () => (
 interface Props {
   filterSize?: string;
   onFilterSizeChange?: (size: string) => void;
+  onHouseholdFactorsChange?: (factors: string[]) => void;
 }
 
-export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange }: Props) => {
+export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange }: Props) => {
   // Progressive disclosure steps
   const [knowsSize, setKnowsSize] = useState<"yes" | "no" | "">("");
   const [localFilterSize, setLocalFilterSize] = useState(filterSize);
   const [householdFactors, setHouseholdFactors] = useState<HouseholdFactor[]>([]);
+  const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
+  const sizeReady = !!localFilterSize || knowsSize === "no";
+
   const step = useMemo(() => {
-    if (!localFilterSize && knowsSize !== "no") return 1; // ask filter size
-    if (localFilterSize && householdFactors.length === 0) return 2; // ask household
-    if (householdFactors.length > 0 && !changeFreq) return 3; // ask frequency
-    if (changeFreq) return 4; // show results
-    return 1;
-  }, [localFilterSize, knowsSize, householdFactors, changeFreq]);
+    if (!sizeReady) return 1; // ask filter size
+    if (!householdConfirmed) return 2; // ask household
+    if (!changeFreq) return 3; // ask frequency
+    return 4; // show results
+  }, [sizeReady, householdConfirmed, changeFreq]);
 
   const recommendation = useMemo(() => {
     if (householdFactors.length === 0) return null;
