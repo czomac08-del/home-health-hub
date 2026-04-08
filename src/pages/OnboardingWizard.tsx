@@ -8,13 +8,14 @@ import {
   Droplets, Waves, Flame, Zap, Wind, Sun, Shield, Wifi,
   ChevronLeft, ChevronRight, Check, Sparkles, PartyPopper,
   Car, CircleDot, ThermometerSun, Fan, AirVent, Heater,
-  Fuel, PlugZap, Droplet, Truck, Store,
+  Fuel, PlugZap, Droplet, Truck, Store, Users,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
+import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 interface WizardData {
   homeType: string;
