@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { WaterHeaterLocation, HvacLocation, WaterSystemLocation } from "@/components/SystemLocationTracking";
 import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
+import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
+import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -69,6 +71,15 @@ const SystemConfigScreen = () => {
   const [warrantyInfo, setWarrantyInfo] = useState<WarrantyInfo | null>(null);
   const [recallInfo, setRecallInfo] = useState<RecallInfo | null>(null);
 
+  // Water/Sewer type selection state
+  const isWaterSource = displayName.toLowerCase().includes("water source");
+  const isSewerWaste = displayName.toLowerCase().includes("sewer");
+  const [waterType, setWaterType] = useState<"city" | "well" | "">("");
+  const [sewerType, setSewerType] = useState<"city" | "septic" | "">("");
+  const [additionalWaterSources, setAdditionalWaterSources] = useState<Array<{ type: string; location: string; pumpDetails: string; serviceContact: string }>>([]);
+  const [septicSystems, setSepticSystems] = useState<SepticSystem[]>([{ name: "Main Septic", tankSize: "", tankMaterial: "", lastPumped: "", accessLocation: "", pumpCompany: "", pumpPhone: "", location: "", notes: "" }]);
+  const [utilityContacts, setUtilityContacts] = useState<Record<string, string>>({});
+
   const { searching: manualSearching, search: searchManual } = useManualSearch({
     brand, model, onResult: setManualResult,
   });
@@ -83,7 +94,13 @@ const SystemConfigScreen = () => {
     }
   }, [brand, model, searchManual]);
 
-  const specFields = useMemo(() => getSpecFields(displayName), [displayName]);
+  const specFields = useMemo(() => {
+    if (isWaterSource && waterType === "city") return getSpecFields("city water");
+    if (isWaterSource && waterType === "well") return getSpecFields("well");
+    if (isSewerWaste && sewerType === "city") return getSpecFields("sewer");
+    if (isSewerWaste && sewerType === "septic") return getSpecFields("septic");
+    return getSpecFields(displayName);
+  }, [displayName, isWaterSource, isSewerWaste, waterType, sewerType]);
 
   const setSpec = (key: string, value: string | boolean | string[]) => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
@@ -325,6 +342,36 @@ const SystemConfigScreen = () => {
       <h1 className="text-xl font-bold text-foreground mb-1">{displayName}</h1>
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
 
+      {/* Water Source Type Selector */}
+      {isWaterSource && !waterType && (
+        <div className="mb-6">
+          <WaterSourceTypeSelector onSelect={setWaterType} selected={waterType || undefined} />
+        </div>
+      )}
+      {isWaterSource && waterType && (
+        <div className="mb-4">
+          <button onClick={() => setWaterType("")} className="text-xs text-primary hover:underline mb-2">← Change water source type</button>
+          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
+            {waterType === "city" ? "City / Municipal Water" : "Well Water"}
+          </div>
+        </div>
+      )}
+
+      {/* Sewer Type Selector */}
+      {isSewerWaste && !sewerType && (
+        <div className="mb-6">
+          <SewerTypeSelector onSelect={setSewerType} selected={sewerType || undefined} />
+        </div>
+      )}
+      {isSewerWaste && sewerType && (
+        <div className="mb-4">
+          <button onClick={() => setSewerType("")} className="text-xs text-primary hover:underline mb-2">← Change sewer type</button>
+          <div className="rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs text-primary font-medium">
+            {sewerType === "city" ? "City / Municipal Sewer" : "Septic System"}
+          </div>
+        </div>
+      )}
+
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
@@ -510,7 +557,27 @@ const SystemConfigScreen = () => {
           className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
       </div>
 
-      {/* === BUTTONS === */}
+      {/* Additional Water Sources */}
+      {isWaterSource && waterType && (
+        <div className="mb-6">
+          <AdditionalWaterSources sources={additionalWaterSources} onChange={setAdditionalWaterSources} />
+          {waterType === "city" && (
+            <UtilityContactCard title="Water Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+          )}
+        </div>
+      )}
+
+      {/* Multiple Septic Systems */}
+      {isSewerWaste && sewerType === "septic" && (
+        <div className="mb-6">
+          <MultipleSepticSystems systems={septicSystems} onChange={setSepticSystems} />
+        </div>
+      )}
+      {isSewerWaste && sewerType === "city" && (
+        <div className="mb-6">
+          <UtilityContactCard title="Sewer Utility Contact Information" values={utilityContacts} onChange={setUtilityContacts} />
+        </div>
+      )}
       <div className="space-y-3">
         <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
           <Save className="h-5 w-5" /> Save to Passport

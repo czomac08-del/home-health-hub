@@ -12,12 +12,12 @@ interface SystemItem {
 }
 
 const coreInfrastructure: SystemItem[] = [
-  { name: "Well / Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure" },
+  { name: "Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure" },
   { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, status: "configured", detail: "92% health — Excellent" },
   { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, status: "configured", detail: "65% health — Needs inspection" },
   { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, status: "configured", detail: "78% health — Good" },
   { name: "Roof", icon: <Home className="h-5 w-5 text-primary" />, status: "configured", detail: "55% health — Action required" },
-  { name: "Septic / Sewer", icon: <Gauge className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Sewer and Waste", icon: <Gauge className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
   { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, status: "configured", detail: "9 years old — Monitor" },
   { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
 ];
