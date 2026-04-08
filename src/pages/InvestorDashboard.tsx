@@ -426,6 +426,8 @@ const InvestorDashboard = () => {
         <p className="text-sm text-muted-foreground">{profile?.full_name || "Investor"} · Portfolio Summary</p>
       </div>
 
+      {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-3">
         {[
