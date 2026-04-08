@@ -8,10 +8,11 @@ import {
   Droplets, Waves, Flame, Zap, Wind, Sun, Shield, Wifi,
   ChevronLeft, ChevronRight, Check, Sparkles, PartyPopper,
   Car, CircleDot, ThermometerSun, Fan, AirVent, Heater,
-  Fuel, PlugZap, Droplet,
+  Fuel, PlugZap, Droplet, Truck, Store,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
 
 const TOTAL_STEPS = 7;
 
@@ -34,6 +35,7 @@ interface WizardData {
   hasPool: boolean;
   hasSecurity: boolean;
   hasSmartHome: boolean;
+  manufacturedFields: Record<string, string | boolean>;
 }
 
 const defaultData: WizardData = {
@@ -42,15 +44,11 @@ const defaultData: WizardData = {
   hvacType: "", fuelType: "", propaneTankOwned: true, knowsFilterLocation: true,
   hasGenerator: false, hasSolar: false, septicOrSewer: "",
   hasGarage: false, garageDoors: 1, hasPool: false, hasSecurity: false, hasSmartHome: false,
+  manufacturedFields: {},
 };
 
-const homeTypes = [
-  { id: "single_family", label: "Single Family Home", icon: Home },
-  { id: "townhouse", label: "Townhouse / Condo", icon: Building2 },
-  { id: "mobile", label: "Mobile Home", icon: Warehouse },
-  { id: "multi_family", label: "Multi-Family", icon: Building },
-  { id: "farm", label: "Farm / Rural", icon: TreePine },
-  { id: "commercial", label: "Commercial", icon: Factory },
+const ageRanges = [
+  "Built before 1950", "1950–1970", "1970–1990", "1990–2010", "2010–2020", "2020 or newer",
 ];
 
 const ageRanges = [
@@ -229,12 +227,14 @@ const OnboardingWizard = () => {
         );
 
       /* STEP 2 — Home type */
-      case 2:
+      case 2: {
+        const selectedPropType = propertyTypes.find(p => p.id === data.homeType);
+        const isManufactured = selectedPropType?.isManufactured;
         return (
           <div className="flex flex-col gap-6 animate-fade-in">
-            <h2 className="text-xl font-bold text-foreground">What type of home do you have?</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {homeTypes.map(h => (
+            <h2 className="text-xl font-bold text-foreground">What type of property do you have?</h2>
+            <div className="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
+              {propertyTypes.map(h => (
                 <SelectCard key={h.id} selected={data.homeType === h.id} onClick={() => update("homeType", h.id)} icon={h.icon} label={h.label} />
               ))}
             </div>
@@ -246,8 +246,48 @@ const OnboardingWizard = () => {
                 {ageRanges.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
+            {isManufactured && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <p className="text-xs text-primary font-medium mb-3">
+                  Manufactured and mobile homes have unique maintenance needs. We've customized your experience accordingly.
+                </p>
+                <div className="space-y-2">
+                  {manufacturedHomeFields.slice(0, 6).map(field => (
+                    <div key={field.key}>
+                      <label className="text-xs text-muted-foreground">{field.label}</label>
+                      {field.type === "select" ? (
+                        <select
+                          value={(data.manufacturedFields[field.key] as string) || ""}
+                          onChange={e => update("manufacturedFields", { ...data.manufacturedFields, [field.key]: e.target.value })}
+                          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
+                          <option value="">Select...</option>
+                          {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      ) : field.type === "toggle" ? (
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={!!data.manufacturedFields[field.key]}
+                            onCheckedChange={v => update("manufacturedFields", { ...data.manufacturedFields, [field.key]: v })}
+                          />
+                          <span className="text-xs text-muted-foreground">{data.manufacturedFields[field.key] ? "Yes" : "No"}</span>
+                        </div>
+                      ) : (
+                        <input
+                          type={field.type === "number" ? "number" : "text"}
+                          value={(data.manufacturedFields[field.key] as string) || ""}
+                          onChange={e => update("manufacturedFields", { ...data.manufacturedFields, [field.key]: e.target.value })}
+                          placeholder={field.placeholder || ""}
+                          className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
+      }
 
       /* STEP 3 — Water */
       case 3:
@@ -301,10 +341,10 @@ const OnboardingWizard = () => {
             <ToggleRow label="Do you have a generator?" checked={data.hasGenerator} onChange={v => update("hasGenerator", v)} />
             <ToggleRow label="Do you have solar panels?" checked={data.hasSolar} onChange={v => update("hasSolar", v)} />
             <div className="flex flex-col gap-2">
-              <span className="text-sm text-foreground">Septic or city sewer?</span>
+              <span className="text-sm text-foreground">Sewer and waste system?</span>
               <div className="grid grid-cols-2 gap-3">
-                <SelectCard selected={data.septicOrSewer === "septic"} onClick={() => update("septicOrSewer", "septic")} icon={CircleDot} label="Septic" />
-                <SelectCard selected={data.septicOrSewer === "sewer"} onClick={() => update("septicOrSewer", "sewer")} icon={Droplets} label="City Sewer" />
+                <SelectCard selected={data.septicOrSewer === "septic"} onClick={() => update("septicOrSewer", "septic")} icon={CircleDot} label="Septic System" />
+                <SelectCard selected={data.septicOrSewer === "sewer"} onClick={() => update("septicOrSewer", "sewer")} icon={Droplets} label="City / Municipal Sewer" />
               </div>
             </div>
             <ToggleRow label="Do you have a garage?" checked={data.hasGarage} onChange={v => update("hasGarage", v)} />
