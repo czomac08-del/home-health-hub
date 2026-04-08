@@ -28,6 +28,7 @@ type FlipProject = {
   notes: string | null;
   sold_price: number | null;
   sold_date: string | null;
+  isDemo?: boolean;
 };
 
 type FlipContractor = {
