@@ -99,9 +99,12 @@ const AffiliateNote = () => (
 /* ───────── main component ───────── */
 interface Props {
   waterType: "city" | "well";
+  householdFactors?: string[];
 }
 
-export const WaterFiltrationSection = ({ waterType }: Props) => {
+export const WaterFiltrationSection = ({ waterType, householdFactors = [] }: Props) => {
+  const hasVulnerable = householdFactors.some(f => ["allergies", "asthma", "young_children", "immunocompromised"].includes(f));
+  const hasPets = householdFactors.some(f => ["dogs", "cats", "multiple_pets"].includes(f));
   const [hasFiltration, setHasFiltration] = useState<"yes" | "no" | "">("");
   const [systemType, setSystemType] = useState<FiltrationSystemType | "">("");
   const [brand, setBrand] = useState("");
