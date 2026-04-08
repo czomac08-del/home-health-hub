@@ -298,13 +298,14 @@ const InspectorDashboard = () => {
           ) : (
             <div className="space-y-2 mb-6">
               {scheduled.map(insp => (
-                <div key={insp.id} className="rounded-xl border border-border bg-card p-4">
+                <div key={insp.id} className="rounded-xl border border-border bg-card p-4 relative">
+                  {insp.isDemo && <div className="absolute top-2.5 right-2.5"><DemoTag /></div>}
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{insp.property_address}</p>
                       <p className="text-[10px] text-muted-foreground">{insp.client_name || "Client TBD"} · {insp.inspection_date ? new Date(insp.inspection_date).toLocaleDateString() : "Date TBD"}</p>
                     </div>
-                    {insp.has_passport && (
+                    {insp.has_passport && !insp.isDemo && (
                       <span className="text-[9px] font-semibold bg-primary/15 text-primary border border-primary/30 px-2 py-1 rounded-full">Passport</span>
                     )}
                   </div>
@@ -323,7 +324,8 @@ const InspectorDashboard = () => {
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Completed</h2>
               <div className="space-y-2 mb-6">
                 {completed.map(insp => (
-                  <div key={insp.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between">
+                  <div key={insp.id} className="rounded-xl border border-border bg-card p-3 flex items-center justify-between relative">
+                    {insp.isDemo && <div className="absolute top-2 right-2"><DemoTag /></div>}
                     <div>
                       <p className="text-sm font-medium text-foreground">{insp.property_address}</p>
                       <p className="text-[10px] text-muted-foreground">{insp.client_name} · {insp.inspection_date ? new Date(insp.inspection_date).toLocaleDateString() : ""}</p>
