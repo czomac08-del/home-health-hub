@@ -12,6 +12,7 @@ const roles = [
   { key: "realtor", icon: Briefcase, title: "Realtors", desc: "Differentiate listings with verified home health data. Generate professional Buyer Reports instantly.", color: "from-blue-500/20 to-blue-500/5" },
   { key: "inspector", icon: ClipboardList, title: "Home Inspectors", desc: "Access pre-populated data, streamline inspections, and deliver comprehensive reports faster.", color: "from-amber-500/20 to-amber-500/5" },
   { key: "contractor", icon: Wrench, title: "Pro Contractors", desc: "Arrive prepared with full system history, model numbers, and service records for every job.", color: "from-purple-500/20 to-purple-500/5" },
+  { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate Home Passports for sale.", color: "from-emerald-500/20 to-emerald-500/5" },
 ];
 
 const stats = [
@@ -113,7 +114,7 @@ const LandingPage = () => {
       {/* User Types */}
       <section className="max-w-5xl mx-auto px-6 pb-20">
         <h2 className="text-2xl font-bold text-foreground text-center mb-2">Built for Everyone in Real Estate</h2>
-        <p className="text-muted-foreground text-center mb-10">One platform, four powerful experiences</p>
+        <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences</p>
         <div className="grid md:grid-cols-2 gap-4">
           {roles.map((r) => (
             <div key={r.key} className={`rounded-2xl border border-border bg-gradient-to-br ${r.color} p-6 hover:border-primary/40 transition-colors`}>
