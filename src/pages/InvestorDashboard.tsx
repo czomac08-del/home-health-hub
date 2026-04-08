@@ -968,7 +968,4 @@ const InvestorDashboard = () => {
   );
 };
 
-// Need React import for Fragment
-import React from "react";
-
 export default InvestorDashboard;
