@@ -311,6 +311,11 @@ const SystemConfigScreen = () => {
       if (data.service_company) setServiceCompany(data.service_company);
       if (data.service_phone) setServicePhone(data.service_phone);
       if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      // Restore water type from specs if saved
+      if (displayName.toLowerCase().includes("water source")) {
+        const s = data.specs as Record<string, any>;
+        if (s?.waterType) setWaterType(s.waterType);
+      }
       if (data.notes) setNotes(data.notes);
       if (data.location_in_home) setLocation(data.location_in_home);
 

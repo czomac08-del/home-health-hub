@@ -248,7 +248,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         </div>
       )}
 
-      {step === 1 && knowsSize === "no" && (
+      {step === 1 && knowsSize === "no" && !localFilterSize && (
         <div className="animate-fade-in space-y-3">
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
             <p className="text-xs font-semibold text-foreground mb-2">How to find your filter size</p>
@@ -266,12 +266,10 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
             placeholder="Enter size once you find it, e.g. 16x25x1"
             className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          {localFilterSize && (
-            <button onClick={() => handleSizeEntered(localFilterSize)}
-              className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors">
-              Continue
-            </button>
-          )}
+          <button onClick={() => { setLocalFilterSize("unknown"); }}
+            className="w-full rounded-xl border border-border text-muted-foreground py-2.5 text-xs font-medium hover:border-primary/40 transition-colors">
+            Skip — I'll measure later
+          </button>
         </div>
       )}
 
@@ -294,7 +292,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
             ))}
           </div>
           {householdFactors.length > 0 && (
-            <button onClick={() => {}} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
+            <button onClick={() => { setHouseholdConfirmed(true); onHouseholdFactorsChange?.(householdFactors); }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
           )}
