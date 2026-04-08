@@ -191,7 +191,8 @@ const OnboardingWizard = () => {
   }, [step, activeProperty]);
 
   const next = () => {
-    if (step === 6) { saveOnboarding(); return; }
+    if (step === 7) { saveOnboarding(); return; }
+    if (step === 6) { setStep(7); return; } // household profile handles its own save
     setStep(s => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep(s => Math.max(s - 1, 1));
