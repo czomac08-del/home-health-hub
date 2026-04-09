@@ -74,8 +74,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const RoleRedirect = () => {
   const { profile, properties } = useAuth();
+  const location = useLocation();
   const role = profile?.role || "homeowner";
-  if (role === "homeowner" && properties.length === 0) return <Navigate to="/onboarding" replace />;
+  const params = new URLSearchParams(location.search);
+  const isCheckoutReturn = params.get("checkout") === "success";
+  if (role === "homeowner" && properties.length === 0 && !isCheckoutReturn) return <Navigate to="/onboarding" replace />;
   const dest: Record<string, string> = {
     homeowner: "/dashboard",
     realtor: "/realtor",
