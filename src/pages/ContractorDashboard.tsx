@@ -140,7 +140,7 @@ const ContractorDashboard = () => {
     const total = subtotal + markup + tax;
 
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Professional Estimate</h1>
         <p className="text-xs text-muted-foreground mb-6">{activeJob.homeowner_name} · {activeJob.property_address}</p>
@@ -193,7 +193,7 @@ const ContractorDashboard = () => {
   /* ── Integrations ── */
   if (view === "integrations") {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setView("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Integrations</h1>
         <p className="text-xs text-muted-foreground mb-6">Connect your business tools</p>
@@ -220,7 +220,7 @@ const ContractorDashboard = () => {
   /* ── Quote Screen ── */
   if (view === "quote" && activeJob) {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Generate Quote</h1>
         <p className="text-xs text-muted-foreground mb-6">{activeJob.property_address} — {activeJob.system_type}</p>
@@ -240,7 +240,7 @@ const ContractorDashboard = () => {
   /* ── Job Completion ── */
   if (view === "complete" && activeJob) {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setView("job")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Complete Job</h1>
         <p className="text-xs text-muted-foreground mb-6">{activeJob.homeowner_name} · {activeJob.property_address}</p>
@@ -285,7 +285,7 @@ const ContractorDashboard = () => {
   /* ── Job Detail ── */
   if (view === "job" && activeJob) {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setView("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-0.5">{activeJob.homeowner_name}</h1>
         <p className="text-xs text-muted-foreground mb-1">{activeJob.property_address}</p>
@@ -343,7 +343,7 @@ const ContractorDashboard = () => {
 
   /* ── Dashboard ── */
   return (
-    <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Contractor"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Licensed Contractor</p>
 

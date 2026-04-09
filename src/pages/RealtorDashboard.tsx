@@ -135,7 +135,7 @@ const RealtorDashboard = () => {
     const l = showClientPortal;
     const portalUrl = `homepassport.app/buyer/${l.id.slice(0, 8)}`;
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setShowClientPortal(null)} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Buyer Portal</h1>
         <p className="text-xs text-muted-foreground mb-6">{l.property_address}</p>
@@ -191,7 +191,7 @@ const RealtorDashboard = () => {
   /* ── Digital Disclosure ── */
   if (showDisclosure) {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setShowDisclosure(null)} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Digital Disclosure</h1>
         <p className="text-xs text-muted-foreground mb-2">{showDisclosure.property_address}</p>
@@ -317,7 +317,7 @@ const RealtorDashboard = () => {
 
   /* ── Dashboard ── */
   return (
-    <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-foreground mb-1">Welcome, {profile?.full_name || "Agent"}</h1>
       <p className="text-xs text-muted-foreground mb-6">{profile?.role === "realtor" ? "Licensed Real Estate Agent" : "Realtor Dashboard"}</p>
 

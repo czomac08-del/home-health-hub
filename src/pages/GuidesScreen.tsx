@@ -182,7 +182,7 @@ const GuidesScreen = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto px-6 py-8">
+    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">DIY Guides</h1>
         <button onClick={() => setShowSkillPicker(!showSkillPicker)}

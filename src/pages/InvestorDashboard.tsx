@@ -277,7 +277,7 @@ const InvestorDashboard = () => {
     const daysSince = p.purchase_date ? Math.round((Date.now() - new Date(p.purchase_date).getTime()) / 86400000) : 0;
 
     return (
-      <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
+      <div className="min-h-screen max-w-lg lg:max-w-6xl mx-auto px-4 py-6 pb-24 space-y-4">
         <button onClick={() => setSelectedProject(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">← Back to Projects</button>
 
         <div className="rounded-2xl border border-border bg-card p-4">
@@ -470,7 +470,7 @@ const InvestorDashboard = () => {
 
   // ── MAIN DASHBOARD ──
   return (
-    <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-5">
+    <div className="min-h-screen max-w-lg lg:max-w-6xl mx-auto px-4 py-6 pb-24 space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Investor Dashboard</h1>
         <p className="text-sm text-muted-foreground">{profile?.full_name || "Investor"} · Portfolio Summary</p>

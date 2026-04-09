@@ -21,7 +21,7 @@ const PortfolioOverview = () => {
   const needsAttention = profileProperties.filter((p) => (p.health_score || 50) < 70);
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto px-6 py-8">
+    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-xl font-bold text-foreground mb-1">Portfolio Overview</h1>
       <p className="text-sm text-muted-foreground mb-6">
         {activeAppProfile?.business_name || "Business"} — {profileProperties.length} properties
