@@ -1,88 +1,98 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "@supabase/supabase-js/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.102.1";
-import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-04-30.basil" });
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
 
-const PRICE_MAP: Record<string, { monthly: number; annual: number; name: string }> = {
-  homeowner_pro: { monthly: 999, annual: 9500, name: "Homeowner Pro" },
-  homeowner_premium: { monthly: 1999, annual: 19100, name: "Homeowner Premium" },
-  realtor_pro: { monthly: 4900, annual: 47000, name: "Realtor Pro" },
-  inspector_pro: { monthly: 2900, annual: 27800, name: "Inspector Pro" },
-  contractor_pro: { monthly: 3900, annual: 37400, name: "Contractor Pro" },
-  investor_pro: { monthly: 7900, annual: 75800, name: "Investor Pro" },
-  one_time_report: { monthly: 999, annual: 999, name: "Buyer Report" },
+const PRICE_MAP: Record<string, { monthly: string; annual: string }> = {
+  homeowner_pro:     { monthly: "price_1TKJY0ECIkzmsZKyvrB0cliU", annual: "price_1TKJXRECIkzmsZKyKIK8Ef8R" },
+  homeowner_premium: { monthly: "price_1TKJZ1ECIkzmsZKyJDtpGf0V", annual: "price_1TKJZVECIkzmsZKyAAee2BIB" },
+  realtor_pro:       { monthly: "price_1TKJaKECIkzmsZKy6RLJlodV", annual: "price_1TKJadECIkzmsZKy7tQSlcqC" },
+  inspector_pro:     { monthly: "price_1TKJbMECIkzmsZKyOyA7wQOl", annual: "price_1TKJbiECIkzmsZKysWkeMiMF" },
+  contractor_pro:    { monthly: "price_1TKJcEECIkzmsZKyj121ds0B", annual: "price_1TKJccECIkzmsZKyi9MPFxBn" },
+  investor_pro:      { monthly: "price_1TKJczECIkzmsZKyBtKkFiDC", annual: "price_1TKJdTECIkzmsZKy9Vu87WEj" },
 };
+
+const ONE_TIME_PRICE = "price_1TKJeVECIkzmsZKylalJ3MFa";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !claimsData?.claims) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
-    const userId = claimsData.claims.sub as string;
-    const userEmail = claimsData.claims.email as string;
 
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+
+    const user = userData.user;
     const { planId, billingPeriod } = await req.json();
+
+    // Find or create Stripe customer
+    const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
+    let customerId: string | undefined;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+    }
+
+    const origin = req.headers.get("origin") || "https://house-scan-hub.lovable.app";
+
+    // One-time purchase
+    if (planId === "one_time_report") {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email!,
+        mode: "payment",
+        line_items: [{ price: ONE_TIME_PRICE, quantity: 1 }],
+        success_url: `${origin}/home?checkout=success`,
+        cancel_url: `${origin}/pricing?checkout=cancel`,
+        metadata: { user_id: user.id, plan_id: planId },
+      });
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Subscription
     const plan = PRICE_MAP[planId];
     if (!plan) {
       return new Response(JSON.stringify({ error: "Invalid plan" }), { status: 400, headers: corsHeaders });
     }
 
-    // Find or create Stripe customer
-    const { data: sub } = await supabase.from("subscriptions").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
-    let customerId = sub?.stripe_customer_id;
-
-    if (!customerId) {
-      const customer = await stripe.customers.create({ email: userEmail, metadata: { user_id: userId } });
-      customerId = customer.id;
-    }
-
-    const origin = req.headers.get("origin") || "https://house-scan-hub.lovable.app";
-
-    if (planId === "one_time_report") {
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: "payment",
-        line_items: [{ price_data: { currency: "usd", unit_amount: plan.monthly, product_data: { name: plan.name } }, quantity: 1 }],
-        success_url: `${origin}/home?checkout=success`,
-        cancel_url: `${origin}/pricing?checkout=cancel`,
-        metadata: { user_id: userId, plan_id: planId },
-      });
-      return new Response(JSON.stringify({ url: session.url }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const amount = billingPeriod === "annual" ? plan.annual : plan.monthly;
-    const interval = billingPeriod === "annual" ? "year" : "month";
+    const priceId = billingPeriod === "annual" ? plan.annual : plan.monthly;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: customerId ? undefined : user.email!,
       mode: "subscription",
-      line_items: [{ price_data: { currency: "usd", unit_amount: amount, recurring: { interval }, product_data: { name: plan.name } }, quantity: 1 }],
-      subscription_data: { trial_period_days: 14, metadata: { user_id: userId, plan_id: planId, billing_period: billingPeriod } },
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: {
+        trial_period_days: 14,
+        metadata: { user_id: user.id, plan_id: planId, billing_period: billingPeriod },
+      },
       success_url: `${origin}/home?checkout=success`,
       cancel_url: `${origin}/pricing?checkout=cancel`,
-      metadata: { user_id: userId, plan_id: planId, billing_period: billingPeriod },
+      metadata: { user_id: user.id, plan_id: planId, billing_period: billingPeriod },
     });
 
-    return new Response(JSON.stringify({ url: session.url }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ url: session.url }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.error("Checkout error:", e);
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
