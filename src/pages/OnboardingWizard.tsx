@@ -483,7 +483,7 @@ const OnboardingWizard = () => {
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
                 <ChevronLeft className="h-4 w-4" /> Back
               </button>
-              <button onClick={next} disabled={saving}
+              <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
                 className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
                 {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
               </button>
