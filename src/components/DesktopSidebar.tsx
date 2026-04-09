@@ -42,8 +42,8 @@ const DesktopSidebar = () => {
               onClick={() => navigate(tab.path)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-primary/10 text-primary border-l-[3px] border-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-[3px] border-transparent"
               }`}
             >
               <tab.icon className="h-4.5 w-4.5" />

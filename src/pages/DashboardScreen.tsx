@@ -80,7 +80,7 @@ const DashboardScreen = () => {
           {/* Health Score */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
             <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home Health</h2>
-            <HealthRing percentage={activeProperty?.health_score || 87} size={160} strokeWidth={10} />
+            <HealthRing percentage={activeProperty?.health_score || 87} size={180} strokeWidth={12} />
           </div>
 
           {/* This Week Summary */}
@@ -122,7 +122,7 @@ const DashboardScreen = () => {
             <AlertTriangle className="h-4 w-4 text-health-amber" />
             <h3 className="text-health-amber font-semibold text-sm uppercase tracking-wider">Needs Attention</h3>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {needsAttention.map((sys) => (
               <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
             ))}
@@ -132,7 +132,7 @@ const DashboardScreen = () => {
         {/* All Systems */}
         <div className="mb-6">
           <h3 className="text-foreground font-semibold text-lg mb-4">All Systems</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {healthySystems.map((sys) => (
               <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} onClick={() => navigate(`/system/${sys.id}`)} />
             ))}
