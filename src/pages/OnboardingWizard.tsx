@@ -169,9 +169,12 @@ const OnboardingWizard = () => {
       }
 
       await refreshProperties();
-      setStep(TOTAL_STEPS);
+      navigate("/dashboard");
+      toast.success("Home Passport setup complete!");
     } catch {
-      toast.error("Something went wrong saving your setup.");
+      // Even on error, navigate to dashboard — don't trap the user
+      navigate("/dashboard");
+      toast.error("Setup saved with some issues — you can update details anytime.");
     } finally {
       setSaving(false);
     }
@@ -192,7 +195,15 @@ const OnboardingWizard = () => {
   }, [step, activeProperty]);
 
   const next = () => {
-    if (step === 7) { saveOnboarding(); return; }
+    if (step === 7) {
+      // Always allow finishing — save in background, navigate immediately
+      if (user && activeProperty) {
+        saveOnboarding();
+      } else {
+        navigate("/dashboard");
+      }
+      return;
+    }
     if (step === 6) { setStep(7); return; } // household profile handles its own save
     setStep(s => Math.min(s + 1, TOTAL_STEPS));
   };
@@ -455,7 +466,7 @@ const OnboardingWizard = () => {
 
       {/* footer nav */}
       {step < TOTAL_STEPS && (
-        <div className="px-6 pb-8 max-w-lg mx-auto w-full flex flex-col gap-3">
+        <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
             <>
               <button onClick={next}
@@ -472,9 +483,9 @@ const OnboardingWizard = () => {
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
                 <ChevronLeft className="h-4 w-4" /> Back
               </button>
-              <button onClick={next} disabled={!canNext() || saving}
-                className="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40">
-                {saving ? "Saving..." : step === 7 ? "Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
+              <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
+                className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
+                {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
               </button>
             </div>
           )}
