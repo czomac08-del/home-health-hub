@@ -410,7 +410,7 @@ const RealtorDashboard = () => {
               <p className="text-sm text-muted-foreground">No listings yet. Add your first property above.</p>
             </div>
           ) : (
-            <div className="space-y-2 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
               {filtered.map(l => (
                 <div key={l.id} className="rounded-xl border border-border bg-card p-4 relative">
                   <div className="flex items-center justify-between mb-2">
