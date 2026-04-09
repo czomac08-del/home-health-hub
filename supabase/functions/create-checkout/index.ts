@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         customer_email: customerId ? undefined : user.email!,
         mode: "payment",
         line_items: [{ price: ONE_TIME_PRICE, quantity: 1 }],
-        success_url: `${origin}/home?checkout=success`,
+        success_url: `${origin}/dashboard?checkout=success`,
         cancel_url: `${origin}/pricing?checkout=cancel`,
         metadata: { user_id: user.id, plan_id: planId },
       });
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
         trial_period_days: 14,
         metadata: { user_id: user.id, plan_id: planId, billing_period: billingPeriod },
       },
-      success_url: `${origin}/home?checkout=success`,
+      success_url: `${origin}/dashboard?checkout=success`,
       cancel_url: `${origin}/pricing?checkout=cancel`,
       metadata: { user_id: user.id, plan_id: planId, billing_period: billingPeriod },
     });
