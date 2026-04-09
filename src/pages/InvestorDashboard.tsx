@@ -592,8 +592,8 @@ const InvestorDashboard = () => {
 
       {/* ── FLIP ANALYZER TAB — 5 STEPS ── */}
       {activeTab === "analyzer" && !showCompare && (
-        <div className="space-y-4">
-          {/* Step indicator */}
+        <div className="lg:grid lg:grid-cols-5 lg:gap-6">
+        <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map(s => (
               <button key={s} onClick={() => setAnalyzerStep(s)}
