@@ -880,6 +880,52 @@ const InvestorDashboard = () => {
             );
           })()}
         </div>
+        {/* Desktop live summary panel */}
+        <div className="hidden lg:block lg:col-span-2 space-y-4 sticky top-20 self-start">
+          {(() => {
+            const c = analyzerCalc();
+            return (
+              <>
+                <div className={`rounded-xl border-2 p-4 text-center ${c.ratingBg}`}>
+                  <p className="text-[10px] text-muted-foreground mb-1">Live Deal Rating</p>
+                  <p className={`text-2xl font-bold ${c.ratingColor}`}>{c.rating}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-xs">
+                  <h4 className="text-sm font-bold text-foreground mb-2">Live Summary</h4>
+                  {[
+                    ["Purchase", c.purchase],
+                    ["Renovation", c.renoTotal],
+                    ["Closing (Buy)", c.closingBuy],
+                    ["Carrying", c.totalCarrying],
+                    ["Closing (Sell)", c.closingSell],
+                  ].map(([label, val]) => (
+                    <div key={label as string} className="flex justify-between text-muted-foreground">
+                      <span>{label as string}</span><span>{fmt(Math.round(val as number))}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-2 text-sm">
+                    <span>Total Cost</span><span>{fmt(Math.round(c.totalProjectCost))}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-border pt-2 text-sm">
+                    <span>Profit</span>
+                    <span className={c.profit >= 0 ? "text-green-400" : "text-destructive"}>{fmt(Math.round(c.profit))}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>ROI</span><span className="text-primary font-bold">{c.roi.toFixed(1)}%</span>
+                  </div>
+                </div>
+                <div className={`rounded-xl border p-3 ${c.maoPass ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                  <p className="text-[10px] text-muted-foreground">70% Rule MAO</p>
+                  <p className="text-lg font-bold text-foreground">{fmt(Math.round(c.mao))}</p>
+                  <span className={`text-[10px] font-bold ${c.maoPass ? "text-green-400" : "text-destructive"}`}>
+                    {c.maoPass ? "✓ PASS" : "✗ OVER"}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+        </div>
       )}
 
       {/* ── COMPARE DEALS ── */}
