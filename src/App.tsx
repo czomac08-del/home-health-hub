@@ -87,8 +87,19 @@ const RoleRedirect = () => {
 
 const AppContent = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const showNav = user && !hideNavRoutes.some((r) => location.pathname === r || location.pathname.startsWith("/report/"));
+
+  // Welcome toast on sign in
+  useEffect(() => {
+    const handler = () => {
+      const name = profile?.full_name?.split(" ")[0] || "back";
+      const { toast } = require("sonner");
+      toast.success(`Welcome back, ${name}!`, { duration: 3000 });
+    };
+    window.addEventListener("auth:signed_in", handler);
+    return () => window.removeEventListener("auth:signed_in", handler);
+  }, [profile]);
 
   return (
     <div className="flex min-h-screen w-full">
