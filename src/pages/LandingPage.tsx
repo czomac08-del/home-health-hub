@@ -115,7 +115,7 @@ const LandingPage = () => {
       <section className="max-w-5xl mx-auto px-6 pb-20">
         <h2 className="text-2xl font-bold text-foreground text-center mb-2">Built for Everyone in Real Estate</h2>
         <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences</p>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {roles.map((r) => (
             <div key={r.key} className={`rounded-2xl border border-border bg-gradient-to-br ${r.color} p-6 hover:border-primary/40 transition-colors`}>
               <div className="h-11 w-11 rounded-xl bg-card border border-border flex items-center justify-center mb-4">
