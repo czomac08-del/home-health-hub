@@ -32,6 +32,8 @@ import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import FeedbackScreen from "./pages/FeedbackScreen";
 import BottomNav from "./components/BottomNav";
 import HelpButton from "./components/HelpButton";
+import DesktopSidebar from "./components/DesktopSidebar";
+import DesktopHeader from "./components/DesktopHeader";
 import CreateProfileScreen from "./pages/CreateProfileScreen";
 import PortfolioOverview from "./pages/PortfolioOverview";
 import UtilityServicesScreen from "./pages/UtilityServicesScreen";
@@ -54,10 +56,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [loading]);
 
-  // If still loading but not timed out, show skeleton
   if (loading && !timedOut) {
     return (
-      <div className="min-h-screen max-w-lg mx-auto px-6 py-8 space-y-4 animate-pulse">
+      <div className="min-h-screen max-w-lg lg:max-w-4xl mx-auto px-6 py-8 space-y-4 animate-pulse">
         <div className="h-8 w-48 bg-secondary rounded-lg" />
         <div className="h-32 w-full bg-secondary rounded-xl" />
         <div className="h-20 w-full bg-secondary rounded-xl" />
@@ -90,42 +91,65 @@ const AppContent = () => {
   const showNav = user && !hideNavRoutes.some((r) => location.pathname === r || location.pathname.startsWith("/report/"));
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
-        <Route path="/welcome" element={<WelcomeScreen />} />
-        <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />
-        <Route path="/privacy-reminder" element={<ProtectedRoute><PrivacyReminderScreen /></ProtectedRoute>} />
-        <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
-        <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />
-        <Route path="/system-config/:name" element={<ProtectedRoute><SystemConfigScreen /></ProtectedRoute>} />
-        <Route path="/systems" element={<ProtectedRoute><SystemsScreen /></ProtectedRoute>} />
-        <Route path="/guides" element={<ProtectedRoute><GuidesScreen /></ProtectedRoute>} />
-        <Route path="/guide/:id" element={<ProtectedRoute><GuideWalkthroughScreen /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
-        <Route path="/property" element={<ProtectedRoute><PropertyDetailScreen /></ProtectedRoute>} />
-        <Route path="/handover" element={<ProtectedRoute><HandoverWizardScreen /></ProtectedRoute>} />
-        <Route path="/claim" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
-        <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
-        <Route path="/inspector" element={<ProtectedRoute><InspectorDashboard /></ProtectedRoute>} />
-        <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
-        <Route path="/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
-        <Route path="/report/:id" element={<ScoreReportPage />} />
-        <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
-        <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
-        <Route path="/create-profile" element={<ProtectedRoute><CreateProfileScreen /></ProtectedRoute>} />
-        <Route path="/portfolio" element={<ProtectedRoute><PortfolioOverview /></ProtectedRoute>} />
-        <Route path="/utilities" element={<ProtectedRoute><UtilityServicesScreen /></ProtectedRoute>} />
-        <Route path="/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
-        <Route path="/api-docs" element={<ApiDocsPage />} />
-        <Route path="/report" element={<ScoreReportPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      {showNav && <><HelpButton /><BottomNav /></>}
-    </>
+    <div className="flex min-h-screen w-full">
+      {/* Desktop sidebar — only show on authenticated app pages */}
+      {showNav && <DesktopSidebar />}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop header */}
+        {showNav && <DesktopHeader />}
+
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
+            <Route path="/welcome" element={<WelcomeScreen />} />
+            <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />
+            <Route path="/privacy-reminder" element={<ProtectedRoute><PrivacyReminderScreen /></ProtectedRoute>} />
+            <Route path="/home" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
+            <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />
+            <Route path="/system-config/:name" element={<ProtectedRoute><SystemConfigScreen /></ProtectedRoute>} />
+            <Route path="/systems" element={<ProtectedRoute><SystemsScreen /></ProtectedRoute>} />
+            <Route path="/guides" element={<ProtectedRoute><GuidesScreen /></ProtectedRoute>} />
+            <Route path="/guide/:id" element={<ProtectedRoute><GuideWalkthroughScreen /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+            <Route path="/property" element={<ProtectedRoute><PropertyDetailScreen /></ProtectedRoute>} />
+            <Route path="/handover" element={<ProtectedRoute><HandoverWizardScreen /></ProtectedRoute>} />
+            <Route path="/claim" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
+            <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
+            <Route path="/inspector" element={<ProtectedRoute><InspectorDashboard /></ProtectedRoute>} />
+            <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
+            <Route path="/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
+            <Route path="/report/:id" element={<ScoreReportPage />} />
+            <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
+            <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
+            <Route path="/create-profile" element={<ProtectedRoute><CreateProfileScreen /></ProtectedRoute>} />
+            <Route path="/portfolio" element={<ProtectedRoute><PortfolioOverview /></ProtectedRoute>} />
+            <Route path="/utilities" element={<ProtectedRoute><UtilityServicesScreen /></ProtectedRoute>} />
+            <Route path="/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
+            <Route path="/api-docs" element={<ApiDocsPage />} />
+            <Route path="/report" element={<ScoreReportPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+      </div>
+
+      {/* Mobile bottom nav — hidden on desktop via lg:hidden */}
+      {showNav && (
+        <div className="lg:hidden">
+          <HelpButton />
+          <BottomNav />
+        </div>
+      )}
+      {/* Desktop help button */}
+      {showNav && (
+        <div className="hidden lg:block">
+          <HelpButton />
+        </div>
+      )}
+    </div>
   );
 };
 
