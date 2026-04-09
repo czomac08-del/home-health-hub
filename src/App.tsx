@@ -94,8 +94,9 @@ const AppContent = () => {
   useEffect(() => {
     const handler = () => {
       const name = profile?.full_name?.split(" ")[0] || "back";
-      const { toast } = require("sonner");
-      toast.success(`Welcome back, ${name}!`, { duration: 3000 });
+      import("sonner").then(({ toast }) => {
+        toast.success(`Welcome back, ${name}!`, { duration: 3000 });
+      });
     };
     window.addEventListener("auth:signed_in", handler);
     return () => window.removeEventListener("auth:signed_in", handler);

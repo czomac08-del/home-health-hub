@@ -1,6 +1,5 @@
 import { Bell, Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight } from "lucide-react";
 import PrivacyBadge from "@/components/PrivacyBadge";
-import PrivacyBadge from "@/components/PrivacyBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
