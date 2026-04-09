@@ -73,8 +73,8 @@ const LandingPage = () => {
           <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold hover:opacity-90 transition-opacity glow-teal-strong text-sm">
             Get Started Free
           </button>
-          <button className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm">
-            View Demo
+          <button onClick={() => navigate("/pricing")} className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-semibold hover:bg-secondary/80 transition-colors text-sm">
+            View Pricing
           </button>
         </div>
       </section>
