@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const tiers = [
   { name: "Free", price: "$0", features: ["1 property", "Basic health score", "DIY guides", "System tracking"], cta: "Get Started Free" },
@@ -24,6 +25,12 @@ const stats = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() || "?";
+  const firstName = profile?.full_name?.split(" ")[0] || "User";
 
   return (
     <div className="min-h-screen">
@@ -36,8 +43,17 @@ const LandingPage = () => {
           <span className="text-lg font-bold text-foreground">Home Passport</span>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/auth")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
-          <button onClick={() => navigate("/auth")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">Get Started</button>
+          {user ? (
+            <button onClick={() => navigate("/home")} className="flex items-center gap-2 text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+              <div className="h-6 w-6 rounded-full bg-primary-foreground/20 flex items-center justify-center text-xs font-bold">{initials}</div>
+              Go to Dashboard
+            </button>
+          ) : (
+            <>
+              <button onClick={() => navigate("/auth")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
+              <button onClick={() => navigate("/auth")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">Get Started</button>
+            </>
+          )}
         </div>
       </nav>
 

@@ -90,12 +90,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // 2. Listen for auth changes — never block with await
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => {
+      (event, s) => {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
           void fetchProfile(s.user.id);
           void fetchProperties(s.user.id);
+          if (event === "SIGNED_IN") {
+            // Dispatch custom event for welcome toast
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("auth:signed_in"));
+            }, 300);
+          }
         } else {
           setProfile(null);
           setProperties([]);
