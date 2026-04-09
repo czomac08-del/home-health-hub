@@ -39,6 +39,7 @@ import PortfolioOverview from "./pages/PortfolioOverview";
 import UtilityServicesScreen from "./pages/UtilityServicesScreen";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
+import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
