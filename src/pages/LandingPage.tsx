@@ -42,12 +42,12 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 pt-16 pb-12 text-center">
+      <section className="max-w-5xl mx-auto px-6 pt-16 lg:pt-24 pb-12 lg:pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
           <Zap className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-foreground leading-tight mb-4">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4">
           Your Home's Complete<br /><span className="text-primary">Digital Passport</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -64,8 +64,8 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="max-w-4xl mx-auto px-6 pb-12">
-        <div className="grid grid-cols-3 gap-4">
+      <section className="max-w-5xl mx-auto px-6 pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { step: "1", icon: Search, title: "Scan Your Address", desc: "Enter your address and we pull public records instantly" },
             { step: "2", icon: Shield, title: "Verify Your Systems", desc: "Confirm AI-found data and add your own details" },
@@ -112,7 +112,7 @@ const LandingPage = () => {
       </section>
 
       {/* User Types */}
-      <section className="max-w-5xl mx-auto px-6 pb-20">
+      <section className="max-w-7xl mx-auto px-6 pb-20">
         <h2 className="text-2xl font-bold text-foreground text-center mb-2">Built for Everyone in Real Estate</h2>
         <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
