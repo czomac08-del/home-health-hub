@@ -612,6 +612,57 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          billing_period: string | null
+          cancel_at: string | null
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_period?: string | null
+          cancel_at?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_period?: string | null
+          cancel_at?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_details: {
         Row: {
           brand: string | null

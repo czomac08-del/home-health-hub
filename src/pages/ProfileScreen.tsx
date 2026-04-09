@@ -152,7 +152,7 @@ const ProfileScreen = () => {
                 <p className="text-xs text-muted-foreground">1 property, limited guides</p>
               </div>
             </div>
-            <button className="text-xs font-semibold text-primary-foreground bg-primary px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+            <button onClick={() => navigate("/pricing")} className="text-xs font-semibold text-primary-foreground bg-primary px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
               Upgrade to Pro
             </button>
           </div>
