@@ -277,7 +277,7 @@ const InvestorDashboard = () => {
     const daysSince = p.purchase_date ? Math.round((Date.now() - new Date(p.purchase_date).getTime()) / 86400000) : 0;
 
     return (
-      <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
+      <div className="min-h-screen max-w-lg lg:max-w-6xl mx-auto px-4 py-6 pb-24 space-y-4">
         <button onClick={() => setSelectedProject(null)} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">← Back to Projects</button>
 
         <div className="rounded-2xl border border-border bg-card p-4">
@@ -312,7 +312,7 @@ const InvestorDashboard = () => {
 
         {detailTab === "overview" && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { label: "Purchase Price", value: fmt(p.purchase_price), color: "text-foreground" },
                 { label: "Projected ARV", value: fmt(p.projected_arv), color: "text-primary" },
@@ -470,7 +470,7 @@ const InvestorDashboard = () => {
 
   // ── MAIN DASHBOARD ──
   return (
-    <div className="min-h-screen max-w-lg mx-auto px-4 py-6 pb-24 space-y-5">
+    <div className="min-h-screen max-w-lg lg:max-w-6xl mx-auto px-4 py-6 pb-24 space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Investor Dashboard</h1>
         <p className="text-sm text-muted-foreground">{profile?.full_name || "Investor"} · Portfolio Summary</p>
@@ -478,7 +478,7 @@ const InvestorDashboard = () => {
 
       {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Active Projects", value: activeProjects.length.toString(), icon: Building2, color: "text-primary" },
           { label: "Total Invested", value: fmt(totalInvested), icon: DollarSign, color: "text-amber-400" },
@@ -592,8 +592,8 @@ const InvestorDashboard = () => {
 
       {/* ── FLIP ANALYZER TAB — 5 STEPS ── */}
       {activeTab === "analyzer" && !showCompare && (
-        <div className="space-y-4">
-          {/* Step indicator */}
+        <div className="lg:grid lg:grid-cols-5 lg:gap-6">
+        <div className="lg:col-span-3 space-y-4">
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map(s => (
               <button key={s} onClick={() => setAnalyzerStep(s)}
@@ -750,7 +750,7 @@ const InvestorDashboard = () => {
           {analyzerStep === 4 && (
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               <h3 className="text-sm font-bold text-foreground">Timeline & Carrying Costs</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <InputField label="Renovation (months)" value={az.renoDuration} onChange={v => setAz({ ...az, renoDuration: v })} placeholder="4" />
                 <InputField label="Time on Market (months)" value={az.marketTime} onChange={v => setAz({ ...az, marketTime: v })} placeholder="2" />
               </div>
@@ -760,7 +760,7 @@ const InvestorDashboard = () => {
               </div>
 
               <p className="text-xs font-semibold text-foreground mt-2">Monthly Carrying Costs</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <InputField label="Property Taxes" value={az.propertyTax} onChange={v => setAz({ ...az, propertyTax: v })} placeholder="$300" />
                 <InputField label="Insurance" value={az.insurance} onChange={v => setAz({ ...az, insurance: v })} placeholder="$150" />
                 <InputField label="Utilities" value={az.utilities} onChange={v => setAz({ ...az, utilities: v })} placeholder="$200" />
@@ -820,7 +820,7 @@ const InvestorDashboard = () => {
                 </div>
 
                 {/* Profit & ROI */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="rounded-xl border border-border bg-card p-3 text-center">
                     <p className="text-[10px] text-muted-foreground mb-1">Projected Profit</p>
                     <p className={`text-xl font-bold ${c.profit >= 0 ? "text-green-400" : "text-destructive"}`}>{fmt(Math.round(c.profit))}</p>
@@ -880,6 +880,52 @@ const InvestorDashboard = () => {
             );
           })()}
         </div>
+        {/* Desktop live summary panel */}
+        <div className="hidden lg:block lg:col-span-2 space-y-4 sticky top-20 self-start">
+          {(() => {
+            const c = analyzerCalc();
+            return (
+              <>
+                <div className={`rounded-xl border-2 p-4 text-center ${c.ratingBg}`}>
+                  <p className="text-[10px] text-muted-foreground mb-1">Live Deal Rating</p>
+                  <p className={`text-2xl font-bold ${c.ratingColor}`}>{c.rating}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-xs">
+                  <h4 className="text-sm font-bold text-foreground mb-2">Live Summary</h4>
+                  {[
+                    ["Purchase", c.purchase],
+                    ["Renovation", c.renoTotal],
+                    ["Closing (Buy)", c.closingBuy],
+                    ["Carrying", c.totalCarrying],
+                    ["Closing (Sell)", c.closingSell],
+                  ].map(([label, val]) => (
+                    <div key={label as string} className="flex justify-between text-muted-foreground">
+                      <span>{label as string}</span><span>{fmt(Math.round(val as number))}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-2 text-sm">
+                    <span>Total Cost</span><span>{fmt(Math.round(c.totalProjectCost))}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-border pt-2 text-sm">
+                    <span>Profit</span>
+                    <span className={c.profit >= 0 ? "text-green-400" : "text-destructive"}>{fmt(Math.round(c.profit))}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>ROI</span><span className="text-primary font-bold">{c.roi.toFixed(1)}%</span>
+                  </div>
+                </div>
+                <div className={`rounded-xl border p-3 ${c.maoPass ? "border-green-500/40 bg-green-500/5" : "border-destructive/40 bg-destructive/5"}`}>
+                  <p className="text-[10px] text-muted-foreground">70% Rule MAO</p>
+                  <p className="text-lg font-bold text-foreground">{fmt(Math.round(c.mao))}</p>
+                  <span className={`text-[10px] font-bold ${c.maoPass ? "text-green-400" : "text-destructive"}`}>
+                    {c.maoPass ? "✓ PASS" : "✗ OVER"}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+        </div>
       )}
 
       {/* ── COMPARE DEALS ── */}
@@ -930,7 +976,7 @@ const InvestorDashboard = () => {
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-sm font-bold text-foreground mb-3">Portfolio Summary</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div><p className="text-[10px] text-muted-foreground">Total Properties</p><p className="text-lg font-bold text-foreground">{effectiveProjects.length}</p></div>
               <div><p className="text-[10px] text-muted-foreground">Active Flips</p><p className="text-lg font-bold text-primary">{activeProjects.length}</p></div>
               <div><p className="text-[10px] text-muted-foreground">Total Invested</p><p className="text-lg font-bold text-foreground">{fmt(totalInvested)}</p></div>

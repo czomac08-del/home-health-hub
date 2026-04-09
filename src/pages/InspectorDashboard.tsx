@@ -119,7 +119,7 @@ const InspectorDashboard = () => {
   if (mode === "report" && active) {
     const findings = Array.isArray(active.findings) ? active.findings : [];
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setMode("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Inspection Report</h1>
         <p className="text-xs text-muted-foreground mb-6">{active.property_address}</p>
@@ -197,7 +197,7 @@ const InspectorDashboard = () => {
     const progress = Math.round((checkedItems / totalItems) * 100);
 
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setMode("intel")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Digital Inspection</h1>
         <p className="text-xs text-muted-foreground mb-4">{active.property_address}</p>
@@ -261,7 +261,7 @@ const InspectorDashboard = () => {
   /* ── Pre-Inspection Intel ── */
   if (mode === "intel" && active) {
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setMode("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Pre-Inspection Intel</h1>
         <p className="text-xs text-muted-foreground mb-4">{active.property_address} · {active.client_name || "Client"}</p>
@@ -305,7 +305,7 @@ const InspectorDashboard = () => {
     const weekDates = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; });
 
     return (
-      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+      <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
         <button onClick={() => setMode("dashboard")} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Scheduling Calendar</h1>
         <p className="text-xs text-muted-foreground mb-6">Week of {weekDates[0].toLocaleDateString()}</p>
@@ -366,7 +366,7 @@ const InspectorDashboard = () => {
 
   /* ── Dashboard ── */
   return (
-    <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Inspector"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Certified Home Inspector</p>
 

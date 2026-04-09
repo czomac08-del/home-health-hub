@@ -66,7 +66,7 @@ const ProfileScreen = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto px-6 py-8">
+    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       {/* Avatar + Name */}
       <div className="flex flex-col items-center gap-3 mb-8">
         <div className="h-20 w-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">

@@ -59,7 +59,7 @@ const SystemsScreen = () => {
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto px-6 py-8">
+    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold text-foreground mb-6">Systems</h1>
 
       <div className="relative mb-6">

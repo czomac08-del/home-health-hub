@@ -372,7 +372,7 @@ const SystemConfigScreen = () => {
   };
 
   return (
-    <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen pb-32 max-w-lg lg:max-w-5xl mx-auto px-4 py-6">
       <button onClick={() => navigate("/systems")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
         <ArrowLeft className="h-4 w-4" /> Back to Systems
       </button>

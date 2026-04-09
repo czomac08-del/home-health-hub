@@ -38,7 +38,7 @@ const DocumentVaultScreen = () => {
   }, [activeTab, search]);
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg mx-auto px-6 py-8">
+    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
