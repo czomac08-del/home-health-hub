@@ -44,7 +44,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder"];
+const hideNavRoutes = ["/", "/auth", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing"];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
