@@ -36,7 +36,7 @@ const DashboardScreen = () => {
           <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-4 w-4 text-primary" />
           </div>
-          <span className="text-foreground font-semibold text-sm">Home Passport</span>
+          <span className="text-foreground font-semibold text-sm">ComingHomeIQ</span>
         </div>
         <div className="flex items-center gap-2">
           <PrivacyBadge />

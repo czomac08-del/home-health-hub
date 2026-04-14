@@ -13,7 +13,7 @@ const roles = [
   { key: "realtor", icon: Briefcase, title: "Realtors", desc: "Differentiate listings with verified home health data. Generate professional Buyer Reports instantly.", color: "from-blue-500/20 to-blue-500/5" },
   { key: "inspector", icon: ClipboardList, title: "Home Inspectors", desc: "Access pre-populated data, streamline inspections, and deliver comprehensive reports faster.", color: "from-amber-500/20 to-amber-500/5" },
   { key: "contractor", icon: Wrench, title: "Pro Contractors", desc: "Arrive prepared with full system history, model numbers, and service records for every job.", color: "from-purple-500/20 to-purple-500/5" },
-  { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate Home Passports for sale.", color: "from-emerald-500/20 to-emerald-500/5" },
+  { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate ComingHomeIQs for sale.", color: "from-emerald-500/20 to-emerald-500/5" },
 ];
 
 const stats = [
@@ -40,7 +40,7 @@ const LandingPage = () => {
           <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold text-foreground">Home Passport</span>
+          <span className="text-lg font-bold text-foreground">ComingHomeIQ</span>
         </div>
         <div className="flex items-center gap-4">
           {user ? (
@@ -64,7 +64,7 @@ const LandingPage = () => {
           <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4">
-          Your Home's Complete<br /><span className="text-primary">Digital Passport</span>
+          Your Home's Complete<br /><span className="text-primary">IQ</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           Track every system, protect your investment, and transfer verified home data seamlessly — whether you're a homeowner, realtor, inspector, or contractor.
@@ -146,7 +146,7 @@ const LandingPage = () => {
 
       {/* Features */}
       <section className="max-w-4xl mx-auto px-6 pb-20">
-        <h2 className="text-2xl font-bold text-foreground text-center mb-10">Why Home Passport?</h2>
+        <h2 className="text-2xl font-bold text-foreground text-center mb-10">Why ComingHomeIQ?</h2>
         <div className="grid md:grid-cols-3 gap-5">
           {[
             { icon: Shield, title: "Protect Your Investment", desc: "Track system health, maintenance history, and warranties in one place." },
@@ -208,7 +208,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center">
-        <p className="text-xs text-muted-foreground">© 2026 Home Passport. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ. All rights reserved.</p>
       </footer>
     </div>
   );

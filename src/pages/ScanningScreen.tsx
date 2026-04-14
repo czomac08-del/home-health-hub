@@ -91,7 +91,7 @@ const ScanningScreen = () => {
         <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
           <Home className="h-5 w-5 text-primary" />
         </div>
-        <span className="text-lg font-bold text-foreground tracking-tight">Home Passport</span>
+        <span className="text-lg font-bold text-foreground tracking-tight">ComingHomeIQ</span>
       </div>
 
       {/* Pulsing circle */}

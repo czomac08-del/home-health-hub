@@ -29,7 +29,7 @@ const helpContent: Record<string, { title: string; description: string }> = {
   },
   "/welcome": {
     title: "Welcome",
-    description: "Enter your home address to get started. We'll set up your Home Passport from here.",
+    description: "Enter your home address to get started. We'll set up your ComingHomeIQ from here.",
   },
   "/property": {
     title: "Property Details",
@@ -44,7 +44,7 @@ const HelpButton = () => {
   const pathKey = Object.keys(helpContent).find(
     (k) => location.pathname === k || location.pathname.startsWith(k + "/")
   );
-  const content = pathKey ? helpContent[pathKey] : { title: "Help", description: "Navigate using the bottom tabs to explore your Home Passport." };
+  const content = pathKey ? helpContent[pathKey] : { title: "Help", description: "Navigate using the bottom tabs to explore your ComingHomeIQ." };
 
   return (
     <>

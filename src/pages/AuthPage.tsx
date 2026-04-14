@@ -83,7 +83,7 @@ const AuthPage = () => {
           <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
             <Home className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Home Passport</h1>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">ComingHomeIQ</h1>
         </div>
 
         <p className="text-muted-foreground text-lg text-center">

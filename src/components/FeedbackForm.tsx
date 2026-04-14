@@ -54,7 +54,7 @@ const FeedbackForm = ({ onClose }: { onClose: () => void }) => {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-bold text-foreground mb-1">Send Feedback</h2>
-        <p className="text-xs text-muted-foreground">Help us improve Home Passport</p>
+        <p className="text-xs text-muted-foreground">Help us improve ComingHomeIQ</p>
       </div>
 
       {/* Star Rating */}

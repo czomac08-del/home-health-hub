@@ -74,7 +74,7 @@ export const SmartHomeIntegrations = () => {
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 mb-2">
         <p className="text-xs text-foreground font-medium flex items-center gap-2">
           <Wifi className="h-4 w-4 text-primary" />
-          Connecting your smart devices gives Home Passport real data instead of estimates — making your health score more accurate.
+          Connecting your smart devices gives ComingHomeIQ real data instead of estimates — making your health score more accurate.
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export const SmartHomeIntegrations = () => {
             <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
               <p className="text-xs text-muted-foreground">{integ.description}</p>
               <div>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Data shared with Home Passport:</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Data shared with ComingHomeIQ:</p>
                 <div className="space-y-1">
                   {integ.dataShared.map((d, i) => (
                     <div key={i} className="flex items-center gap-2">

@@ -128,7 +128,7 @@ const IntegrationsPage = () => {
           <Plug2 className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold text-foreground">Integrations</h1>
         </div>
-        <p className="text-xs text-muted-foreground">Connect Home Passport to the tools you already use.</p>
+        <p className="text-xs text-muted-foreground">Connect ComingHomeIQ to the tools you already use.</p>
         <p className="text-[10px] text-muted-foreground/70">Sync your data, eliminate double entry, and supercharge your workflow.</p>
       </div>
 
@@ -227,9 +227,9 @@ const IntegrationsPage = () => {
       <div className="mt-8 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-6">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="h-5 w-5 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Home Passport API</h3>
+          <h3 className="text-sm font-bold text-foreground">ComingHomeIQ API</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Are you a software company? Integrate Home Passport into your platform.</p>
+        <p className="text-xs text-muted-foreground mb-4">Are you a software company? Integrate ComingHomeIQ into your platform.</p>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           {[

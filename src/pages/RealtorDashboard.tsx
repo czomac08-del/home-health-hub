@@ -244,7 +244,7 @@ const RealtorDashboard = () => {
           </button>
           <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-4 py-1.5 mb-6">
             <Shield className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-bold text-primary uppercase tracking-wider">Home Passport · Open House</span>
+            <span className="text-xs font-bold text-primary uppercase tracking-wider">ComingHomeIQ · Open House</span>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">{showOpenHouse.property_address}</h1>
           <p className="text-lg text-muted-foreground mb-8">{showOpenHouse.list_price || "Price TBD"}</p>
@@ -517,7 +517,7 @@ const BuyerReport = ({ listing, onBack }: { listing: Listing; onBack: () => void
       <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden relative">
         <div className="absolute top-6 right-6 rotate-12 opacity-15 pointer-events-none select-none">
           <div className="border-4 border-primary rounded-xl px-4 py-2">
-            <p className="text-primary font-black text-lg uppercase tracking-widest leading-none">Home Passport</p>
+            <p className="text-primary font-black text-lg uppercase tracking-widest leading-none">ComingHomeIQ</p>
             <p className="text-primary font-bold text-[10px] uppercase tracking-widest text-center">Verified</p>
           </div>
         </div>
