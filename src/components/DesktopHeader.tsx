@@ -1,4 +1,4 @@
-import { Bell, Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus } from "lucide-react";
+import { Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus, Heart } from "lucide-react";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";

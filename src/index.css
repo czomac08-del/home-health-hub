@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=DM+Sans:wght@400;500;600&family=Orbitron:wght@700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -146,14 +146,17 @@
   .font-heading {
     font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   }
+  .font-logo {
+    font-family: 'Orbitron', 'Nunito', system-ui, sans-serif;
+  }
   .font-body {
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   }
   .glow-orange {
-    box-shadow: 0 0 20px hsl(24 91% 54% / 0.2);
+    box-shadow: 0 4px 20px hsl(24 91% 54% / 0.35);
   }
   .glow-orange-strong {
-    box-shadow: 0 0 30px hsl(24 91% 54% / 0.3);
+    box-shadow: 0 4px 30px hsl(24 91% 54% / 0.4);
   }
   /* Keep old names as aliases */
   .glow-teal {

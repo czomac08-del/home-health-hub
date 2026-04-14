@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Grid3X3, Wrench, User, Settings, Home, Briefcase } from "lucide-react";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
-
 const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
