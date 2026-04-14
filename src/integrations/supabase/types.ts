@@ -47,6 +47,44 @@ export type Database = {
         }
         Relationships: []
       }
+      certification_shares: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          property_id: string
+          share_token: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          property_id: string
+          share_token?: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          property_id?: string
+          share_token?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certification_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_jobs: {
         Row: {
           created_at: string
