@@ -37,7 +37,7 @@ const DesktopHeader = () => {
       <div className="flex items-center gap-2 w-40">
         <Heart className="h-5 w-5 text-primary fill-primary" />
         <span className="text-sm font-logo font-bold text-foreground hidden xl:inline">Coming Home<span className="text-primary font-black">IQ</span></span>
-        <span className="text-sm font-logo font-black text-primary xl:hidden">IQ</span>
+        <span className="text-sm font-logo font-black text-primary xl:hidden">CHIQ</span>
       </div>
 
       {/* Center — property switcher */}
