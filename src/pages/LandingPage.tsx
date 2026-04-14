@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp } from "lucide-react";
+import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -37,10 +37,8 @@ const LandingPage = () => {
       {/* Nav */}
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Home className="h-5 w-5 text-primary" />
-          </div>
-          <span className="text-lg font-heading font-black text-foreground">Coming Home<span className="text-primary">IQ</span></span>
+          <Heart className="h-6 w-6 text-primary fill-primary" />
+          <span className="text-lg font-logo font-bold text-foreground">Coming Home<span className="text-primary font-black">IQ</span></span>
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
@@ -59,24 +57,28 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 pt-16 lg:pt-24 pb-12 lg:pb-16 text-center">
-        <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
-          <Zap className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
-        </div>
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-foreground leading-tight mb-4">
-          Your Home's Complete<br /><span className="text-primary">IQ</span>
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-          Track every system, protect your investment, and transfer verified home data seamlessly — whether you're a homeowner, realtor, inspector, or contractor.
-        </p>
-        <div className="flex items-center justify-center gap-3">
-          <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:opacity-90 transition-opacity glow-orange-strong text-sm">
-            Get Started Free
-          </button>
-          <button onClick={() => navigate("/pricing")} className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-secondary/80 transition-colors text-sm">
-            View Pricing
-          </button>
+      <section className="relative max-w-5xl mx-auto px-6 pt-16 lg:pt-24 pb-12 lg:pb-16 text-center">
+        {/* Orange radial glow behind headline */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-foreground leading-tight mb-4">
+            Your Home's Complete<br /><span className="text-primary">IQ</span>
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            The Carfax for homes — track every system, verify every record, and transfer everything when you sell.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-[hsl(24_91%_60%)] hover:-translate-y-[2px] transition-all duration-200 glow-orange-strong text-sm">
+              Scan My Home
+            </button>
+            <button onClick={() => navigate("/pricing")} className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-[hsl(224_73%_40%)] hover:-translate-y-[2px] transition-all duration-200 text-sm">
+              View Pricing
+            </button>
+          </div>
         </div>
       </section>
 
@@ -104,7 +106,7 @@ const LandingPage = () => {
       <section className="max-w-4xl mx-auto px-6 pb-16">
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: Home, label: "50,000+ Homes Documented" },
+            { icon: Heart, label: "50,000+ Homes Documented" },
             { icon: Briefcase, label: "Trusted by Realtors" },
             { icon: ClipboardList, label: "Inspector Verified" },
           ].map((t) => (

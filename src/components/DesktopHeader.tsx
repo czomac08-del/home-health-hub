@@ -1,4 +1,4 @@
-import { Bell, Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus } from "lucide-react";
+import { Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus, Heart } from "lucide-react";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,8 +33,12 @@ const DesktopHeader = () => {
   };
 
   return (
-    <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-card sticky top-0 z-30">
-      <div className="w-40" />
+    <header className="hidden lg:flex items-center justify-between h-14 px-6 border-b border-border bg-[hsl(var(--bg-secondary))] sticky top-0 z-30">
+      <div className="flex items-center gap-2 w-40">
+        <Heart className="h-5 w-5 text-primary fill-primary" />
+        <span className="text-sm font-logo font-bold text-foreground hidden xl:inline">Coming Home<span className="text-primary font-black">IQ</span></span>
+        <span className="text-sm font-logo font-black text-primary xl:hidden">IQ</span>
+      </div>
 
       {/* Center — property switcher */}
       <div className="relative">

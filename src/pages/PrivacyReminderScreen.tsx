@@ -19,7 +19,7 @@ const PrivacyReminderScreen = () => {
       </div>
 
       <h1 className="text-2xl font-bold text-foreground mb-3">
-        Your Home Passport is Private by Default
+        Your ComingHomeIQ Profile is Private by Default
       </h1>
 
       <p className="text-muted-foreground text-base leading-relaxed mb-8">

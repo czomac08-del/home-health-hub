@@ -272,8 +272,8 @@ const InspectorDashboard = () => {
               <Zap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-primary">Home Passport data found</p>
-              <p className="text-[10px] text-muted-foreground">System data, permits, and known issues are pre-populated.</p>
+               <p className="text-sm font-bold text-primary">ComingHomeIQ data found</p>
+               <p className="text-[10px] text-muted-foreground">System data, permits, and known issues are pre-populated.</p>
             </div>
           </div>
         )}

@@ -195,7 +195,7 @@ const RealtorDashboard = () => {
         <button onClick={() => setShowDisclosure(null)} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Digital Disclosure</h1>
         <p className="text-xs text-muted-foreground mb-2">{showDisclosure.property_address}</p>
-        <p className="text-[10px] text-muted-foreground mb-6">Items auto-populated from Home Passport data. Review and mark each as disclosed.</p>
+        <p className="text-[10px] text-muted-foreground mb-6">Items auto-populated from ComingHomeIQ data. Review and mark each as disclosed.</p>
 
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 mb-4 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -471,7 +471,7 @@ const RealtorDashboard = () => {
             <p className="text-xs text-muted-foreground mb-4">{showRequestModal.property_address}</p>
             <input value={requestEmail} onChange={e => setRequestEmail(e.target.value)} placeholder="Homeowner email address..."
               className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 mb-3" />
-            <p className="text-[10px] text-muted-foreground mb-4">The homeowner will receive an invitation to create a free Home Passport.</p>
+            <p className="text-[10px] text-muted-foreground mb-4">The homeowner will receive an invitation to create a free ComingHomeIQ profile.</p>
             <div className="flex gap-2">
               <button onClick={sendPassportRequest} disabled={sending}
                 className="flex-1 rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50 flex items-center justify-center gap-1">

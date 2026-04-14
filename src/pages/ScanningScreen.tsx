@@ -12,7 +12,7 @@ const tasks = [
   { label: "Scanning for known hazard risks...", delay: 5500 },
   { label: "Checking neighborhood health data...", delay: 6500 },
   { label: "Reviewing electrical panel safety recalls...", delay: 7500 },
-  { label: "Building your Home Passport profile...", delay: 8500 },
+  { label: "Building your ComingHomeIQ profile...", delay: 8500 },
   { label: "Almost done — generating your health score...", delay: 9500 },
 ];
 
@@ -20,7 +20,7 @@ const tips = [
   "Homes with documented maintenance history sell for up to 3% more.",
   "Your HVAC filter should be changed every 60 to 90 days.",
   "Most homeowners don't know their well depth — we find it for you.",
-  "A documented home passport can speed up closing by reducing inspection surprises.",
+  "A documented home profile can speed up closing by reducing inspection surprises.",
   "87% of home buyers say maintenance history affects their offer price.",
 ];
 

@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Grid3X3, Wrench, User, Settings, Home, Briefcase } from "lucide-react";
+import { LayoutDashboard, Grid3X3, Wrench, User, Settings, Briefcase, Heart } from "lucide-react";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
-
 const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -26,11 +25,9 @@ const DesktopSidebar = () => {
     <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-border bg-card h-screen sticky top-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-        <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
-          <Home className="h-5 w-5 text-primary" />
-        </div>
-        <span className="text-base font-heading font-black text-foreground">
-          Coming Home<span className="text-primary">IQ</span>
+        <Heart className="h-6 w-6 text-primary fill-primary" />
+        <span className="text-base font-logo font-bold text-foreground">
+          Coming Home<span className="text-primary font-black">IQ</span>
         </span>
       </div>
 
