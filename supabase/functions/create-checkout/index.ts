@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://house-scan-hub.lovable.app";
+    const origin = req.headers.get("origin") || "https://cominghomeiq.lovable.app";
 
     // One-time purchase
     if (planId === "one_time_report") {
