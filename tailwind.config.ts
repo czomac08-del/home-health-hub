@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         heading: ["Nunito", "system-ui", "-apple-system", "sans-serif"],
+        logo: ["Orbitron", "Nunito", "system-ui", "sans-serif"],
         body: ["DM Sans", "system-ui", "-apple-system", "sans-serif"],
       },
       colors: {
