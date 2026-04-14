@@ -59,7 +59,7 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
   const [showForm, setShowForm] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showClaimAssist, setShowClaimAssist] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [_uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     warranty_type: "manufacturer",
     provider_name: "",
@@ -71,7 +71,7 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
     is_transferable: true,
   });
 
-  useEffect(() => { loadWarranties(); }, [systemDetailId]);
+  useEffect(() => { loadWarranties(); }, [systemDetailId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadWarranties = async () => {
     const { data } = await supabase
