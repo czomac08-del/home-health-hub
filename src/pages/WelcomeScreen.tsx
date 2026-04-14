@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Home, MapPin, Loader2, CheckCircle2 } from "lucide-react";
+import { Search, MapPin, Loader2, CheckCircle2, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -91,11 +91,9 @@ const WelcomeScreen = () => {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
-            <Home className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="text-3xl font-heading font-black text-foreground tracking-tight">
-            Coming Home<span className="text-primary">IQ</span>
+          <Heart className="h-8 w-8 text-primary fill-primary" />
+          <h1 className="text-3xl font-logo font-bold text-foreground tracking-tight">
+            Coming Home<span className="text-primary font-black">IQ</span>
           </h1>
         </div>
 
