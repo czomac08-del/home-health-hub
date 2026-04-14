@@ -391,7 +391,7 @@ const OnboardingWizard = () => {
         return (
           <div className="flex flex-col gap-5 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground">Your First To-Do List</h2>
-            <p className="text-sm text-muted-foreground">Complete these {todos.length} tasks to reach 100% home health.</p>
+            <p className="text-sm text-muted-foreground">Complete these {todos.length} tasks to reach 100% Home IQ.</p>
             <div className="flex flex-col gap-3">
               {todos.map((t, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">

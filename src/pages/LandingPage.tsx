@@ -11,7 +11,7 @@ const tiers = [
 
 const roles = [
   { key: "homeowner", icon: Home, title: "Homeowners", desc: "Track every system, schedule maintenance, and build a complete history that adds value when you sell.", accent: "border-t-4 border-t-primary" },
-  { key: "realtor", icon: Briefcase, title: "Realtors", desc: "Differentiate listings with verified home health data. Generate professional Buyer Reports instantly.", accent: "border-t-4 border-t-secondary" },
+  { key: "realtor", icon: Briefcase, title: "Realtors", desc: "Differentiate listings with verified home IQ data. Generate professional Buyer Reports instantly.", accent: "border-t-4 border-t-secondary" },
   { key: "inspector", icon: ClipboardList, title: "Home Inspectors", desc: "Access pre-populated data, streamline inspections, and deliver comprehensive reports faster.", accent: "border-t-4 border-t-blue-brain" },
   { key: "contractor", icon: Wrench, title: "Pro Contractors", desc: "Arrive prepared with full system history, model numbers, and service records for every job.", accent: "border-t-4 border-t-success" },
   { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate ComingHomeIQs for sale.", accent: "border-t-4 border-t-warning" },
