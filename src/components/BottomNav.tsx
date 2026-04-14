@@ -23,7 +23,7 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/30" style={{ backgroundColor: "#1A1F24" }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card">
       <div className="max-w-lg mx-auto flex items-center justify-around py-2">
         {tabs.map((tab) => {
           const active = isActive(tab.path);
