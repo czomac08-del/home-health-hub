@@ -88,7 +88,7 @@ const LandingPage = () => {
           {[
             { step: "1", icon: Search, title: "Scan Your Address", desc: "Enter your address and we pull public records instantly" },
             { step: "2", icon: Shield, title: "Verify Your Systems", desc: "Confirm AI-found data and add your own details" },
-            { step: "3", icon: FileText, title: "Share Your Passport", desc: "Transfer to buyers, share with pros, or generate reports" },
+            { step: "3", icon: FileText, title: "Share Your IQ Report", desc: "Transfer to buyers, share with pros, or generate reports" },
           ].map((s) => (
             <div key={s.step} className="rounded-2xl border border-border bg-card p-4 text-center hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200">
               <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
@@ -133,7 +133,7 @@ const LandingPage = () => {
       {/* User Types */}
       <section className="max-w-7xl mx-auto px-6 pb-20">
         <h2 className="text-2xl font-heading font-black text-foreground text-center mb-2">Built for Everyone in Real Estate</h2>
-        <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences</p>
+        <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {roles.map((r) => (
             <div key={r.key} className={`rounded-2xl border border-border bg-card p-6 ${r.accent} hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200`}>
@@ -211,7 +211,7 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center">
-        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ · Your Home's Complete IQ</p>
+        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ. All rights reserved.</p>
       </footer>
     </div>
   );

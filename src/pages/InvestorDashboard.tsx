@@ -332,7 +332,7 @@ const InvestorDashboard = () => {
             </div>
             {p.status === "listed" && (
               <button className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                <FileText className="h-4 w-4" /> Convert to Home Passport
+                <FileText className="h-4 w-4" /> Convert to Home Passport Report
               </button>
             )}
           </div>

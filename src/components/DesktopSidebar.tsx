@@ -55,7 +55,7 @@ const DesktopSidebar = () => {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-border">
-        <p className="text-[10px] text-muted-foreground">© 2026 ComingHomeIQ · Your Home's Complete IQ</p>
+        <p className="text-[10px] text-muted-foreground">© 2026 ComingHomeIQ. All rights reserved.</p>
       </div>
     </aside>
   );

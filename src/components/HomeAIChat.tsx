@@ -87,7 +87,7 @@ const HomeAIChat = () => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-bold text-foreground">Home AI</p>
+              <p className="text-sm font-bold text-foreground">Home IQ Assistant</p>
               <span className="text-[9px] text-muted-foreground">— Knows your home</span>
             </div>
             <div className="flex items-center gap-1">

@@ -134,7 +134,7 @@ const DispositionPill = ({ label, active, color, onClick }: { label: string; act
 const StepStaying = ({ systems, dispositions, setDisposition }: { systems: SystemEntry[]; dispositions: Record<string, ItemDisposition>; setDisposition: (n: string, d: ItemDisposition) => void }) => (
   <div>
     <h2 className="text-lg font-bold text-foreground mb-1">What's Staying With the Home?</h2>
-    <p className="text-xs text-muted-foreground mb-4">Items marked <span className="text-primary font-semibold">Staying</span> will transfer to the new owner's passport. Items you're taking will be removed from the home record.</p>
+    <p className="text-xs text-muted-foreground mb-4">Items marked <span className="text-primary font-semibold">Staying</span> will transfer to the new owner's Home Passport Report. Items you're taking will be removed from the home record.</p>
     <div className="space-y-2">
       {systems.map((s) => (
         <div key={s.name} className="rounded-xl border border-border bg-card p-3">
@@ -178,7 +178,7 @@ const StepScrub = ({ toggles, setToggles, shareCount, scrubCount }: { toggles: R
       ))}
     </div>
     <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-center">
-      <p className="text-sm text-primary font-medium">Your passport will share <span className="font-bold">{shareCount} items</span> and protect <span className="font-bold">{scrubCount} private fields</span>.</p>
+      <p className="text-sm text-primary font-medium">Your report will share <span className="font-bold">{shareCount} items</span> and protect <span className="font-bold">{scrubCount} private fields</span>.</p>
     </div>
   </div>
 );
@@ -267,7 +267,7 @@ const SmallField = ({ label, value, onChange, placeholder }: { label: string; va
 /* ═══ Step 5: Generate ═══ */
 const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => (
   <div>
-    <h2 className="text-lg font-bold text-foreground mb-1">Generate Your Home Passport</h2>
+    <h2 className="text-lg font-bold text-foreground mb-1">Generate Your Home Passport Report</h2>
     <p className="text-xs text-muted-foreground mb-4">Review what the new owner will receive.</p>
 
     <div className="rounded-xl border border-primary/30 bg-card p-4 mb-4">
@@ -314,7 +314,7 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
         <div className="rounded-xl border border-primary/30 bg-primary/10 p-5 text-center mb-6">
           <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3"><Check className="h-7 w-7 text-primary" /></div>
           <h2 className="text-lg font-bold text-foreground mb-2">Transfer Prepared!</h2>
-          <p className="text-xs text-muted-foreground">Your Home Passport has been prepared for transfer. Your personal information has been protected. The new owner will receive an invitation to claim the home.</p>
+          <p className="text-xs text-muted-foreground">Your Home Passport Report has been prepared for transfer. Your personal information has been protected. The new owner will receive an invitation to claim the home.</p>
         </div>
 
         {!showRemoveConfirm ? (
@@ -324,7 +324,7 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
         ) : (
           <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4">
             <p className="text-sm font-semibold text-foreground mb-1">Are you sure?</p>
-            <p className="text-xs text-muted-foreground mb-4">This will remove 123 Main St from your account. The home passport will remain available for the new owner to claim.</p>
+            <p className="text-xs text-muted-foreground mb-4">This will remove 123 Main St from your account. The Home Passport Report will remain available for the new owner to claim.</p>
             <div className="flex gap-2">
               <button onClick={() => { toast.success("Property removed from your account."); navigate("/profile"); }} className="flex-1 rounded-xl bg-destructive py-3 text-sm font-semibold text-destructive-foreground">Yes, Remove</button>
               <button onClick={() => setShowRemoveConfirm(false)} className="flex-1 rounded-xl bg-secondary py-3 text-sm font-semibold text-secondary-foreground">Cancel</button>
@@ -338,7 +338,7 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
   return (
     <div>
       <h2 className="text-lg font-bold text-foreground mb-1">Transfer Method</h2>
-      <p className="text-xs text-muted-foreground mb-4">Choose how to deliver the Home Passport to the new owner.</p>
+      <p className="text-xs text-muted-foreground mb-4">Choose how to deliver the Home Passport Report to the new owner.</p>
 
       <div className="space-y-3">
         {/* Email */}
@@ -377,7 +377,7 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
             <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center"><FileText className="h-5 w-5 text-primary" /></div>
             <div>
               <p className="text-sm font-medium text-foreground">Generate PDF Report</p>
-              <p className="text-[10px] text-muted-foreground">Download a complete passport to hand over</p>
+              <p className="text-[10px] text-muted-foreground">Download a complete report to hand over</p>
             </div>
           </div>
           <button onClick={() => { toast.success("PDF downloaded!"); setTransferDone(true); }} className="w-full rounded-lg bg-secondary py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2">

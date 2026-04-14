@@ -34,9 +34,9 @@ const ScoreReportPage = () => {
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1 mb-4">
           <Shield className="h-3 w-3 text-primary" />
-          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Home Passport Verified</span>
+          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Verified by ComingHomeIQ</span>
         </div>
-        <h1 className="text-2xl font-bold text-foreground mb-1">Home Passport Score</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-1">Home Passport Report — Powered by ComingHomeIQ</h1>
         <p className="text-sm text-muted-foreground">123 Main St · Built 2005</p>
       </div>
 
@@ -157,10 +157,10 @@ const ScoreReportPage = () => {
         <p className="text-[10px] text-muted-foreground mb-3">Add to your MLS listing or Zillow description</p>
         <div className="rounded-lg bg-secondary p-3 flex items-center justify-center gap-2 mb-2">
           <Shield className="h-4 w-4 text-primary" />
-          <span className="text-xs font-bold text-primary">Home Passport Verified — Score: {overallScore}/100</span>
+          <span className="text-xs font-bold text-primary">Verified by ComingHomeIQ — Score: {overallScore}/100</span>
         </div>
         <code className="block text-[9px] text-muted-foreground bg-background rounded p-2 break-all">
-          {`<a href="https://homepassport.app/report/${id || "abc123"}"><img src="https://homepassport.app/badge/${overallScore}.svg" alt="Home Passport Verified" /></a>`}
+          {`<a href="https://cominghomeiq.com/report/${id || "abc123"}"><img src="https://cominghomeiq.com/badge/${overallScore}.svg" alt="Verified by ComingHomeIQ" /></a>`}
         </code>
       </div>
     </div>

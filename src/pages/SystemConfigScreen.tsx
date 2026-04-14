@@ -284,7 +284,7 @@ const SystemConfigScreen = () => {
       }
     }
 
-    toast.success(`${displayName} details saved to your Home Passport!`);
+    toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
     navigate("/systems");
   };
 

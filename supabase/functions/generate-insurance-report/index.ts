@@ -79,7 +79,7 @@ serve(async (req) => {
 </div>
 
 <div class="score-row">
-  <div class="score-box"><div class="value">${healthScore}</div><div class="label">Home Health Score</div></div>
+  <div class="score-box"><div class="value">${healthScore}</div><div class="label">Home IQ Score</div></div>
   <div class="score-box"><div class="value">${profileCompleteness}%</div><div class="label">Profile Complete</div></div>
   <div class="score-box"><div class="value">${systemDetails.length}</div><div class="label">Systems Tracked</div></div>
 </div>

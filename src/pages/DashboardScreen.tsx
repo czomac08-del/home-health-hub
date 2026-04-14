@@ -41,7 +41,8 @@ const DashboardScreen = () => {
           <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-4 w-4 text-primary" />
           </div>
-          <span className="text-foreground font-heading font-black text-sm">Coming Home<span className="text-primary">IQ</span></span>
+          <span className="text-foreground font-heading font-black text-sm hidden sm:inline">Coming Home<span className="text-primary">IQ</span></span>
+          <span className="text-foreground font-heading font-black text-sm sm:hidden">CH<span className="text-primary">IQ</span></span>
         </div>
         <div className="flex items-center gap-2">
           <PrivacyBadge />
@@ -83,7 +84,7 @@ const DashboardScreen = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Health Score */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
-            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home IQ</h2>
+            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Your Home IQ Score</h2>
             <HealthRing percentage={activeProperty?.health_score || 87} size={180} strokeWidth={12} label="Home IQ" />
           </div>
 

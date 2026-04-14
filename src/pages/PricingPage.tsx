@@ -84,8 +84,8 @@ const plans = [
 const faqs = [
   { q: "Can I switch plans anytime?", a: "Yes — upgrade or downgrade anytime. Your new rate starts immediately." },
   { q: "What happens to my data if I cancel?", a: "Your data is saved for 90 days after cancellation and can be exported anytime." },
-  { q: "Can I share my passport with my realtor for free?", a: "Yes — sharing your Home Passport with professionals is always free." },
-  { q: "Do contractors need to pay to view homeowner passports?", a: "Contractors need a Pro account to access client system history." },
+  { q: "Can I share my report with my realtor for free?", a: "Yes — sharing your ComingHomeIQ report with professionals is always free." },
+  { q: "Do contractors need to pay to view homeowner profiles?", a: "Contractors need a Pro account to access client system history." },
   { q: "Is there a money-back guarantee?", a: "Yes — 30 days, no questions asked." },
 ];
 

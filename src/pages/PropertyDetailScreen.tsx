@@ -43,7 +43,7 @@ const PropertyDetailScreen = () => {
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-foreground">Selling or transferring this home?</p>
-            <p className="text-xs text-muted-foreground mt-1">Prepare a complete Home Passport for the new owner, protect your private data, and make the transition seamless.</p>
+            <p className="text-xs text-muted-foreground mt-1">Prepare a complete Home Passport Report for the new owner, protect your private data, and make the transition seamless.</p>
           </div>
         </div>
         <button

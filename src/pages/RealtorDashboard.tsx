@@ -154,7 +154,7 @@ const RealtorDashboard = () => {
           <div className="bg-gradient-to-br from-primary/10 to-transparent p-6 text-center border-b border-border">
             <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-3 py-1 mb-3">
               <Shield className="h-3 w-3 text-primary" />
-              <span className="text-[9px] font-bold text-primary uppercase tracking-wider">Public Home Passport</span>
+              <span className="text-[9px] font-bold text-primary uppercase tracking-wider">ComingHomeIQ Verified</span>
             </div>
             <h2 className="text-lg font-bold text-foreground mb-1">{l.property_address}</h2>
             <p className="text-sm text-muted-foreground">{l.list_price || "Price on Request"}</p>
@@ -467,7 +467,7 @@ const RealtorDashboard = () => {
       {showRequestModal && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="rounded-2xl border border-border bg-card p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-foreground mb-1">Request Home Passport</h3>
+            <h3 className="text-lg font-bold text-foreground mb-1">Request ComingHomeIQ Report</h3>
             <p className="text-xs text-muted-foreground mb-4">{showRequestModal.property_address}</p>
             <input value={requestEmail} onChange={e => setRequestEmail(e.target.value)} placeholder="Homeowner email address..."
               className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 mb-3" />

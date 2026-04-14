@@ -98,7 +98,7 @@ const WelcomeScreen = () => {
         </div>
 
         <p className="text-muted-foreground text-lg text-center">
-          Welcome, {profile?.full_name?.split(" ")[0] || "there"}! Let&apos;s set up your home.
+          Welcome to ComingHomeIQ, {profile?.full_name?.split(" ")[0] || "there"}! Let&apos;s build your home&apos;s complete IQ in about 5 minutes.
         </p>
 
         <div className="w-full relative" ref={wrapperRef}>
