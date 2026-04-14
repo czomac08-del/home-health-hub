@@ -75,7 +75,6 @@ const WelcomeScreen = () => {
 
     const finalAddress = address.trim();
 
-    // Fire-and-forget: save property in background, don't block navigation
     if (user && properties.length === 0) {
       supabase.from("properties").insert({
         user_id: user.id,
@@ -85,7 +84,6 @@ const WelcomeScreen = () => {
       }).then(() => { void refreshProperties(); });
     }
 
-    // Navigate IMMEDIATELY — no awaits, no API blocking
     navigate(user ? "/scanning" : "/auth");
   };
 
@@ -96,7 +94,9 @@ const WelcomeScreen = () => {
           <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
             <Home className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">ComingHomeIQ</h1>
+          <h1 className="text-3xl font-heading font-black text-foreground tracking-tight">
+            Coming Home<span className="text-primary">IQ</span>
+          </h1>
         </div>
 
         <p className="text-muted-foreground text-lg text-center">
@@ -127,7 +127,7 @@ const WelcomeScreen = () => {
                 <button
                   key={i}
                   onClick={() => selectSuggestion(s)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors border-b border-border last:border-0"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-0"
                 >
                   <MapPin className="h-4 w-4 text-primary shrink-0" />
                   <span className="text-sm text-foreground">{s.matchedAddress}</span>
@@ -152,7 +152,7 @@ const WelcomeScreen = () => {
         <button
           onClick={handleContinue}
           disabled={!address.trim() || loading}
-          className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-primary py-4 font-heading font-extrabold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed glow-orange"
         >
           {loading ? "Setting up..." : verifyFailed ? "Use This Address Anyway" : "Scan My Home"}
         </button>
