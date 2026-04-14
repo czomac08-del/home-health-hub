@@ -28,6 +28,7 @@ import InspectorDashboard from "./pages/InspectorDashboard";
 import ContractorDashboard from "./pages/ContractorDashboard";
 import InvestorDashboard from "./pages/InvestorDashboard";
 import ScoreReportPage from "./pages/ScoreReportPage";
+import WarrantyDashboard from "./pages/WarrantyDashboard";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import FeedbackScreen from "./pages/FeedbackScreen";
@@ -141,6 +142,7 @@ const AppContent = () => {
             <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
             <Route path="/investor" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
             <Route path="/report/:id" element={<ScoreReportPage />} />
+            <Route path="/warranties" element={<ProtectedRoute><WarrantyDashboard /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><DocumentVaultScreen /></ProtectedRoute>} />
             <Route path="/feedback" element={<ProtectedRoute><FeedbackScreen /></ProtectedRoute>} />
             <Route path="/create-profile" element={<ProtectedRoute><CreateProfileScreen /></ProtectedRoute>} />

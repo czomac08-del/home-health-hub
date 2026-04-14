@@ -1076,6 +1076,84 @@ export type Database = {
         }
         Relationships: []
       }
+      warranties: {
+        Row: {
+          claim_notes: string | null
+          claim_phone: string | null
+          claim_website: string | null
+          coverage_end: string | null
+          coverage_start: string | null
+          created_at: string
+          document_path: string | null
+          document_url: string | null
+          extended_doc_path: string | null
+          extended_doc_url: string | null
+          id: string
+          is_transferable: boolean | null
+          property_id: string
+          provider_name: string | null
+          system_detail_id: string | null
+          updated_at: string
+          user_id: string
+          warranty_type: string
+        }
+        Insert: {
+          claim_notes?: string | null
+          claim_phone?: string | null
+          claim_website?: string | null
+          coverage_end?: string | null
+          coverage_start?: string | null
+          created_at?: string
+          document_path?: string | null
+          document_url?: string | null
+          extended_doc_path?: string | null
+          extended_doc_url?: string | null
+          id?: string
+          is_transferable?: boolean | null
+          property_id: string
+          provider_name?: string | null
+          system_detail_id?: string | null
+          updated_at?: string
+          user_id: string
+          warranty_type?: string
+        }
+        Update: {
+          claim_notes?: string | null
+          claim_phone?: string | null
+          claim_website?: string | null
+          coverage_end?: string | null
+          coverage_start?: string | null
+          created_at?: string
+          document_path?: string | null
+          document_url?: string | null
+          extended_doc_path?: string | null
+          extended_doc_url?: string | null
+          id?: string
+          is_transferable?: boolean | null
+          property_id?: string
+          provider_name?: string | null
+          system_detail_id?: string | null
+          updated_at?: string
+          user_id?: string
+          warranty_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranties_system_detail_id_fkey"
+            columns: ["system_detail_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

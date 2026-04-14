@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import BreakerPanelMapper from "@/components/BreakerPanelMapper";
 import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "@/components/AiPhotoScanner";
 import type { ScanResult } from "@/components/AiPhotoScanner";
+import WarrantySection from "@/components/WarrantySection";
 
 const iconMap: Record<string, ReactNode> = {
   hvac: <Fan className="h-6 w-6 text-primary" />,
@@ -156,6 +157,15 @@ const SystemDetailScreen = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Warranty Section */}
+      <div className="mb-6">
+        <WarrantySection
+          systemDetailId={id || ""}
+          propertyId=""
+          systemInfo={{ id: id || "", system_name: system.name, brand: null, model: null, serial_number: null, purchase_date: null, install_date: null }}
+        />
       </div>
 
       {/* Breaker Panel Mapper — Electrical only */}
