@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, Upload, Phone, Globe, MessageSquare, ChevronDown, ChevronUp, Camera, FileText, Clock, AlertTriangle } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, ShieldX, Upload, Phone, Globe, MessageSquare, ChevronDown, ChevronUp, FileText, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";

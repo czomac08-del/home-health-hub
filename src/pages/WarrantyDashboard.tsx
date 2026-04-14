@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Filter, Clock } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
