@@ -107,7 +107,7 @@ const ContractorDashboard = () => {
       status: "completed", work_performed: workDone, parts_replaced: partsReplaced,
       part_models: partModels, labor_hours: laborTime, next_service_rec: nextServiceRec, invoice_amount: cost,
     }).eq("id", activeJob.id);
-    toast.success("Job completed! Service record pushed to ComingHomeIQ.");
+    toast.success("Job completed! Service record pushed to Home Passport.");
     setView("dashboard"); fetchJobs();
   };
 
