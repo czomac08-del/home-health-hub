@@ -6,13 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import type { UserRole } from "@/contexts/RoleContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
-const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string }[] = [
-  { key: "homeowner", icon: Home, title: "Homeowner", desc: "Manage and protect your home" },
-  { key: "realtor", icon: Briefcase, title: "Realtor", desc: "Add value to your listings" },
-  { key: "inspector", icon: ClipboardList, title: "Home Inspector", desc: "Streamline your inspections" },
-  { key: "contractor", icon: Wrench, title: "Pro Contractor", desc: "Arrive prepared to every job" },
-  { key: "investor", icon: Building2, title: "Real Estate Investor", desc: "Track flips, manage renovations, maximize ROI" },
+const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string; accent: string }[] = [
+  { key: "homeowner", icon: Home, title: "Homeowner", desc: "Manage and protect your home", accent: "border-t-primary" },
+  { key: "realtor", icon: Briefcase, title: "Realtor", desc: "Add value to your listings", accent: "border-t-secondary" },
+  { key: "inspector", icon: ClipboardList, title: "Home Inspector", desc: "Streamline your inspections", accent: "border-t-blue-brain" },
+  { key: "contractor", icon: Wrench, title: "Pro Contractor", desc: "Arrive prepared to every job", accent: "border-t-success" },
+  { key: "investor", icon: Building2, title: "Real Estate Investor", desc: "Track flips, manage renovations, maximize ROI", accent: "border-t-warning" },
 ];
 
 const AuthPage = () => {
@@ -26,7 +27,6 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (user) navigate("/home", { replace: true });
   }, [user, navigate]);
@@ -39,9 +39,7 @@ const AuthPage = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: { full_name: fullName, role },
-          },
+          options: { data: { full_name: fullName, role } },
         });
         if (error) throw error;
         toast.success("Account created! Redirecting...");
@@ -50,7 +48,6 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       }
-      // Navigation handled by auth state listener in App
     } catch (err: any) {
       toast.error(err.message || "Authentication failed");
     } finally {
@@ -78,12 +75,17 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
             <Home className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">ComingHomeIQ</h1>
+          <h1 className="text-3xl font-heading font-black text-foreground tracking-tight">
+            Coming Home<span className="text-primary">IQ</span>
+          </h1>
         </div>
 
         <p className="text-muted-foreground text-lg text-center">
@@ -94,7 +96,7 @@ const AuthPage = () => {
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full rounded-xl border border-border bg-card py-3.5 font-medium text-foreground hover:bg-secondary/50 transition-colors flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full rounded-xl border border-border bg-card py-3.5 font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -134,10 +136,10 @@ const AuthPage = () => {
                         key={r.key}
                         type="button"
                         onClick={() => setRole(r.key)}
-                        className={`rounded-xl border-2 p-3 text-left transition-all ${active ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/30"}`}
+                        className={`rounded-2xl border-2 border-t-4 p-3 text-left transition-all ${active ? `border-primary ${r.accent} bg-primary/10` : `border-border ${r.accent} bg-card hover:border-primary/30`}`}
                       >
                         <r.icon className={`h-5 w-5 mb-1.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                        <p className={`text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}>{r.title}</p>
+                        <p className={`text-sm font-heading font-bold ${active ? "text-primary" : "text-foreground"}`}>{r.title}</p>
                         <p className="text-[10px] text-muted-foreground leading-tight">{r.desc}</p>
                       </button>
                     );
@@ -174,7 +176,7 @@ const AuthPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+            className="w-full rounded-xl bg-primary py-4 font-heading font-extrabold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 glow-orange"
           >
             {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
           </button>

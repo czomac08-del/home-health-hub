@@ -30,13 +30,13 @@ const DashboardScreen = () => {
 
   return (
     <div className="min-h-screen pb-24 lg:pb-8">
-      {/* Mobile Header — hidden on desktop (desktop uses DesktopHeader) */}
+      {/* Mobile Header */}
       <header className="flex lg:hidden items-center justify-between px-6 pt-6 pb-4">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-4 w-4 text-primary" />
           </div>
-          <span className="text-foreground font-semibold text-sm">ComingHomeIQ</span>
+          <span className="text-foreground font-heading font-black text-sm">Coming Home<span className="text-primary">IQ</span></span>
         </div>
         <div className="flex items-center gap-2">
           <PrivacyBadge />
@@ -60,7 +60,7 @@ const DashboardScreen = () => {
                 <button
                   key={p.id}
                   onClick={() => { setActivePropertyId(p.id); setShowSwitcher(false); }}
-                  className={`w-full px-4 py-2 text-xs hover:bg-secondary text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                  className={`w-full px-4 py-2 text-xs hover:bg-muted text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
                 >
                   {p.label} — {p.address}
                 </button>
@@ -73,41 +73,40 @@ const DashboardScreen = () => {
         </div>
       </div>
 
-      {/* Main content — responsive container */}
+      {/* Main content */}
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
-        {/* Top row: Health Score + This Week — side by side on desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Health Score */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
-            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home Health</h2>
-            <HealthRing percentage={activeProperty?.health_score || 87} size={180} strokeWidth={12} />
+            <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Overall Home IQ</h2>
+            <HealthRing percentage={activeProperty?.health_score || 87} size={180} strokeWidth={12} label="Home IQ" />
           </div>
 
           {/* This Week Summary */}
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-foreground font-semibold">Good morning, {userName}</p>
+                <p className="text-foreground font-heading font-bold">Good morning, {userName}</p>
                 <p className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
               </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
-                <Sun className="h-3.5 w-3.5 text-health-yellow" />
-                <span className="text-xs text-foreground font-medium">72°F</span>
+              <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
+                <Sun className="h-3.5 w-3.5 text-warning" />
+                <span className="text-xs text-foreground font-heading font-bold">72°F</span>
               </div>
             </div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
             <div className="space-y-2">
               {[
-                { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-health-amber", action: "Set Reminder" },
-                { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-health-yellow", action: "Find a Pro" },
-                { icon: Wrench, text: "Well water test is overdue", color: "text-health-red", action: "Schedule Test" },
+                { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-orange", action: "Set Reminder" },
+                { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-warning", action: "Find a Pro" },
+                { icon: Wrench, text: "Well water test is overdue", color: "text-danger", action: "Schedule Test" },
               ].map((tip) => (
                 <div key={tip.text} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <tip.icon className={`h-3.5 w-3.5 ${tip.color} shrink-0`} />
                     <span className="text-xs text-foreground truncate">{tip.text}</span>
                   </div>
-                  <button className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
+                  <button className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
                     {tip.action} <ChevronRight className="h-2.5 w-2.5" />
                   </button>
                 </div>
@@ -119,8 +118,8 @@ const DashboardScreen = () => {
         {/* Needs Attention */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-health-amber" />
-            <h3 className="text-health-amber font-semibold text-sm uppercase tracking-wider">Needs Attention</h3>
+            <AlertTriangle className="h-4 w-4 text-orange" />
+            <h3 className="text-orange font-heading font-bold text-sm uppercase tracking-wider">Needs Attention</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {needsAttention.map((sys) => (
@@ -131,7 +130,7 @@ const DashboardScreen = () => {
 
         {/* All Systems */}
         <div className="mb-6">
-          <h3 className="text-foreground font-semibold text-lg mb-4">All Systems</h3>
+          <h3 className="text-foreground font-heading font-bold text-lg mb-4">All Systems</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {healthySystems.map((sys) => (
               <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} onClick={() => navigate(`/system/${sys.id}`)} />
