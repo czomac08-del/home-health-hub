@@ -4,6 +4,7 @@ import { Home, Briefcase, ClipboardList, Wrench, TrendingUp, Check, Shield, Lock
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const plans = [
   {
@@ -24,7 +25,7 @@ const plans = [
     icon: Home,
     monthly: 9.99,
     annual: 95,
-    features: ["Everything in Basic", "Unlimited properties", "AI maintenance assistant", "Smart filter reminders with Amazon links", "Home health score tracking", "Full maintenance history", "Priority support"],
+    features: ["Everything in Basic", "Unlimited properties", "AI maintenance assistant", "Smart filter reminders with Amazon links", "Home IQ score tracking", "Full maintenance history", "Priority support"],
     cta: "Start Free Trial",
     highlight: true,
   },
@@ -83,7 +84,7 @@ const plans = [
 const faqs = [
   { q: "Can I switch plans anytime?", a: "Yes — upgrade or downgrade anytime. Your new rate starts immediately." },
   { q: "What happens to my data if I cancel?", a: "Your data is saved for 90 days after cancellation and can be exported anytime." },
-  { q: "Can I share my passport with my realtor for free?", a: "Yes — sharing your passport with professionals is always free." },
+  { q: "Can I share my passport with my realtor for free?", a: "Yes — sharing your Home Passport with professionals is always free." },
   { q: "Do contractors need to pay to view homeowner passports?", a: "Contractors need a Pro account to access client system history." },
   { q: "Is there a money-back guarantee?", a: "Yes — 30 days, no questions asked." },
 ];
@@ -94,6 +95,14 @@ const trustBadges = [
   { icon: Heart, label: "Your Data Is Always Yours" },
   { icon: RefreshCw, label: "Cancel Anytime" },
 ];
+
+const roleAccents: Record<string, string> = {
+  homeowner: "border-t-primary",
+  realtor: "border-t-secondary",
+  inspector: "border-t-blue-brain",
+  contractor: "border-t-success",
+  investor: "border-t-warning",
+};
 
 const PricingPage = () => {
   const [annual, setAnnual] = useState(false);
@@ -141,7 +150,6 @@ const PricingPage = () => {
     return Math.round(plan.monthly * 12 - plan.annual);
   };
 
-  // Group plans by category
   const homeownerPlans = plans.filter(p => p.role === "homeowner");
   const proPlansList = plans.filter(p => p.role !== "homeowner");
 
@@ -153,29 +161,32 @@ const PricingPage = () => {
           <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold text-foreground">ComingHomeIQ</span>
+          <span className="text-lg font-heading font-black text-foreground">Coming Home<span className="text-primary">IQ</span></span>
         </button>
-        <button onClick={() => user ? navigate("/home") : navigate("/auth")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
-          {user ? "Go to Dashboard" : "Sign In"}
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button onClick={() => user ? navigate("/home") : navigate("/auth")} className="text-sm font-heading font-extrabold bg-primary text-primary-foreground px-4 py-2 rounded-xl hover:opacity-90 transition-opacity glow-orange">
+            {user ? "Go to Dashboard" : "Sign In"}
+          </button>
+        </div>
       </nav>
 
       {/* Header */}
       <div className="text-center px-6 pt-8 pb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Simple, Transparent Pricing</h1>
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-foreground mb-3">Simple, Transparent Pricing</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">Choose the plan that fits your needs. All paid plans include a 14-day free trial.</p>
 
         {/* Billing Toggle */}
-        <div className="flex items-center justify-center gap-1 mt-8 bg-secondary/50 rounded-full p-1 w-fit mx-auto">
+        <div className="flex items-center justify-center gap-1 mt-8 bg-muted rounded-full p-1 w-fit mx-auto">
           <button
             onClick={() => setAnnual(false)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${!annual ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+            className={`px-5 py-2 rounded-full text-sm font-heading font-bold transition-all duration-300 ${!annual ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
           >
             Monthly
           </button>
           <button
             onClick={() => setAnnual(true)}
-            className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${annual ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+            className={`px-5 py-2 rounded-full text-sm font-heading font-bold transition-all duration-300 flex items-center gap-2 ${annual ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
           >
             Annual
             <span className="text-[10px] font-bold bg-primary-foreground/20 text-primary-foreground px-2 py-0.5 rounded-full">Save 20%</span>
@@ -185,7 +196,7 @@ const PricingPage = () => {
 
       {/* Homeowner Plans */}
       <div className="max-w-6xl mx-auto px-6 mb-12">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-heading font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
           <Home className="h-4 w-4" /> Homeowner Plans
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -197,7 +208,7 @@ const PricingPage = () => {
 
       {/* Professional Plans */}
       <div className="max-w-6xl mx-auto px-6 mb-12">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-heading font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
           <Briefcase className="h-4 w-4" /> Professional Plans
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -209,17 +220,17 @@ const PricingPage = () => {
 
       {/* One-Time Report */}
       <div className="max-w-6xl mx-auto px-6 mb-16">
-        <div className="rounded-xl border-2 border-dashed border-border bg-card p-6 text-center max-w-md mx-auto">
+        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-6 text-center max-w-md mx-auto">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <FileText className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="font-bold text-foreground text-lg mb-1">Pay Per Report</h3>
+          <h3 className="font-heading font-black text-foreground text-lg mb-1">Pay Per Report</h3>
           <p className="text-muted-foreground text-sm mb-3">No subscription required</p>
-          <p className="text-3xl font-bold text-foreground mb-1">$9.99</p>
+          <p className="text-3xl font-heading font-black text-foreground mb-1">$9.99</p>
           <p className="text-sm text-muted-foreground mb-4">per report</p>
           <button
             onClick={() => handleSubscribe({ id: "one_time_report", monthly: 9.99, annual: 9.99, isFree: false } as any)}
-            className="w-full rounded-lg border border-primary text-primary py-2.5 text-sm font-semibold hover:bg-primary/10 transition-colors"
+            className="w-full rounded-xl border border-primary text-primary py-2.5 text-sm font-heading font-extrabold hover:bg-primary/10 transition-colors"
           >
             Buy Single Report
           </button>
@@ -228,10 +239,10 @@ const PricingPage = () => {
 
       {/* FAQ */}
       <div className="max-w-2xl mx-auto px-6 mb-16">
-        <h2 className="text-xl font-bold text-foreground text-center mb-6">Frequently Asked Questions</h2>
+        <h2 className="text-xl font-heading font-black text-foreground text-center mb-6">Frequently Asked Questions</h2>
         <div className="space-y-2">
           {faqs.map((faq, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">
+            <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between p-4 text-left"
@@ -251,13 +262,18 @@ const PricingPage = () => {
       <div className="max-w-4xl mx-auto px-6 mb-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {trustBadges.map((badge, i) => (
-            <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-secondary/30 border border-border/50">
+            <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-muted border border-border">
               <badge.icon className="h-6 w-6 text-primary" />
               <span className="text-xs text-center font-medium text-muted-foreground">{badge.label}</span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-border py-8 text-center">
+        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ · Your Home's Complete IQ</p>
+      </footer>
     </div>
   );
 };
@@ -272,11 +288,12 @@ const PlanCard = ({ plan, annual, loading, onSubscribe, getPrice, getSavings }: 
 }) => {
   const Icon = plan.icon;
   const savings = getSavings(plan);
+  const accent = roleAccents[plan.role] || "border-t-primary";
 
   return (
-    <div className={`rounded-xl border bg-card p-5 flex flex-col transition-all duration-300 ${plan.highlight ? "border-primary shadow-lg shadow-primary/10 ring-1 ring-primary/30" : "border-border"}`}>
+    <div className={`rounded-2xl border border-t-4 bg-card p-5 flex flex-col transition-all duration-300 hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] ${plan.highlight ? `border-primary ${accent} shadow-lg shadow-primary/10 ring-1 ring-primary/30` : `border-border ${accent}`}`}>
       {plan.highlight && (
-        <div className="text-[10px] font-bold text-primary-foreground bg-primary px-3 py-1 rounded-full self-start mb-3">
+        <div className="text-[10px] font-heading font-black text-primary-foreground bg-primary px-3 py-1 rounded-full self-start mb-3">
           MOST POPULAR
         </div>
       )}
@@ -284,11 +301,11 @@ const PlanCard = ({ plan, annual, loading, onSubscribe, getPrice, getSavings }: 
         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="font-bold text-foreground text-sm">{plan.name}</h3>
+        <h3 className="font-heading font-bold text-foreground text-sm">{plan.name}</h3>
       </div>
 
       <div className="mb-1">
-        <span className="text-3xl font-bold text-foreground transition-all duration-300">{getPrice(plan)}</span>
+        <span className="text-3xl font-heading font-black text-foreground transition-all duration-300">{getPrice(plan)}</span>
         {!plan.isFree && <span className="text-muted-foreground text-sm">/mo</span>}
       </div>
 
@@ -296,7 +313,7 @@ const PlanCard = ({ plan, annual, loading, onSubscribe, getPrice, getSavings }: 
         <div className="mb-3 space-y-1">
           <p className="text-xs text-muted-foreground">Billed ${plan.annual} annually</p>
           {savings > 0 && (
-            <span className="inline-block text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">
+            <span className="inline-block text-[10px] font-heading font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
               Save ${savings}/year
             </span>
           )}
@@ -316,10 +333,10 @@ const PlanCard = ({ plan, annual, loading, onSubscribe, getPrice, getSavings }: 
       <button
         onClick={() => onSubscribe(plan)}
         disabled={loading === plan.id}
-        className={`w-full rounded-lg py-2.5 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
+        className={`w-full rounded-xl py-2.5 text-sm font-heading font-extrabold transition-all duration-200 disabled:opacity-50 ${
           plan.isFree
-            ? "border border-border text-foreground hover:bg-secondary/50"
-            : "bg-primary text-primary-foreground hover:opacity-90"
+            ? "border border-border text-foreground hover:bg-muted"
+            : "bg-primary text-primary-foreground hover:opacity-90 glow-orange"
         }`}
       >
         {loading === plan.id ? "Loading..." : plan.cta}

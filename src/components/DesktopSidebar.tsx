@@ -29,7 +29,9 @@ const DesktopSidebar = () => {
         <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
           <Home className="h-5 w-5 text-primary" />
         </div>
-        <span className="text-base font-bold text-foreground">ComingHomeIQ</span>
+        <span className="text-base font-heading font-black text-foreground">
+          Coming Home<span className="text-primary">IQ</span>
+        </span>
       </div>
 
       {/* Nav items */}
@@ -43,7 +45,7 @@ const DesktopSidebar = () => {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? "bg-primary/10 text-primary border-l-[3px] border-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-[3px] border-transparent"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-l-[3px] border-transparent"
               }`}
             >
               <tab.icon className="h-4.5 w-4.5" />
@@ -55,7 +57,7 @@ const DesktopSidebar = () => {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-border">
-        <p className="text-[10px] text-muted-foreground">© 2026 ComingHomeIQ</p>
+        <p className="text-[10px] text-muted-foreground">© 2026 ComingHomeIQ · Your Home's Complete IQ</p>
       </div>
     </aside>
   );

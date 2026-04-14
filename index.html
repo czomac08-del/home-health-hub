@@ -1,30 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>ComingHomeIQ</title>
-    <meta name="description" content="ComingHomeIQ — The intelligent home record that travels with your home. Track systems, verify history, and transfer everything when you sell.">
-    <meta name="author" content="Lovable" />
+    <title>ComingHomeIQ — Your Home's Complete IQ</title>
+    <meta name="description" content="ComingHomeIQ is the Carfax for homes. Track every system, verify every record, and transfer your complete home history when you sell. Trusted by homeowners, realtors, and inspectors.">
+    <meta name="author" content="ComingHomeIQ" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="ComingHomeIQ — Your Home's Complete IQ">
+    <meta property="og:description" content="ComingHomeIQ is the Carfax for homes. Track every system, verify every record, and transfer your complete home history when you sell. Trusted by homeowners, realtors, and inspectors.">
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8c8dc3a2-1d88-4a0e-84f0-941da4d26c33?Expires=1775577062&amp;GoogleAccessId=go-api-on-aws%40gpt-engineer-390607.iam.gserviceaccount.com&amp;Signature=J%2Fq6mI7wryNeF1m4IRZb%2BHklwnPYm9Lqrps57DAwPpuaQBA%2B%2F3bpE4O%2BrCw7NNiUbKsSYhcfEqLUopd6NnBq10bDYTd0ZpvtpoJS3K9lAQQvz65AirMu3NJDKtWaKXHHKsOFJWNJ9bc3CIa7z9B7xSMKtyVg18CL2SFGsAlVEeqwPnNLR%2Fc3OaXgRI%2FBo%2B7BXHSD1tteVMmo2E3rnn1kTHvRrK66TZ%2BwsvUb34RPOQjXNN%2B1AT4uW8IwS%2FghFUtLpNNef6p3L6FT0kXp7YVF%2Bg80rig3Xx9imzxDiybpfr82BQLSq3bV7yLL%2BYLnMjpFxMaXJFd40y3jzQYYiz9G4g%3D%3D">
-
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:site" content="@ComingHomeIQ" />
+    <meta name="twitter:title" content="ComingHomeIQ — Your Home's Complete IQ">
+    <meta name="twitter:description" content="ComingHomeIQ is the Carfax for homes. Track every system, verify every record, and transfer your complete home history when you sell. Trusted by homeowners, realtors, and inspectors.">
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8c8dc3a2-1d88-4a0e-84f0-941da4d26c33?Expires=1775577062&amp;GoogleAccessId=go-api-on-aws%40gpt-engineer-390607.iam.gserviceaccount.com&amp;Signature=J%2Fq6mI7wryNeF1m4IRZb%2BHklwnPYm9Lqrps57DAwPpuaQBA%2B%2F3bpE4O%2BrCw7NNiUbKsSYhcfEqLUopd6NnBq10bDYTd0ZpvtpoJS3K9lAQQvz65AirMu3NJDKtWaKXHHKsOFJWNJ9bc3CIa7z9B7xSMKtyVg18CL2SFGsAlVEeqwPnNLR%2Fc3OaXgRI%2FBo%2B7BXHSD1tteVMmo2E3rnn1kTHvRrK66TZ%2BwsvUb34RPOQjXNN%2B1AT4uW8IwS%2FghFUtLpNNef6p3L6FT0kXp7YVF%2Bg80rig3Xx9imzxDiybpfr82BQLSq3bV7yLL%2BYLnMjpFxMaXJFd40y3jzQYYiz9G4g%3D%3D">
-    <meta property="og:title" content="ComingHomeIQ">
-  <meta name="twitter:title" content="ComingHomeIQ">
-  <meta property="og:description" content="ComingHomeIQ — The intelligent home record that travels with your home. Track systems, verify history, and transfer everything when you sell.">
-  <meta name="twitter:description" content="ComingHomeIQ — The intelligent home record that travels with your home. Track systems, verify history, and transfer everything when you sell.">
-</head>
-
+  </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Apply saved theme before React renders to prevent flash
+      (function() {
+        var t = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

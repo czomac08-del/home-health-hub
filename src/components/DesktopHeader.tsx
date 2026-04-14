@@ -1,5 +1,6 @@
-import { Bell, Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight } from "lucide-react";
+import { Bell, Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus } from "lucide-react";
 import PrivacyBadge from "@/components/PrivacyBadge";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,10 +40,10 @@ const DesktopHeader = () => {
       <div className="relative">
         <button
           onClick={() => setShowSwitcher(!showSwitcher)}
-          className="flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors"
+          className="flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-foreground hover:bg-muted/80 transition-colors"
         >
           <Home className="h-3.5 w-3.5 text-primary" />
-          <span className="font-medium">{activeProperty?.label || "My Home"}</span>
+          <span className="font-heading font-bold">{activeProperty?.label || "My Home"}</span>
           <span className="text-muted-foreground text-xs hidden xl:inline">— {activeProperty?.address || "No property"}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </button>
@@ -52,7 +53,7 @@ const DesktopHeader = () => {
               <button
                 key={p.id}
                 onClick={() => { setActivePropertyId(p.id); setShowSwitcher(false); }}
-                className={`w-full px-4 py-2.5 text-sm hover:bg-secondary text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                className={`w-full px-4 py-2.5 text-sm hover:bg-muted text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
               >
                 {p.label} — {p.address}
               </button>
@@ -66,11 +67,14 @@ const DesktopHeader = () => {
 
       {/* Right */}
       <div className="flex items-center gap-3 w-40 justify-end">
-        <PrivacyBadge />
-        <button className="relative h-9 w-9 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+        <ThemeToggle />
+        <button
+          onClick={() => navigate("/system-config/new")}
+          className="flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-3 py-1.5 text-xs font-heading font-extrabold hover:opacity-90 transition-opacity glow-orange"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add System
         </button>
+        <PrivacyBadge />
 
         {/* User avatar + dropdown */}
         <div className="relative" ref={menuRef}>
@@ -79,11 +83,10 @@ const DesktopHeader = () => {
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <div className="relative">
-              <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold">
+              <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-heading font-bold">
                 {initials}
               </div>
-              {/* Green online dot */}
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-card" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
             </div>
             <span className="text-sm font-medium text-foreground hidden xl:inline">{firstName}</span>
             <ChevronDown className="h-3 w-3 text-muted-foreground hidden xl:inline" />
@@ -92,7 +95,7 @@ const DesktopHeader = () => {
           {showUserMenu && (
             <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-card shadow-lg py-1 z-50">
               <div className="px-4 py-3 border-b border-border">
-                <p className="text-sm font-medium text-foreground">{profile?.full_name || "User"}</p>
+                <p className="text-sm font-heading font-bold text-foreground">{profile?.full_name || "User"}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email || user?.email}</p>
               </div>
               {[
@@ -104,7 +107,7 @@ const DesktopHeader = () => {
                 <button
                   key={item.label}
                   onClick={() => { setShowUserMenu(false); item.action(); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <item.icon className="h-4 w-4" />
                   {item.label}
@@ -113,7 +116,7 @@ const DesktopHeader = () => {
               <div className="border-t border-border mt-1">
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-secondary transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger hover:bg-muted transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out

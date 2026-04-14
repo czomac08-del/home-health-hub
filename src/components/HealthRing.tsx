@@ -7,15 +7,17 @@ interface HealthRingProps {
 }
 
 const getColorClass = (percentage: number): string => {
-  if (percentage >= 75) return "text-health-green";
-  if (percentage >= 60) return "text-health-yellow";
-  return "text-health-red";
+  if (percentage >= 80) return "text-success";
+  if (percentage >= 60) return "text-orange";
+  if (percentage >= 40) return "text-warning";
+  return "text-danger";
 };
 
 const getStrokeColor = (percentage: number): string => {
-  if (percentage >= 75) return "hsl(152, 60%, 50%)";
-  if (percentage >= 60) return "hsl(45, 90%, 55%)";
-  return "hsl(0, 72%, 51%)";
+  if (percentage >= 80) return "hsl(var(--success))";
+  if (percentage >= 60) return "hsl(var(--orange))";
+  if (percentage >= 40) return "hsl(var(--warning))";
+  return "hsl(var(--danger))";
 };
 
 const HealthRing = ({ percentage, size = 120, strokeWidth = 8, label }: HealthRingProps) => {
@@ -32,7 +34,7 @@ const HealthRing = ({ percentage, size = 120, strokeWidth = 8, label }: HealthRi
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="hsl(210, 10%, 20%)"
+            stroke="hsl(var(--border))"
             strokeWidth={strokeWidth}
           />
           <circle
@@ -48,13 +50,13 @@ const HealthRing = ({ percentage, size = 120, strokeWidth = 8, label }: HealthRi
             className="transition-all duration-1000 ease-out"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`text-2xl font-bold ${getColorClass(percentage)}`}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`text-2xl font-heading font-black ${getColorClass(percentage)}`}>
             {percentage}%
           </span>
         </div>
       </div>
-      {label && <span className="text-sm text-muted-foreground">{label}</span>}
+      <span className="text-sm text-muted-foreground">{label || "Home IQ"}</span>
     </div>
   );
 };
