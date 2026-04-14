@@ -64,7 +64,7 @@ const LandingPage = () => {
           <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4">
-          Your Home's Complete<br /><span className="text-primary">Digital Passport</span>
+          Your Home's Complete<br /><span className="text-primary">IQ</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           Track every system, protect your investment, and transfer verified home data seamlessly — whether you're a homeowner, realtor, inspector, or contractor.
