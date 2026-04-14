@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart } from "lucide-react";
+import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
