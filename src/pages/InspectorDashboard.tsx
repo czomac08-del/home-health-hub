@@ -98,7 +98,7 @@ const InspectorDashboard = () => {
       checklist_data: checks, notes_data: notes, findings: findingEntries,
       overall_score: score, status: "completed", report_generated: true,
     }).eq("id", active.id);
-    toast.success("Inspection report saved & pushed to Home Passport!");
+    toast.success("Inspection report saved & pushed to ComingHomeIQ!");
     setMode("dashboard"); fetchInspections();
   };
 
@@ -252,7 +252,7 @@ const InspectorDashboard = () => {
 
         <button onClick={saveChecklist}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 glow-teal-strong flex items-center justify-center gap-2">
-          <Shield className="h-5 w-5" /> Save & Push to Home Passport
+          <Shield className="h-5 w-5" /> Save & Push to ComingHomeIQ
         </button>
       </div>
     );

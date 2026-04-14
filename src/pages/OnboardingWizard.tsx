@@ -391,7 +391,7 @@ const OnboardingWizard = () => {
         return (
           <div className="flex flex-col gap-5 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground">Your First To-Do List</h2>
-            <p className="text-sm text-muted-foreground">Complete these {todos.length} tasks to reach 100% home health.</p>
+            <p className="text-sm text-muted-foreground">Complete these {todos.length} tasks to reach 100% Home IQ.</p>
             <div className="flex flex-col gap-3">
               {todos.map((t, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
@@ -427,7 +427,7 @@ const OnboardingWizard = () => {
 
             <PartyPopper className="h-10 w-10 text-primary animate-bounce" />
 
-            <h1 className="text-2xl font-bold text-foreground">Your Home Passport is Ready!</h1>
+            <h1 className="text-2xl font-bold text-foreground">Your ComingHomeIQ Profile is Ready!</h1>
             <p className="text-muted-foreground text-sm max-w-sm">
               Your {data.homeAge || ""} {propertyTypes.find(h => h.id === data.homeType)?.label || "home"} at{" "}
               <span className="text-foreground font-medium">{activeProperty?.address || "your address"}</span> is set up and ready.

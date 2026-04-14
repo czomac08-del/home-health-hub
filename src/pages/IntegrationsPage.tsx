@@ -21,7 +21,7 @@ type Integration = {
 
 const integrations: Integration[] = [
   // Real Estate Platforms
-  { id: "zillow", name: "Zillow", logo: "Z", description: "Share your Home Passport score on your listing", category: "Real Estate Platforms", syncDirection: "two-way", dataSync: "Listings, photos, health score", roles: ["realtor", "investor"], status: "available" },
+  { id: "zillow", name: "Zillow", logo: "Z", description: "Share your ComingHomeIQ score on your listing", category: "Real Estate Platforms", syncDirection: "two-way", dataSync: "Listings, photos, health score", roles: ["realtor", "investor"], status: "available" },
   { id: "realtor_com", name: "Realtor.com", logo: "R", description: "Add verified health data to your listing", category: "Real Estate Platforms", syncDirection: "one-way", dataSync: "Health score, system data", roles: ["realtor"], status: "coming_soon" },
   { id: "mls", name: "MLS Systems", logo: "MLS", description: "Import listing data automatically from MLS number", category: "Real Estate Platforms", syncDirection: "one-way", dataSync: "Property details, listing status", roles: ["realtor"], status: "available" },
   { id: "docusign", name: "DocuSign", logo: "DS", description: "Sign passport transfer documents digitally", category: "Real Estate Platforms", syncDirection: "two-way", dataSync: "Contracts, signatures, documents", roles: ["realtor", "contractor", "investor"], status: "available" },

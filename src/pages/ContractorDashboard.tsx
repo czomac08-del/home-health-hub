@@ -107,7 +107,7 @@ const ContractorDashboard = () => {
       status: "completed", work_performed: workDone, parts_replaced: partsReplaced,
       part_models: partModels, labor_hours: laborTime, next_service_rec: nextServiceRec, invoice_amount: cost,
     }).eq("id", activeJob.id);
-    toast.success("Job completed! Service record pushed to Home Passport.");
+    toast.success("Job completed! Service record pushed to ComingHomeIQ.");
     setView("dashboard"); fetchJobs();
   };
 
@@ -276,7 +276,7 @@ const ContractorDashboard = () => {
 
         <button onClick={completeJob}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 glow-teal-strong flex items-center justify-center gap-2">
-          <Shield className="h-5 w-5" /> Push to Home Passport
+          <Shield className="h-5 w-5" /> Push to ComingHomeIQ
         </button>
       </div>
     );

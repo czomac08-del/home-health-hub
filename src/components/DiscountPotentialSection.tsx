@@ -37,7 +37,7 @@ const DiscountPotentialSection = ({ healthScore, profileCompleteness, totalSyste
             <span className="text-lg font-heading font-bold text-foreground">{healthScore}</span>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-heading font-bold text-foreground">Current Home Health Score</p>
+            <p className="text-sm font-heading font-bold text-foreground">Current Home IQ Score</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {isCertified
                 ? "You qualify for ComingHomeIQ Certification!"

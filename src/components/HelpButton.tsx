@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom";
 const helpContent: Record<string, { title: string; description: string }> = {
   "/dashboard": {
     title: "Dashboard",
-    description: "Your home health overview. See all your systems at a glance, check health scores, and get alerts about upcoming maintenance.",
+    description: "Your Home IQ overview. See all your systems at a glance, check health scores, and get alerts about upcoming maintenance.",
   },
   "/systems": {
     title: "Systems",
