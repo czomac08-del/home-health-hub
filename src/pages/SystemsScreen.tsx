@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText } from "lucide-react";
+import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText, Shield } from "lucide-react";
 
 type SystemStatus = "configured" | "unconfigured";
 
@@ -20,6 +20,7 @@ const coreInfrastructure: SystemItem[] = [
   { name: "Sewer and Waste", icon: <Gauge className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
   { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, status: "configured", detail: "9 years old — Monitor" },
   { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Home Insurance", icon: <Shield className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Manage policies & coverage" },
 ];
 
 const appliances: SystemItem[] = [
@@ -77,7 +78,10 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(coreInfrastructure).map((item) => (
-            <SystemRow key={item.name} item={item} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
+            <SystemRow key={item.name} item={item} onClick={() => {
+              if (item.name === "Home Insurance") navigate("/insurance");
+              else navigate(`/system-config/${encodeURIComponent(item.name)}`);
+            }} />
           ))}
         </div>
       </div>
