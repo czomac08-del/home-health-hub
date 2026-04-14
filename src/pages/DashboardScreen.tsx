@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
+import CertificationCard from "@/components/CertificationCard";
 import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState } from "react";
@@ -24,6 +25,10 @@ const DashboardScreen = () => {
   const systems = defaultSystems;
   const needsAttention = systems.filter((s) => s.health < 70);
   const healthySystems = systems.filter((s) => s.health >= 70);
+  const currentHealthScore = activeProperty?.health_score || 87;
+  // Profile completeness: simple calculation based on configured systems
+  const configuredCount = systems.filter((s) => !s.flagged).length;
+  const profileCompleteness = Math.round((configuredCount / systems.length) * 100);
 
   const userName = profile?.full_name?.split(" ")[0] || "there";
   const address = activeProperty?.address || "No property added";
@@ -114,6 +119,13 @@ const DashboardScreen = () => {
             </div>
           </div>
         </div>
+
+        {/* Certification Card */}
+        <CertificationCard
+          healthScore={currentHealthScore}
+          profileCompleteness={profileCompleteness}
+          systems={systems.map((s) => ({ name: s.name, health: s.health }))}
+        />
 
         {/* Needs Attention */}
         <div className="mb-6">
