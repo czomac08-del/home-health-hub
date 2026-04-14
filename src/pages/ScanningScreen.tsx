@@ -12,7 +12,7 @@ const tasks = [
   { label: "Scanning for known hazard risks...", delay: 5500 },
   { label: "Checking neighborhood health data...", delay: 6500 },
   { label: "Reviewing electrical panel safety recalls...", delay: 7500 },
-  { label: "Building your Home Passport profile...", delay: 8500 },
+  { label: "Building your ComingHomeIQ profile...", delay: 8500 },
   { label: "Almost done — generating your health score...", delay: 9500 },
 ];
 

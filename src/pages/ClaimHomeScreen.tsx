@@ -24,7 +24,7 @@ const ClaimHomeScreen = () => {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
         <h1 className="text-xl font-bold text-foreground mb-1">New Owner Setup</h1>
-        <p className="text-xs text-muted-foreground mb-6">Let's customize your new Home Passport.</p>
+        <p className="text-xs text-muted-foreground mb-6">Let's customize your new ComingHomeIQ profile.</p>
 
         <div className="mb-6">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">What appliances did you bring?</h2>
