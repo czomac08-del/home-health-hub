@@ -20,7 +20,7 @@ const ApiDocsPage = () => {
         </div>
 
         <h1 className="text-4xl font-bold text-foreground mb-4">
-          Home Passport <span className="text-primary">API</span>
+          ComingHomeIQ <span className="text-primary">API</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10">
           Integrate verified home data into your platform. Access property health scores, system records, maintenance history, and inspection reports programmatically.
@@ -31,7 +31,7 @@ const ApiDocsPage = () => {
           <Zap className="h-10 w-10 text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Coming Soon</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-            Join the waitlist to be the first to integrate your platform with Home Passport. Early partners get free API access during beta.
+            Join the waitlist to be the first to integrate your platform with ComingHomeIQ. Early partners get free API access during beta.
           </p>
           <div className="flex gap-2 max-w-sm mx-auto">
             <input value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com"

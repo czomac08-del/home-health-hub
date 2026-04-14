@@ -24,7 +24,7 @@ const ClaimHomeScreen = () => {
     return (
       <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
         <h1 className="text-xl font-bold text-foreground mb-1">New Owner Setup</h1>
-        <p className="text-xs text-muted-foreground mb-6">Let's customize your new Home Passport.</p>
+        <p className="text-xs text-muted-foreground mb-6">Let's customize your new ComingHomeIQ.</p>
 
         <div className="mb-6">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">What appliances did you bring?</h2>
@@ -55,7 +55,7 @@ const ClaimHomeScreen = () => {
           </div>
         </div>
 
-        <button onClick={() => { toast.success("Your Home Passport is ready!"); navigate("/dashboard"); }}
+        <button onClick={() => { toast.success("Your ComingHomeIQ is ready!"); navigate("/dashboard"); }}
           className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
           Complete Setup <ArrowRight className="h-4 w-4" />
         </button>
@@ -70,7 +70,7 @@ const ClaimHomeScreen = () => {
           <Home className="h-8 w-8 text-primary" />
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-1">Claim Your Home</h1>
-        <p className="text-sm text-muted-foreground">A Home Passport has been prepared for you</p>
+        <p className="text-sm text-muted-foreground">A ComingHomeIQ has been prepared for you</p>
       </div>
 
       <div className="rounded-xl border border-primary/30 bg-card p-5 mb-6">

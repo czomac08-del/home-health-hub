@@ -29,7 +29,7 @@ const DesktopSidebar = () => {
         <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
           <Home className="h-5 w-5 text-primary" />
         </div>
-        <span className="text-base font-bold text-foreground">Home Passport</span>
+        <span className="text-base font-bold text-foreground">ComingHomeIQ</span>
       </div>
 
       {/* Nav items */}
@@ -55,7 +55,7 @@ const DesktopSidebar = () => {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-border">
-        <p className="text-[10px] text-muted-foreground">© 2026 Home Passport</p>
+        <p className="text-[10px] text-muted-foreground">© 2026 ComingHomeIQ</p>
       </div>
     </aside>
   );

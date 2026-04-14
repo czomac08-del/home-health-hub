@@ -136,7 +136,7 @@ const TapCard = ({ selected, onClick, children, className = "" }: { selected: bo
 
 const AffiliateNote = () => (
   <p className="text-[10px] text-muted-foreground/60 mt-4 italic text-center">
-    Home Passport earns a small commission on purchases made through our links at no extra cost to you. This helps us keep the app running.
+    ComingHomeIQ earns a small commission on purchases made through our links at no extra cost to you. This helps us keep the app running.
   </p>
 );
 

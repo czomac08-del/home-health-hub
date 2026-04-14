@@ -300,7 +300,7 @@ const UtilityServicesScreen = () => {
                 <div className="flex items-center gap-1">
                   <Star className="h-3.5 w-3.5 text-primary fill-primary" />
                   <span className="text-xs font-medium text-foreground">{provider.rating}</span>
-                  <span className="text-xs text-muted-foreground">from Home Passport users</span>
+                  <span className="text-xs text-muted-foreground">from ComingHomeIQ users</span>
                 </div>
                 <button className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg hover:opacity-90">
                   Get Quote

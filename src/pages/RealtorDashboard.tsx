@@ -154,7 +154,7 @@ const RealtorDashboard = () => {
           <div className="bg-gradient-to-br from-primary/10 to-transparent p-6 text-center border-b border-border">
             <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-3 py-1 mb-3">
               <Shield className="h-3 w-3 text-primary" />
-              <span className="text-[9px] font-bold text-primary uppercase tracking-wider">Public Home Passport</span>
+              <span className="text-[9px] font-bold text-primary uppercase tracking-wider">Public ComingHomeIQ</span>
             </div>
             <h2 className="text-lg font-bold text-foreground mb-1">{l.property_address}</h2>
             <p className="text-sm text-muted-foreground">{l.list_price || "Price on Request"}</p>
@@ -195,7 +195,7 @@ const RealtorDashboard = () => {
         <button onClick={() => setShowDisclosure(null)} className="text-xs text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1">← Back</button>
         <h1 className="text-xl font-bold text-foreground mb-1">Digital Disclosure</h1>
         <p className="text-xs text-muted-foreground mb-2">{showDisclosure.property_address}</p>
-        <p className="text-[10px] text-muted-foreground mb-6">Items auto-populated from Home Passport data. Review and mark each as disclosed.</p>
+        <p className="text-[10px] text-muted-foreground mb-6">Items auto-populated from ComingHomeIQ data. Review and mark each as disclosed.</p>
 
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 mb-4 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -244,7 +244,7 @@ const RealtorDashboard = () => {
           </button>
           <div className="inline-flex items-center gap-1.5 bg-primary/20 border border-primary/30 rounded-full px-4 py-1.5 mb-6">
             <Shield className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-bold text-primary uppercase tracking-wider">Home Passport · Open House</span>
+            <span className="text-xs font-bold text-primary uppercase tracking-wider">ComingHomeIQ · Open House</span>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">{showOpenHouse.property_address}</h1>
           <p className="text-lg text-muted-foreground mb-8">{showOpenHouse.list_price || "Price TBD"}</p>
@@ -467,11 +467,11 @@ const RealtorDashboard = () => {
       {showRequestModal && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="rounded-2xl border border-border bg-card p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-foreground mb-1">Request Home Passport</h3>
+            <h3 className="text-lg font-bold text-foreground mb-1">Request ComingHomeIQ</h3>
             <p className="text-xs text-muted-foreground mb-4">{showRequestModal.property_address}</p>
             <input value={requestEmail} onChange={e => setRequestEmail(e.target.value)} placeholder="Homeowner email address..."
               className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 mb-3" />
-            <p className="text-[10px] text-muted-foreground mb-4">The homeowner will receive an invitation to create a free Home Passport.</p>
+            <p className="text-[10px] text-muted-foreground mb-4">The homeowner will receive an invitation to create a free ComingHomeIQ.</p>
             <div className="flex gap-2">
               <button onClick={sendPassportRequest} disabled={sending}
                 className="flex-1 rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50 flex items-center justify-center gap-1">
@@ -517,7 +517,7 @@ const BuyerReport = ({ listing, onBack }: { listing: Listing; onBack: () => void
       <div className="rounded-2xl border border-primary/30 bg-card overflow-hidden relative">
         <div className="absolute top-6 right-6 rotate-12 opacity-15 pointer-events-none select-none">
           <div className="border-4 border-primary rounded-xl px-4 py-2">
-            <p className="text-primary font-black text-lg uppercase tracking-widest leading-none">Home Passport</p>
+            <p className="text-primary font-black text-lg uppercase tracking-widest leading-none">ComingHomeIQ</p>
             <p className="text-primary font-bold text-[10px] uppercase tracking-widest text-center">Verified</p>
           </div>
         </div>

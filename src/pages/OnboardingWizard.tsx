@@ -170,7 +170,7 @@ const OnboardingWizard = () => {
 
       await refreshProperties();
       navigate("/dashboard");
-      toast.success("Home Passport setup complete!");
+      toast.success("ComingHomeIQ setup complete!");
     } catch {
       // Even on error, navigate to dashboard — don't trap the user
       navigate("/dashboard");
@@ -224,7 +224,7 @@ const OnboardingWizard = () => {
               <Home className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold text-foreground">
-              Welcome to Home Passport{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
+              Welcome to ComingHomeIQ{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-muted-foreground text-lg max-w-sm">
               Let's set up your home in about 5 minutes. We'll guide you through every step.

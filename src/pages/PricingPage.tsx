@@ -75,7 +75,7 @@ const plans = [
     icon: TrendingUp,
     monthly: 79,
     annual: 758,
-    features: ["Unlimited flip projects", "Complete flip analyzer", "Renovation budget tracker", "Contractor management", "Auto Home Passport on sale", "PropStream integration"],
+    features: ["Unlimited flip projects", "Complete flip analyzer", "Renovation budget tracker", "Contractor management", "Auto ComingHomeIQ on sale", "PropStream integration"],
     cta: "Start Free Trial",
   },
 ];
@@ -153,7 +153,7 @@ const PricingPage = () => {
           <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
             <Home className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-lg font-bold text-foreground">Home Passport</span>
+          <span className="text-lg font-bold text-foreground">ComingHomeIQ</span>
         </button>
         <button onClick={() => user ? navigate("/home") : navigate("/auth")} className="text-sm font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
           {user ? "Go to Dashboard" : "Sign In"}
