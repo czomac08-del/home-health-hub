@@ -33,9 +33,14 @@ const CertificationCard = ({ healthScore, profileCompleteness, systems }: Certif
         },
       });
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        toast.success("Report generated!");
+      if (data?.html) {
+        const blob = new Blob([data.html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, "_blank");
+        if (w) {
+          w.onload = () => { setTimeout(() => w.print(), 500); };
+        }
+        toast.success("Report generated — use Print > Save as PDF");
       }
     } catch (e) {
       console.error(e);
