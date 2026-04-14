@@ -399,6 +399,198 @@ export type Database = {
         }
         Relationships: []
       }
+      insurance_claims: {
+        Row: {
+          amount_claimed: number | null
+          amount_paid: number | null
+          claim_date: string
+          claim_number: string | null
+          claim_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          policy_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_claimed?: number | null
+          amount_paid?: number | null
+          claim_date: string
+          claim_number?: string | null
+          claim_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          policy_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_claimed?: number | null
+          amount_paid?: number | null
+          claim_date?: string
+          claim_number?: string | null
+          claim_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          policy_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_name: string
+          id: string
+          policy_id: string
+          storage_path: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type?: string
+          file_name: string
+          id?: string
+          policy_id: string
+          storage_path: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_name?: string
+          id?: string
+          policy_id?: string
+          storage_path?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_documents_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_policies: {
+        Row: {
+          agent_name: string | null
+          agent_phone: string | null
+          ai_analysis: Json | null
+          claims_phone: string | null
+          coverage_end: string | null
+          coverage_gaps: string[] | null
+          coverage_start: string | null
+          created_at: string
+          deductible_amount: number | null
+          dwelling_coverage: number | null
+          earthquake_coverage: boolean | null
+          equipment_breakdown: boolean | null
+          exclusions: string[] | null
+          flood_coverage: boolean | null
+          id: string
+          insurance_company: string | null
+          liability_coverage: number | null
+          online_portal_url: string | null
+          personal_property_coverage: number | null
+          policy_number: string | null
+          policy_type: string
+          premium_amount: number | null
+          premium_frequency: string | null
+          property_id: string
+          updated_at: string
+          user_id: string
+          wind_hail_deductible: string | null
+        }
+        Insert: {
+          agent_name?: string | null
+          agent_phone?: string | null
+          ai_analysis?: Json | null
+          claims_phone?: string | null
+          coverage_end?: string | null
+          coverage_gaps?: string[] | null
+          coverage_start?: string | null
+          created_at?: string
+          deductible_amount?: number | null
+          dwelling_coverage?: number | null
+          earthquake_coverage?: boolean | null
+          equipment_breakdown?: boolean | null
+          exclusions?: string[] | null
+          flood_coverage?: boolean | null
+          id?: string
+          insurance_company?: string | null
+          liability_coverage?: number | null
+          online_portal_url?: string | null
+          personal_property_coverage?: number | null
+          policy_number?: string | null
+          policy_type?: string
+          premium_amount?: number | null
+          premium_frequency?: string | null
+          property_id: string
+          updated_at?: string
+          user_id: string
+          wind_hail_deductible?: string | null
+        }
+        Update: {
+          agent_name?: string | null
+          agent_phone?: string | null
+          ai_analysis?: Json | null
+          claims_phone?: string | null
+          coverage_end?: string | null
+          coverage_gaps?: string[] | null
+          coverage_start?: string | null
+          created_at?: string
+          deductible_amount?: number | null
+          dwelling_coverage?: number | null
+          earthquake_coverage?: boolean | null
+          equipment_breakdown?: boolean | null
+          exclusions?: string[] | null
+          flood_coverage?: boolean | null
+          id?: string
+          insurance_company?: string | null
+          liability_coverage?: number | null
+          online_portal_url?: string | null
+          personal_property_coverage?: number | null
+          policy_number?: string | null
+          policy_type?: string
+          premium_amount?: number | null
+          premium_frequency?: string | null
+          property_id?: string
+          updated_at?: string
+          user_id?: string
+          wind_hail_deductible?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_history: {
         Row: {
           action: string

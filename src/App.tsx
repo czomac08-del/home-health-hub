@@ -16,6 +16,7 @@ import DashboardScreen from "./pages/DashboardScreen";
 import SystemDetailScreen from "./pages/SystemDetailScreen";
 import SystemConfigScreen from "./pages/SystemConfigScreen";
 import SystemsScreen from "./pages/SystemsScreen";
+import InsuranceScreen from "./pages/InsuranceScreen";
 import GuidesScreen from "./pages/GuidesScreen";
 import GuideWalkthroughScreen from "./pages/GuideWalkthroughScreen";
 import ProfileScreen from "./pages/ProfileScreen";
@@ -128,6 +129,7 @@ const AppContent = () => {
             <Route path="/system/:id" element={<ProtectedRoute><SystemDetailScreen /></ProtectedRoute>} />
             <Route path="/system-config/:name" element={<ProtectedRoute><SystemConfigScreen /></ProtectedRoute>} />
             <Route path="/systems" element={<ProtectedRoute><SystemsScreen /></ProtectedRoute>} />
+            <Route path="/insurance" element={<ProtectedRoute><InsuranceScreen /></ProtectedRoute>} />
             <Route path="/guides" element={<ProtectedRoute><GuidesScreen /></ProtectedRoute>} />
             <Route path="/guide/:id" element={<ProtectedRoute><GuideWalkthroughScreen /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
