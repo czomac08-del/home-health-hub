@@ -8,6 +8,7 @@ import {
   MessageSquare, Send, Bot, Clock, ExternalLink, Star, Trash2, X,
   CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart
 } from "lucide-react";
+import DiscountPotentialSection from "@/components/DiscountPotentialSection";
 
 // ─── Types ───
 type PolicyType = "primary" | "flood" | "earthquake" | "umbrella" | "warranty";
@@ -638,6 +639,14 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
           </button>
         )}
       </Section>
+
+      {/* ── Maintenance Discount Potential ── */}
+      <DiscountPotentialSection
+        healthScore={87}
+        profileCompleteness={65}
+        totalSystems={8}
+        configuredSystems={5}
+      />
 
       {/* ── Insurance Marketplace ── */}
       <Section title="Compare Insurance Options">
