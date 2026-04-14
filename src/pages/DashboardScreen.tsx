@@ -120,6 +120,13 @@ const DashboardScreen = () => {
           </div>
         </div>
 
+        {/* Certification Card */}
+        <CertificationCard
+          healthScore={currentHealthScore}
+          profileCompleteness={profileCompleteness}
+          systems={systems.map((s) => ({ name: s.name, health: s.health }))}
+        />
+
         {/* Needs Attention */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
