@@ -177,10 +177,40 @@ const SystemDetailScreen = () => {
         </div>
       )}
 
+      {/* Amazon Affiliate Buttons */}
+      {id === "hvac" && (
+        <a
+          href={`https://www.amazon.com/s?k=hvac+air+filter+16x25x1&tag=${AMAZON_TAG}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-xl border border-primary bg-primary/10 py-4 font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 mb-4"
+        >
+          <ShoppingCart className="h-5 w-5" /> Buy This Filter on Amazon
+        </a>
+      )}
+
+      {id === "plumbing" && (
+        <a
+          href={`https://www.amazon.com/s?k=water+heater+replacement+parts&tag=${AMAZON_TAG}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full rounded-xl border border-primary bg-primary/10 py-4 font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 mb-4"
+        >
+          <ShoppingCart className="h-5 w-5" /> Buy Replacement Parts on Amazon
+        </a>
+      )}
+
       {/* Schedule a Pro */}
       <button className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity shadow-lg shadow-primary/30 mb-4">
         Schedule a Pro
       </button>
+
+      {/* Affiliate Disclosure */}
+      {(id === "hvac" || id === "plumbing") && (
+        <p className="text-[10px] text-muted-foreground/60 text-center mb-4">
+          As an Amazon Associate, ComingHomeIQ earns from qualifying purchases.
+        </p>
+      )}
 
       {/* Floating AI Scan Button */}
       <FloatingAiScanButton onClick={() => setShowPicker(true)} />
