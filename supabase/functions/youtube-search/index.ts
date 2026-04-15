@@ -38,7 +38,11 @@ Deno.serve(async (req) => {
     ytUrl.searchParams.set("safeSearch", "strict");
     ytUrl.searchParams.set("key", apiKey);
 
-    const resp = await fetch(ytUrl.toString());
+    const resp = await fetch(ytUrl.toString(), {
+      headers: {
+        "Referer": "https://cominghomeiq.lovable.app",
+      },
+    });
 
     if (!resp.ok) {
       const errText = await resp.text();
