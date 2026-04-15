@@ -1,15 +1,27 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MapPin, Loader2, CheckCircle2, Heart } from "lucide-react";
+import { Search, MapPin, Loader2, CheckCircle2, Heart, BadgeCheck, Home, BedDouble, Bath, Ruler, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-
 const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
+const RENTCAST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup`;
 
 interface AddressSuggestion {
   matchedAddress: string;
   coordinates: { x: number; y: number };
+}
+
+interface RentCastData {
+  found: boolean;
+  yearBuilt?: number | null;
+  squareFootage?: number | null;
+  lotSize?: number | null;
+  propertyType?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  estimatedValue?: number | null;
+  formattedAddress?: string | null;
 }
 
 const WelcomeScreen = () => {
@@ -20,6 +32,8 @@ const WelcomeScreen = () => {
   const [verified, setVerified] = useState(false);
   const [searching, setSearching] = useState(false);
   const [verifyFailed, setVerifyFailed] = useState(false);
+  const [propertyData, setPropertyData] = useState<RentCastData | null>(null);
+  const [fetchingProperty, setFetchingProperty] = useState(false);
   const navigate = useNavigate();
   const { user, profile, properties, refreshProperties } = useAuth();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -34,6 +48,27 @@ const WelcomeScreen = () => {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const fetchRentCastData = async (addr: string) => {
+    setFetchingProperty(true);
+    try {
+      const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(addr)}`);
+      if (res.ok) {
+        const data: RentCastData = await res.json();
+        if (data.found) {
+          setPropertyData(data);
+        } else {
+          setPropertyData(null);
+        }
+      } else {
+        setPropertyData(null);
+      }
+    } catch {
+      setPropertyData(null);
+    } finally {
+      setFetchingProperty(false);
+    }
+  };
 
   const fetchSuggestions = async (query: string) => {
     if (query.length < 3) {
@@ -58,6 +93,7 @@ const WelcomeScreen = () => {
     setAddress(value);
     setVerified(false);
     setVerifyFailed(false);
+    setPropertyData(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 400);
   };
@@ -67,6 +103,7 @@ const WelcomeScreen = () => {
     setVerified(true);
     setShowSuggestions(false);
     setSuggestions([]);
+    fetchRentCastData(s.matchedAddress);
   };
 
   const handleContinue = () => {
@@ -76,16 +113,28 @@ const WelcomeScreen = () => {
     const finalAddress = address.trim();
 
     if (user && properties.length === 0) {
-      supabase.from("properties").insert({
+      const insertData: Record<string, unknown> = {
         user_id: user.id,
         address: finalAddress,
         label: "Primary Residence",
         is_active: true,
-      }).then(() => { void refreshProperties(); });
+      };
+      if (propertyData?.yearBuilt) insertData.year_built = String(propertyData.yearBuilt);
+      if (propertyData?.squareFootage) insertData.square_footage = String(propertyData.squareFootage);
+
+      supabase.from("properties").insert(insertData as any).then(() => { void refreshProperties(); });
+    }
+
+    // Store property data in sessionStorage so onboarding can use it
+    if (propertyData) {
+      sessionStorage.setItem("rentcast_data", JSON.stringify(propertyData));
     }
 
     navigate(user ? "/scanning" : "/auth");
   };
+
+  const fmt = (n: number | null | undefined) => n != null ? n.toLocaleString() : null;
+  const fmtCurrency = (n: number | null | undefined) => n != null ? `$${n.toLocaleString()}` : null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
@@ -103,10 +152,10 @@ const WelcomeScreen = () => {
 
         <div className="w-full relative" ref={wrapperRef}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
-          {searching && (
+          {(searching || fetchingProperty) && (
             <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin z-10" />
           )}
-          {verified && !searching && (
+          {verified && !searching && !fetchingProperty && (
             <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10" />
           )}
           <input
@@ -144,6 +193,93 @@ const WelcomeScreen = () => {
         {verifyFailed && (
           <p className="text-xs text-muted-foreground text-center">
             We couldn&apos;t verify this address automatically. You can still proceed — just double-check it&apos;s correct.
+          </p>
+        )}
+
+        {/* RentCast Property Data Card */}
+        {fetchingProperty && (
+          <div className="w-full rounded-xl border border-border bg-card p-4 animate-pulse">
+            <div className="flex items-center gap-2 mb-3">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Looking up property data...</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[1,2,3,4].map(i => <div key={i} className="h-8 rounded-lg bg-muted" />)}
+            </div>
+          </div>
+        )}
+
+        {propertyData && propertyData.found && !fetchingProperty && (
+          <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 animate-fade-in">
+            <div className="flex items-center gap-2 mb-3">
+              <BadgeCheck className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-primary">Property Data Verified ✓</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {propertyData.yearBuilt && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Year Built</p>
+                    <p className="text-sm font-semibold text-foreground">{propertyData.yearBuilt}</p>
+                  </div>
+                </div>
+              )}
+              {propertyData.squareFootage && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <Ruler className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Sq Ft</p>
+                    <p className="text-sm font-semibold text-foreground">{fmt(propertyData.squareFootage)}</p>
+                  </div>
+                </div>
+              )}
+              {propertyData.bedrooms && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <BedDouble className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Bedrooms</p>
+                    <p className="text-sm font-semibold text-foreground">{propertyData.bedrooms}</p>
+                  </div>
+                </div>
+              )}
+              {propertyData.bathrooms && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <Bath className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Bathrooms</p>
+                    <p className="text-sm font-semibold text-foreground">{propertyData.bathrooms}</p>
+                  </div>
+                </div>
+              )}
+              {propertyData.propertyType && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <Home className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Type</p>
+                    <p className="text-sm font-semibold text-foreground capitalize">{propertyData.propertyType.replace(/_/g, ' ')}</p>
+                  </div>
+                </div>
+              )}
+              {propertyData.estimatedValue && (
+                <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-3 py-2">
+                  <span className="text-muted-foreground shrink-0 text-sm font-bold">$</span>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Est. Value</p>
+                    <p className="text-sm font-semibold text-foreground">{fmtCurrency(propertyData.estimatedValue)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            {propertyData.lotSize && (
+              <p className="text-xs text-muted-foreground mt-2">Lot size: {fmt(propertyData.lotSize)} sq ft</p>
+            )}
+          </div>
+        )}
+
+        {verified && !fetchingProperty && !propertyData && (
+          <p className="text-xs text-muted-foreground text-center">
+            No property records found — you&apos;ll enter details manually during setup.
           </p>
         )}
 
