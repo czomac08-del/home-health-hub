@@ -132,6 +132,12 @@ const SystemDetailScreen = () => {
         </div>
       )}
 
+      {/* AI Appliance Scanner */}
+      <ApplianceScanner
+        systemName={system.name}
+        onFieldsScanned={(fields) => console.log("Scanned fields for", system.name, fields)}
+      />
+
       {/* Scan History */}
       {scanHistory.length > 0 && (
         <div className="mb-6">
