@@ -8,6 +8,7 @@ import BreakerPanelMapper from "@/components/BreakerPanelMapper";
 import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "@/components/AiPhotoScanner";
 import type { ScanResult } from "@/components/AiPhotoScanner";
 import WarrantySection from "@/components/WarrantySection";
+import ApplianceScanner from "@/components/ApplianceScanner";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -130,6 +131,12 @@ const SystemDetailScreen = () => {
           </div>
         </div>
       )}
+
+      {/* AI Appliance Scanner */}
+      <ApplianceScanner
+        systemName={system.name}
+        onFieldsScanned={(fields) => console.log("Scanned fields for", system.name, fields)}
+      />
 
       {/* Scan History */}
       {scanHistory.length > 0 && (
