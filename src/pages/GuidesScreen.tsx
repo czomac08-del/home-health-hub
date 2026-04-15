@@ -1,12 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Wrench, Clock, Fan, Droplets, Zap, Home, Refrigerator, Snowflake,
   Play, Bookmark, ExternalLink, Star, ChevronRight, User, Eye, Calendar,
   ThermometerSun, Leaf, Sun, TreePine, Flame, Shield, Waves,
-  Sparkles, ShoppingCart, Lock,
+  Sparkles, ShoppingCart, Lock, Loader2, X,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ─── Types ─── */
 interface Guide {
@@ -21,16 +21,13 @@ interface Guide {
   tools?: { name: string; price: string; link: string }[];
 }
 
-interface VideoCard {
-  id: string;
+interface YouTubeVideo {
+  videoId: string;
   title: string;
-  channel: string;
-  views: string;
-  uploaded: string;
-  duration: string;
+  description: string;
+  channelTitle: string;
   thumbnail: string;
-  matchLevel: "exact" | "good" | "general";
-  isPartner: boolean;
+  publishedAt: string;
 }
 
 interface FeaturedCreator {
@@ -40,6 +37,20 @@ interface FeaturedCreator {
   description: string;
   avatar: string;
 }
+
+/* ─── YouTube query map per category ─── */
+const categoryQueries: Record<string, string> = {
+  All: "home maintenance DIY tips for homeowners",
+  HVAC: "how to change HVAC filter DIY maintenance",
+  Plumbing: "DIY plumbing repair tips homeowner",
+  Electrical: "home electrical safety DIY tips",
+  Roof: "roof inspection DIY homeowner shingles",
+  Appliances: "home appliance maintenance DIY tips",
+  Seasonal: "seasonal home maintenance checklist DIY",
+  "Well Water": "well water maintenance DIY homeowner",
+  Propane: "propane tank maintenance safety DIY",
+  Septic: "septic system maintenance DIY homeowner",
+};
 
 /* ─── Static Data ─── */
 const skillLevels = ["Complete Beginner", "Some Experience", "Comfortable with Basic Repairs", "Advanced DIY", "Professional"];
@@ -117,11 +128,16 @@ const getSeasonalGuides = () => {
   return { season: "Winter", icon: Snowflake, guides: ["Pipe freeze prevention", "Heating check", "Generator test", "Ice dam prevention", "Draft sealing"] };
 };
 
-const mockVideos: VideoCard[] = [
-  { id: "1", title: "How to Replace Your HVAC Filter — Complete Guide", channel: "This Old House", views: "1.2M", uploaded: "8 months ago", duration: "12:34", thumbnail: "", matchLevel: "exact", isPartner: true },
-  { id: "2", title: "Water Heater Maintenance Tips Every Homeowner Needs", channel: "Word of Advice TV", views: "890K", uploaded: "1 year ago", duration: "18:22", thumbnail: "", matchLevel: "good", isPartner: true },
-  { id: "3", title: "Testing Smoke Detectors the Right Way", channel: "Everyday Home Repairs", views: "340K", uploaded: "6 months ago", duration: "8:15", thumbnail: "", matchLevel: "general", isPartner: false },
-];
+/* ─── Helper: relative time ─── */
+const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months > 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years > 1 ? "s" : ""} ago`;
+};
 
 /* ─── Components ─── */
 const DifficultyWrenches = ({ level }: { level: number }) => (
@@ -132,16 +148,6 @@ const DifficultyWrenches = ({ level }: { level: number }) => (
   </div>
 );
 
-const MatchBadge = ({ level }: { level: "exact" | "good" | "general" }) => {
-  const styles = {
-    exact: "bg-health-green/15 text-health-green",
-    good: "bg-primary/15 text-primary",
-    general: "bg-secondary text-muted-foreground",
-  };
-  const labels = { exact: "Exact Match", good: "Good Match", general: "General" };
-  return <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${styles[level]}`}>{labels[level]}</span>;
-};
-
 /* ─── Main Screen ─── */
 const GuidesScreen = () => {
   const [search, setSearch] = useState("");
@@ -150,13 +156,47 @@ const GuidesScreen = () => {
   const [showSkillPicker, setShowSkillPicker] = useState(false);
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set());
   const [followedCreators, setFollowedCreators] = useState<Set<string>>(new Set());
+  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  const [videosError, setVideosError] = useState<string | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const seasonal = getSeasonalGuides();
   const SeasonIcon = seasonal.icon;
 
-  // Smart categories based on what systems homeowner has
   const smartCategories = ["All", "HVAC", "Plumbing", "Electrical", "Roof", "Appliances", "Seasonal", "Well Water", "Propane", "Septic"];
+
+  // Fetch YouTube videos when category changes
+  useEffect(() => {
+    const fetchVideos = async () => {
+      setVideosLoading(true);
+      setVideosError(null);
+      setPlayingVideoId(null);
+      try {
+        const query = categoryQueries[activeCategory] || categoryQueries.All;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const resp = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/youtube-search?q=${encodeURIComponent(query)}&maxResults=3`,
+          {
+            headers: {
+              "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        if (!resp.ok) throw new Error("Failed to fetch videos");
+        const data = await resp.json();
+        setVideos(data.videos || []);
+      } catch (err: any) {
+        console.error("YouTube fetch error:", err);
+        setVideosError("Could not load videos. Try again later.");
+        setVideos([]);
+      } finally {
+        setVideosLoading(false);
+      }
+    };
+    fetchVideos();
+  }, [activeCategory]);
 
   const filtered = guides.filter((g) => {
     const matchesSearch = g.title.toLowerCase().includes(search.toLowerCase());
@@ -269,47 +309,109 @@ const GuidesScreen = () => {
         ))}
       </div>
 
-      {/* Video Cards */}
+      {/* YouTube Video Cards */}
       <div className="mb-6">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recommended Videos</h2>
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Recommended Videos — {activeCategory}
+        </h2>
+
+        {videosLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <span className="ml-2 text-sm text-muted-foreground">Finding videos…</span>
+          </div>
+        )}
+
+        {videosError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive text-center">
+            {videosError}
+          </div>
+        )}
+
+        {!videosLoading && !videosError && videos.length === 0 && (
+          <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            No videos found for this category.
+          </div>
+        )}
+
         <div className="space-y-3">
-          {mockVideos.map(video => (
-            <div key={video.id} className="rounded-xl border border-border bg-card overflow-hidden">
-              {/* Thumbnail placeholder */}
-              <div className="h-36 bg-gradient-to-br from-secondary to-muted flex items-center justify-center relative">
-                <Play className="h-12 w-12 text-foreground/30" />
-                <span className="absolute bottom-2 right-2 text-[10px] font-medium text-foreground bg-background/80 px-1.5 py-0.5 rounded">
-                  {video.duration}
-                </span>
-                {video.isPartner && (
-                  <span className="absolute top-2 left-2 text-[9px] font-bold text-primary bg-primary/15 border border-primary/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Sparkles className="h-2.5 w-2.5" /> Partner · Verified Expert
-                  </span>
-                )}
-              </div>
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground leading-tight">{video.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{video.channel}</p>
+          {videos.map(video => (
+            <div key={video.videoId} className="rounded-xl border border-border bg-card overflow-hidden">
+              {/* Thumbnail or Embedded Player */}
+              {playingVideoId === video.videoId ? (
+                <div className="relative aspect-video">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&rel=0`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={video.title}
+                  />
+                  <button
+                    onClick={() => setPlayingVideoId(null)}
+                    className="absolute top-2 right-2 bg-background/80 rounded-full p-1 hover:bg-background"
+                  >
+                    <X className="h-4 w-4 text-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setPlayingVideoId(video.videoId)}
+                  className="relative w-full h-44 bg-muted overflow-hidden group"
+                >
+                  {video.thumbnail ? (
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
+                      <Play className="h-12 w-12 text-foreground/30" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-primary rounded-full p-3 shadow-lg shadow-primary/30">
+                      <Play className="h-6 w-6 text-primary-foreground fill-primary-foreground" />
+                    </div>
                   </div>
-                  <MatchBadge level={video.matchLevel} />
-                </div>
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {video.views}</span>
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {video.uploaded}</span>
-                </div>
+                </button>
+              )}
+
+              <div className="p-3">
+                <p className="text-sm font-medium text-foreground leading-tight mb-1 line-clamp-2">{video.title}</p>
+                <p className="text-xs text-primary font-medium mb-1">{video.channelTitle}</p>
+                {video.publishedAt && (
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1 mb-3">
+                    <Calendar className="h-3 w-3" /> {timeAgo(video.publishedAt)}
+                  </p>
+                )}
                 <div className="flex gap-2">
-                  <button className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => setPlayingVideoId(video.videoId)}
+                    className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 flex items-center justify-center gap-1"
+                  >
                     <Play className="h-3.5 w-3.5" /> Watch
                   </button>
-                  <button onClick={() => toggleSaveVideo(video.id)}
+                  <button
+                    onClick={() => toggleSaveVideo(video.videoId)}
                     className={`px-3 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-colors ${
-                      savedVideos.has(video.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"
-                    }`}>
-                    <Bookmark className={`h-3.5 w-3.5 ${savedVideos.has(video.id) ? "fill-primary" : ""}`} />
-                    {savedVideos.has(video.id) ? "Saved" : "Save"}
+                      savedVideos.has(video.videoId)
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Bookmark className={`h-3.5 w-3.5 ${savedVideos.has(video.videoId) ? "fill-primary" : ""}`} />
+                    {savedVideos.has(video.videoId) ? "Saved" : "Save"}
                   </button>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                 </div>
               </div>
             </div>
@@ -336,7 +438,6 @@ const GuidesScreen = () => {
                   <span className="text-[10px]">{guide.time}</span>
                 </div>
               </div>
-              {/* Tools & Parts */}
               {guide.tools && guide.tools.length > 0 && (
                 <div className="border-t border-border/50 pt-2 mb-2">
                   <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1 mb-1">
