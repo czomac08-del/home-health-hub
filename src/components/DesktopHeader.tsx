@@ -41,15 +41,15 @@ const DesktopHeader = () => {
       </div>
 
       {/* Center — property switcher */}
-      <div className="relative">
+      <div className="relative flex-1 min-w-0 max-w-md mx-4">
         <button
           onClick={() => setShowSwitcher(!showSwitcher)}
-          className="flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-foreground hover:bg-muted/80 transition-colors"
+          className="flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-foreground hover:bg-muted/80 transition-colors max-w-full"
         >
-          <Home className="h-3.5 w-3.5 text-primary" />
-          <span className="font-heading font-bold">{activeProperty?.label || "My Home"}</span>
-          <span className="text-muted-foreground text-xs hidden xl:inline">— {activeProperty?.address || "No property"}</span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <Home className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="font-heading font-bold truncate shrink-0">{activeProperty?.label || "My Home"}</span>
+          <span className="text-muted-foreground text-xs hidden xl:inline truncate min-w-0">— {activeProperty?.address || "No property"}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
         </button>
         {showSwitcher && (
           <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 rounded-xl border border-border bg-card shadow-lg py-1 z-50 min-w-[240px]">
