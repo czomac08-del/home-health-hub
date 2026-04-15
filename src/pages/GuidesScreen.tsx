@@ -8,6 +8,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+/* ─── Constants ─── */
+const AMAZON_TAG = "cominghomeiq2-20";
+
 /* ─── Types ─── */
 interface Guide {
   id: string;
@@ -19,6 +22,7 @@ interface Guide {
   icon: React.ReactNode;
   headerColor: string;
   tools?: { name: string; price: string; link: string }[];
+  amazonSearch?: string;
 }
 
 interface YouTubeVideo {
