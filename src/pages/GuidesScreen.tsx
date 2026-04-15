@@ -8,6 +8,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+/* ─── Constants ─── */
+const AMAZON_TAG = "cominghomeiq2-20";
+
 /* ─── Types ─── */
 interface Guide {
   id: string;
@@ -19,6 +22,7 @@ interface Guide {
   icon: React.ReactNode;
   headerColor: string;
   tools?: { name: string; price: string; link: string }[];
+  amazonSearch?: string;
 }
 
 interface YouTubeVideo {
@@ -61,6 +65,7 @@ const guides: Guide[] = [
     description: "Swap out your air filter to improve airflow and cut energy costs by up to 15%.",
     category: "HVAC", difficulty: 1, time: "15 min",
     icon: <Fan className="h-6 w-6" />, headerColor: "from-emerald-600/80 to-emerald-800/80",
+    amazonSearch: "hvac+filter+16x25x1",
     tools: [
       { name: "Replacement Filter (16x25x1)", price: "$12.99", link: "#" },
       { name: "Vacuum with brush attachment", price: "$0 (use yours)", link: "#" },
@@ -71,6 +76,7 @@ const guides: Guide[] = [
     description: "Drain sediment buildup to improve efficiency and extend unit lifespan.",
     category: "Plumbing", difficulty: 2, time: "45 min",
     icon: <Droplets className="h-6 w-6" />, headerColor: "from-blue-600/80 to-blue-800/80",
+    amazonSearch: "water+heater+anode+rod",
     tools: [
       { name: "Garden hose", price: "$0", link: "#" },
       { name: "Bucket", price: "$0", link: "#" },
@@ -82,6 +88,7 @@ const guides: Guide[] = [
     description: "Press test buttons on each detector. Replace batteries annually.",
     category: "Electrical", difficulty: 1, time: "10 min",
     icon: <Zap className="h-6 w-6" />, headerColor: "from-amber-600/80 to-amber-800/80",
+    amazonSearch: "smoke+detector+9v+battery",
     tools: [{ name: "9V Batteries (pack of 4)", price: "$8.99", link: "#" }],
   },
   {
@@ -89,6 +96,7 @@ const guides: Guide[] = [
     description: "Check for missing or curling shingles and granule loss in gutters.",
     category: "Roof", difficulty: 2, time: "30 min",
     icon: <Home className="h-6 w-6" />, headerColor: "from-red-600/80 to-red-800/80",
+    amazonSearch: "roof+repair+shingle+kit",
     tools: [
       { name: "Binoculars", price: "$29.99", link: "#" },
       { name: "Ladder (if safe access)", price: "$0", link: "#" },
@@ -99,6 +107,7 @@ const guides: Guide[] = [
     description: "Vacuum dust from condenser coils to improve cooling efficiency.",
     category: "Appliances", difficulty: 1, time: "20 min",
     icon: <Refrigerator className="h-6 w-6" />, headerColor: "from-violet-600/80 to-violet-800/80",
+    amazonSearch: "refrigerator+coil+cleaning+brush",
     tools: [{ name: "Coil cleaning brush", price: "$9.99", link: "#" }],
   },
   {
@@ -106,6 +115,7 @@ const guides: Guide[] = [
     description: "Disconnect hoses, shut off supply valves, and drain outdoor lines.",
     category: "Seasonal", difficulty: 2, time: "30 min",
     icon: <Snowflake className="h-6 w-6" />, headerColor: "from-cyan-600/80 to-cyan-800/80",
+    amazonSearch: "outdoor+faucet+cover+insulation",
     tools: [
       { name: "Faucet insulation cover (2-pack)", price: "$7.99", link: "#" },
       { name: "Pipe insulation wrap", price: "$5.99", link: "#" },
@@ -446,13 +456,28 @@ const GuidesScreen = () => {
                 </div>
               )}
               <button onClick={() => navigate(`/guide/${guide.id}`)}
-                className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+                className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity mb-2">
                 Start Guide
               </button>
+              {guide.amazonSearch && (
+                <a
+                  href={`https://www.amazon.com/s?k=${guide.amazonSearch}&tag=${AMAZON_TAG}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full rounded-lg border border-primary bg-primary/10 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5" /> Buy Supplies
+                </a>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Affiliate Disclosure */}
+      <p className="text-[10px] text-muted-foreground/60 text-center mt-2 mb-6">
+        As an Amazon Associate, ComingHomeIQ earns from qualifying purchases.
+      </p>
     </div>
   );
 };
