@@ -456,13 +456,28 @@ const GuidesScreen = () => {
                 </div>
               )}
               <button onClick={() => navigate(`/guide/${guide.id}`)}
-                className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
+                className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity mb-2">
                 Start Guide
               </button>
+              {guide.amazonSearch && (
+                <a
+                  href={`https://www.amazon.com/s?k=${guide.amazonSearch}&tag=${AMAZON_TAG}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full rounded-lg border border-primary bg-primary/10 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5" /> Buy Supplies
+                </a>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Affiliate Disclosure */}
+      <p className="text-[10px] text-muted-foreground/60 text-center mt-2 mb-6">
+        As an Amazon Associate, ComingHomeIQ earns from qualifying purchases.
+      </p>
     </div>
   );
 };
