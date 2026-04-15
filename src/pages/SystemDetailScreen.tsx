@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart } from "lucide-react";
 import { systems } from "./DashboardScreen";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -8,6 +8,8 @@ import BreakerPanelMapper from "@/components/BreakerPanelMapper";
 import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "@/components/AiPhotoScanner";
 import type { ScanResult } from "@/components/AiPhotoScanner";
 import WarrantySection from "@/components/WarrantySection";
+
+const AMAZON_TAG = "cominghomeiq2-20";
 
 const iconMap: Record<string, ReactNode> = {
   hvac: <Fan className="h-6 w-6 text-primary" />,
