@@ -147,25 +147,25 @@ const InsuranceScreen = () => {
       .select("system_name, brand, health_score, install_date")
       .eq("property_id", activeProperty.id)
       .eq("user_id", user.id);
-    const alerts: string[] = [];
+    const alertSet = new Set<string>();
     if (systems) {
       for (const s of systems) {
         if (s.system_name?.toLowerCase().includes("electrical") &&
           s.brand && ["federal pacific", "zinsco", "challenger"].some(
             (b) => s.brand!.toLowerCase().includes(b)
           )) {
-          alerts.push(`Your ${s.brand} electrical panel may affect your insurance coverage — some insurers require replacement. Check with your agent.`);
+          alertSet.add(`Your ${s.brand} electrical panel may affect your insurance coverage — some insurers require replacement. Check with your agent.`);
         }
         if (s.system_name?.toLowerCase().includes("roof") && s.install_date) {
           const age = new Date().getFullYear() - new Date(s.install_date).getFullYear();
-          if (age >= 20) alerts.push("Your roof age may affect your coverage or premium — verify with your insurer.");
+          if (age >= 20) alertSet.add("Your roof age may affect your coverage or premium — verify with your insurer.");
         }
         if (s.system_name?.toLowerCase().includes("well") && s.health_score && s.health_score < 60) {
-          alerts.push("Some insurers require annual well water tests — check your policy requirements.");
+          alertSet.add("Some insurers require annual well water tests — check your policy requirements.");
         }
       }
     }
-    setSystemAlerts(alerts);
+    setSystemAlerts(Array.from(alertSet));
   };
 
   const handleAddPolicy = async () => {
