@@ -10,6 +10,7 @@ import BeyondPublicRecords from "@/components/BeyondPublicRecords";
 import LegalFlag from "@/components/LegalFlag";
 import EditorialNote from "@/components/EditorialNote";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
+import RefreshButton from "@/components/RefreshButton";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -19,6 +20,9 @@ const PropertyDetailScreen = () => {
       <button onClick={() => navigate("/profile")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
         <ArrowLeft className="h-4 w-4" /> Back to Profile
       </button>
+
+      {/* Refresh */}
+      <RefreshButton scope="full" variant="compact" className="mb-4" />
 
       {/* Property Header */}
       <div className="rounded-xl border border-border bg-card p-5 mb-6">

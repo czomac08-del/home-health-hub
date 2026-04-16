@@ -9,6 +9,7 @@ import {
   CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart
 } from "lucide-react";
 import DiscountPotentialSection from "@/components/DiscountPotentialSection";
+import RefreshButton from "@/components/RefreshButton";
 
 // ─── Types ───
 type PolicyType = "primary" | "flood" | "earthquake" | "umbrella" | "warranty";
@@ -329,6 +330,9 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
           <p className="text-sm text-muted-foreground">Manage policies, claims & coverage</p>
         </div>
       </div>
+
+      {/* Refresh data */}
+      <RefreshButton scope="insurance" variant="compact" className="mb-4" />
 
       {/* Emergency Claims Button */}
       <button

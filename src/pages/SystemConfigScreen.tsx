@@ -17,6 +17,8 @@ import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import SaveButtonMessage from "@/components/SaveButtonMessage";
+import RefreshButton from "@/components/RefreshButton";
+import type { RefreshScope } from "@/hooks/useDataRefresh";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -379,7 +381,10 @@ const SystemConfigScreen = () => {
         <ArrowLeft className="h-4 w-4" /> Back to Systems
       </button>
 
-      <h1 className="text-xl font-bold text-foreground mb-1">{displayName}</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+        <RefreshButton scope={(displayName.toLowerCase().includes("well") ? "well" : displayName.toLowerCase().includes("septic") || displayName.toLowerCase().includes("sewer") ? "septic" : displayName.toLowerCase().includes("hvac") ? "hvac" : displayName.toLowerCase().includes("roof") ? "roof" : displayName.toLowerCase().includes("electrical") ? "electrical" : displayName.toLowerCase().includes("plumbing") ? "plumbing" : displayName.toLowerCase().includes("water heater") ? "water_heater" : "full") as RefreshScope} variant="compact" />
+      </div>
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
 
       {/* Progress Bar — always visible */}
