@@ -59,20 +59,30 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, state }: Pr
   }, [propertyId, user]);
 
   // Categories where the relevant date is recent transactions, not build year
-  // For these, only show pre-digitization warning if digitization year > ~2000
   const TRANSACTION_CATEGORIES = ["property_history", "land_title", "insurance_claims"];
 
+  const stateAbbr = state?.toUpperCase() || "";
+  const stateName = STATE_NAMES[stateAbbr] || stateAbbr;
+
   const predatesDigital = (rt: MissingRecord) => {
-    if (!builtYear || !rt.typical_digitization_year) return false;
-    // For transaction-based categories (sales, appraisals, listings),
-    // don't flag as pre-digital if records from the last 20+ years exist
+    if (!builtYear) return false;
+
+    // Use state-specific cutoff if available, otherwise fall back to DB value
+    const stateCutoff = getDigitizationCutoff(stateAbbr, rt.category);
+    const cutoff = stateCutoff || rt.typical_digitization_year;
+    if (!cutoff) return false;
+
+    // For transaction-based categories, only flag if county hasn't digitized yet
     if (TRANSACTION_CATEGORIES.includes(rt.category)) {
-      // Only flag if digitization year is very recent (post-2010) — meaning
-      // even modern records may not exist digitally for this county
-      return rt.typical_digitization_year > 2010;
+      return cutoff > 2010;
     }
-    // For construction/permit records, the build year is the relevant date
-    return builtYear < rt.typical_digitization_year;
+    // For construction/permit records, compare build year vs cutoff
+    return builtYear < cutoff;
+  };
+
+  /** Get the relevant cutoff year for display */
+  const getCutoffYear = (rt: MissingRecord): number | null => {
+    return getDigitizationCutoff(stateAbbr, rt.category) || rt.typical_digitization_year;
   };
 
   // Group by category
