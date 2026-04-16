@@ -39,7 +39,8 @@ Deno.serve(async (req) => {
     }
 
     const user = userData.user;
-    const { planId, billingPeriod } = await req.json();
+    const body = await req.json();
+    const { planId, billingPeriod, priceId, mode, successUrl, cancelUrl } = body;
 
     // Find or create Stripe customer
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
@@ -50,7 +51,23 @@ Deno.serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://cominghomeiq.lovable.app";
 
-    // One-time purchase
+    // Direct priceId + mode (used by refresh credit purchases)
+    if (priceId && mode === "payment") {
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email!,
+        mode: "payment",
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: successUrl || `${origin}/dashboard?checkout=success`,
+        cancel_url: cancelUrl || `${origin}/pricing?checkout=cancel`,
+        metadata: { user_id: user.id, purchase_type: "refresh_credit" },
+      });
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // One-time report purchase
     if (planId === "one_time_report") {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
