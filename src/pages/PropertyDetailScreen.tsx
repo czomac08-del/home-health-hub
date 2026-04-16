@@ -41,12 +41,36 @@ const PropertyDetailScreen = () => {
         <RecordsDiscoveryStatus propertyId="demo" />
       </div>
 
+      {/* Verification Summary */}
+      <div className="mb-6">
+        <VerificationSummary propertyId="demo" />
+      </div>
+
       {/* Construction Profile */}
       <ConstructionProfile />
 
       {/* Property Timeline */}
       <div className="mt-6 mb-6">
         <PropertyTimeline propertyId="demo" yearBuilt="2005" />
+      </div>
+
+      {/* Permanent Archive */}
+      <div className="mb-6">
+        <PermanentArchive propertyId="demo" />
+      </div>
+
+      {/* Beyond Public Records */}
+      <div className="mb-6">
+        <BeyondPublicRecords
+          comparisons={[
+            { label: "Build year", publicStatus: "1968", chiqStatus: "1965", isCorrected: true },
+            { label: "Well record", publicStatus: null, chiqStatus: "Documented" },
+            { label: "Septic permit", publicStatus: "1981", chiqStatus: "Found + confirmed" },
+            { label: "Electrical panel", publicStatus: null, chiqStatus: "150A, upgraded 1994" },
+            { label: "Deck addition", publicStatus: null, chiqStatus: "Confirmed via satellite" },
+            { label: "Pipe material", publicStatus: null, chiqStatus: "Copper, replaced 1988" },
+          ]}
+        />
       </div>
 
       {/* Missing Records Intelligence */}
