@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle } from "lucide-react";
+import { parseStateFromAddress } from "@/data/stateData";
 import ConstructionProfile from "@/components/ConstructionProfile";
 import PropertyTimeline from "@/components/PropertyTimeline";
 import MissingRecordsIntelligence from "@/components/MissingRecordsIntelligence";
@@ -48,6 +49,7 @@ const PropertyDetailScreen = () => {
 
   const healthScore = activeProperty.health_score;
   const yearBuilt = activeProperty.year_built;
+  const propertyState = useMemo(() => parseStateFromAddress(activeProperty.address) || "", [activeProperty.address]);
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
@@ -113,7 +115,7 @@ const PropertyDetailScreen = () => {
 
       {/* Missing Records Intelligence */}
       <div className="mb-6">
-        <MissingRecordsIntelligence propertyId={propertyId} yearBuilt={yearBuilt || undefined} county="" state="" />
+        <MissingRecordsIntelligence propertyId={propertyId} yearBuilt={yearBuilt || undefined} county="" state={propertyState} />
       </div>
 
       {/* Legal Awareness Flags */}
