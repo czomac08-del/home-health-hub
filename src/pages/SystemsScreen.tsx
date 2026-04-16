@@ -1,40 +1,82 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText, Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-type SystemStatus = "configured" | "unconfigured";
+type SystemStatus = "documented" | "unconfigured";
 
 interface SystemItem {
   name: string;
-  icon: React.ReactNode;
-  status: SystemStatus;
-  detail: string;
+  icon: ReactNode;
   route?: string;
+  status?: SystemStatus;
+  detail?: string;
+  aliases?: string[];
+  documentedDetail?: string;
+  emptyDetail?: string;
+}
+
+interface SystemDetailSummary {
+  system_name: string;
+  brand: string | null;
+  model: string | null;
+  install_date: string | null;
+  purchase_date: string | null;
+  last_service: string | null;
+  next_service: string | null;
+  notes: string | null;
+  location_in_home: string | null;
+  well_type: string | null;
+  specs: Record<string, unknown> | null;
 }
 
 const coreInfrastructure: SystemItem[] = [
-  { name: "Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure", route: "/system-config/Water%20Source" },
-  { name: "Well Water", icon: <Droplets className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Manage well type, drought & water quality", route: "/well-water" },
-  { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, status: "configured", detail: "92% health — Excellent" },
-  { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, status: "configured", detail: "65% health — Needs inspection" },
-  { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, status: "configured", detail: "78% health — Good" },
-  { name: "Roof", icon: <Home className="h-5 w-5 text-primary" />, status: "configured", detail: "55% health — Action required" },
-  { name: "Sewer and Waste", icon: <Gauge className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, status: "configured", detail: "9 years old — Monitor" },
-  { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Home Insurance", icon: <Shield className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Manage policies & coverage" },
+  { name: "Water Source", icon: <Waves className="h-5 w-5 text-primary" />, route: "/system-config/Water%20Source", documentedDetail: "Documented — review water details", emptyDetail: "Needs your input" },
+  { name: "Well Water", icon: <Droplets className="h-5 w-5 text-primary" />, route: "/well-water", aliases: ["Water Source", "Well Water"], documentedDetail: "Documented — review well details", emptyDetail: "Not yet documented" },
+  { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Roof", icon: <Home className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Sewer and Waste", icon: <Gauge className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Home Insurance", icon: <Shield className="h-5 w-5 text-primary" />, route: "/insurance", documentedDetail: "Review policies & coverage", emptyDetail: "Add policy details" },
 ];
 
 const appliances: SystemItem[] = [
-  { name: "Refrigerator", icon: <Refrigerator className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Washer / Dryer", icon: <WashingMachine className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Dishwasher", icon: <UtensilsCrossed className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Garage Door Opener", icon: <DoorOpen className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
-  { name: "Water Softener", icon: <GlassWater className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Tap to add details" },
+  { name: "Refrigerator", icon: <Refrigerator className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Washer / Dryer", icon: <WashingMachine className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Dishwasher", icon: <UtensilsCrossed className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Garage Door Opener", icon: <DoorOpen className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Water Softener", icon: <GlassWater className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
 ];
 
-const SystemRow = ({ item, onClick }: { item: SystemItem; onClick: () => void }) => {
-  const isConfigured = item.status === "configured";
+const hasValue = (value: unknown) => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value as Record<string, unknown>).length > 0;
+  return true;
+};
+
+const hasRealSystemData = (item: SystemDetailSummary) => {
+  const coreFields = [
+    item.brand,
+    item.model,
+    item.install_date,
+    item.purchase_date,
+    item.last_service,
+    item.next_service,
+    item.notes,
+    item.location_in_home,
+    item.well_type,
+  ];
+
+  return coreFields.some(hasValue) || (item.specs && Object.values(item.specs).some(hasValue));
+};
+
+const SystemRow = ({ item, documented, onClick }: { item: SystemItem; documented: boolean; onClick: () => void }) => {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left">
       <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -42,11 +84,11 @@ const SystemRow = ({ item, onClick }: { item: SystemItem; onClick: () => void })
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${isConfigured ? "bg-health-green" : "bg-muted-foreground/30"}`} />
-          <span className={`font-medium text-sm ${isConfigured ? "text-foreground" : "text-muted-foreground"}`}>{item.name}</span>
+          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${documented ? "bg-health-green" : "bg-muted-foreground/30"}`} />
+          <span className={`font-medium text-sm ${documented ? "text-foreground" : "text-muted-foreground"}`}>{item.name}</span>
         </div>
-        <p className={`text-xs mt-0.5 ml-[18px] ${isConfigured ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}>
-          {item.detail}
+        <p className={`text-xs mt-0.5 ml-[18px] ${documented ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
+          {documented ? item.documentedDetail : item.emptyDetail}
         </p>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
@@ -56,14 +98,46 @@ const SystemRow = ({ item, onClick }: { item: SystemItem; onClick: () => void })
 
 const SystemsScreen = () => {
   const [search, setSearch] = useState("");
+  const [documentedNames, setDocumentedNames] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const { user, activeProperty } = useAuth();
+
+  useEffect(() => {
+    if (!user || !activeProperty) return;
+
+    supabase
+      .from("system_details")
+      .select("system_name, brand, model, install_date, purchase_date, last_service, next_service, notes, location_in_home, well_type, specs")
+      .eq("property_id", activeProperty.id)
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        const next = new Set<string>();
+        (data as SystemDetailSummary[] | null)?.forEach((record) => {
+          if (hasRealSystemData(record)) next.add(record.system_name);
+        });
+        setDocumentedNames(next);
+      });
+  }, [user, activeProperty]);
+
+  const isDocumented = (item: SystemItem) => {
+    const possibleNames = [item.name, ...(item.aliases || [])];
+    return possibleNames.some((name) => documentedNames.has(name));
+  };
 
   const filterItems = (items: SystemItem[]) =>
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
 
+  const documentedCount = useMemo(
+    () => [...coreInfrastructure, ...appliances].filter(isDocumented).length,
+    [documentedNames],
+  );
+
   return (
     <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-foreground mb-6">Systems</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-2">Systems</h1>
+      <p className="text-sm text-muted-foreground mb-6">
+        We only show documented system details here. Right now, {documentedCount} systems have real information on file.
+      </p>
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -79,12 +153,16 @@ const SystemsScreen = () => {
       <div className="mb-6">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
         <div className="rounded-xl border border-border bg-card px-4">
-           {filterItems(coreInfrastructure).map((item) => (
-            <SystemRow key={item.name} item={item} onClick={() => {
-              if (item.route) navigate(item.route);
-              else if (item.name === "Home Insurance") navigate("/insurance");
-              else navigate(`/system-config/${encodeURIComponent(item.name)}`);
-            }} />
+          {filterItems(coreInfrastructure).map((item) => (
+            <SystemRow
+              key={item.name}
+              item={item}
+              documented={isDocumented(item)}
+              onClick={() => {
+                if (item.route) navigate(item.route);
+                else navigate(`/system-config/${encodeURIComponent(item.name)}`);
+              }}
+            />
           ))}
         </div>
       </div>
@@ -93,7 +171,7 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(appliances).map((item) => (
-            <SystemRow key={item.name} item={item} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
+            <SystemRow key={item.name} item={item} documented={isDocumented(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
           ))}
         </div>
       </div>
