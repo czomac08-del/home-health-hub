@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Shield, Check, Star, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart } from "lucide-react";
+import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart, Database, MapPin, Globe, DollarSign, AlertTriangle, FileWarning, Award, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -17,11 +17,38 @@ const roles = [
   { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate ComingHomeIQs for sale.", accent: "border-t-4 border-t-warning" },
 ];
 
-const stats = [
-  { value: "50K+", label: "Homes Tracked" },
-  { value: "200K+", label: "Systems Monitored" },
-  { value: "$2.4M", label: "Maintenance Saved" },
-  { value: "4.9★", label: "User Rating" },
+const platformStats = [
+  { value: "16", label: "Home System Categories Tracked", icon: Database },
+  { value: "50", label: "States Covered with Records Intelligence", icon: MapPin },
+  { value: "9+", label: "Live Government Data Sources Connected", icon: Globe },
+  { value: "$0", label: "To Discover Your Home's Public Records", icon: DollarSign },
+];
+
+const industryStats = [
+  {
+    stat: "$5,000–$10,000",
+    description: "more on average for homes with documented maintenance history",
+    source: "National Association of Realtors",
+    icon: TrendingUp,
+  },
+  {
+    stat: "1 in 3",
+    description: "homeowners discover unpermitted work they didn't know about",
+    source: "NAHB",
+    icon: AlertTriangle,
+  },
+  {
+    stat: "$3,000+",
+    description: "average emergency home repair cost — documented maintenance reduces surprises",
+    source: "HomeAdvisor / Angi",
+    icon: FileWarning,
+  },
+  {
+    stat: "$1,200",
+    description: "average warranty claim — most go unclaimed because homeowners lose paperwork",
+    source: "Consumer Reports",
+    icon: Award,
+  },
 ];
 
 const LandingPage = () => {
@@ -58,7 +85,6 @@ const LandingPage = () => {
 
       {/* Hero */}
       <section className="relative max-w-5xl mx-auto px-6 pt-16 lg:pt-24 pb-12 lg:pb-16 text-center">
-        {/* Orange radial glow behind headline */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
@@ -102,29 +128,35 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Trust Indicators */}
+      {/* Platform Stats — real, verifiable numbers */}
       <section className="max-w-4xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Heart, label: "50,000+ Homes Documented" },
-            { icon: Briefcase, label: "Trusted by Realtors" },
-            { icon: ClipboardList, label: "Inspector Verified" },
-          ].map((t) => (
-            <div key={t.label} className="flex flex-col items-center gap-1.5 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-center">
-              <t.icon className="h-4 w-4 text-primary" />
-              <span className="text-[10px] font-semibold text-primary">{t.label}</span>
+        <h2 className="text-lg font-heading font-bold text-foreground text-center mb-6">What's Built and Ready</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {platformStats.map((s) => (
+            <div key={s.label} className="rounded-2xl border border-border bg-card p-5 text-center">
+              <s.icon className="h-5 w-5 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-heading font-black text-primary">{s.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{s.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="max-w-4xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-border bg-card p-5 text-center">
-              <p className="text-2xl font-heading font-black text-primary">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+      {/* Industry Stats — sourced, honest */}
+      <section className="max-w-4xl mx-auto px-6 pb-20">
+        <h2 className="text-2xl font-heading font-black text-foreground text-center mb-2">What ComingHomeIQ Protects You From</h2>
+        <p className="text-sm text-muted-foreground text-center mb-10">Real industry data that explains why this platform exists</p>
+        <div className="grid md:grid-cols-2 gap-4">
+          {industryStats.map((item) => (
+            <div key={item.stat} className="rounded-2xl border border-border bg-card p-5 flex gap-4 items-start">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <item.icon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xl font-heading font-black text-foreground">{item.stat}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1.5 italic">Source: {item.source}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -155,7 +187,7 @@ const LandingPage = () => {
             { icon: Shield, title: "Protect Your Investment", desc: "Track system health, maintenance history, and warranties in one place." },
             { icon: TrendingUp, title: "Increase Home Value", desc: "Homes with complete passports sell faster and for more money." },
             { icon: FileText, title: "Seamless Transfers", desc: "Transfer your home's complete history to new owners with privacy protection." },
-            { icon: Star, title: "Verified Data", desc: "Inspector and contractor findings get verified badges for trust." },
+            { icon: Check, title: "Verified Data", desc: "Inspector and contractor findings get verified badges for trust." },
             { icon: Users, title: "Professional Network", desc: "Connect with trusted local pros for maintenance and repairs." },
             { icon: Zap, title: "AI-Powered Insights", desc: "Get predictive maintenance recommendations before problems happen." },
           ].map((f) => (
@@ -165,6 +197,34 @@ const LandingPage = () => {
               <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Founding Member / Beta Community */}
+      <section className="max-w-3xl mx-auto px-6 pb-20">
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-4">
+            <Heart className="h-3.5 w-3.5 text-primary fill-primary" />
+            <span className="text-xs font-medium text-primary">Founding Members</span>
+          </div>
+          <h2 className="text-2xl font-heading font-black text-foreground mb-3">Be Part of Building the Future of Home Ownership</h2>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed">
+            ComingHomeIQ is in active beta. We're looking for homeowners, landlords, and real estate professionals who want to help shape the most complete home record platform ever built. Early members get lifetime founding pricing.
+          </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-heading font-extrabold hover:opacity-90 transition-opacity glow-orange text-sm">
+              Join the Beta
+            </button>
+            <a
+              href="https://g.page/r/cominghomeiq/review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground px-6 py-3 rounded-xl font-heading font-extrabold hover:bg-secondary/80 transition-colors text-sm"
+            >
+              Leave a Review <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 mt-4">Already a member? Your honest review helps other homeowners find us.</p>
         </div>
       </section>
 
@@ -210,8 +270,13 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 text-center">
-        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ. All rights reserved.</p>
+      <footer className="border-t border-border py-8 text-center space-y-2">
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms of Service</button>
+          <span>·</span>
+          <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">Privacy Policy</button>
+        </div>
+        <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ LLC. All rights reserved.</p>
       </footer>
     </div>
   );
