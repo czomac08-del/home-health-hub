@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ChevronRight, AlertTriangle, HardHat, Upload, Plus, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ChevronRight, AlertTriangle, HardHat } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

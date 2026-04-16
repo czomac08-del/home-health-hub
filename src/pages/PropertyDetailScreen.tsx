@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle } from "lucide-react";
+import ConstructionProfile from "@/components/ConstructionProfile";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ const PropertyDetailScreen = () => {
           <Stat icon={<Calendar className="h-3.5 w-3.5 text-primary" />} label="Built" value="2005" />
         </div>
       </div>
+
+      {/* Construction Profile */}
+      <ConstructionProfile />
 
       {/* Quick Actions */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
