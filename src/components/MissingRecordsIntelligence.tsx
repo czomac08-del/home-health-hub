@@ -38,7 +38,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   agricultural_rural: "Agricultural & Rural",
 };
 
-const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) => {
+const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, state }: Props) => {
   const { user } = useAuth();
   const [allRecordTypes, setAllRecordTypes] = useState<MissingRecord[]>([]);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
