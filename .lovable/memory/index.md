@@ -59,3 +59,4 @@
 - [Autonomous Discovery](mem://features/autonomous-discovery) — 4-tier confidence model for AI extraction, auto-confirm high confidence
 - [True Record System](mem://features/true-record-system) — Multi-source verification engine with 0-100 confidence, permanent archive, satellite imagery
 - [Honest AI Responses](mem://features/honest-ai-responses) — Every empty state explains why, legal flags with calm blue borders, attorney referrals, editorial notes
+- [Legal Compliance System](mem://features/legal-compliance-system) — ToS, Privacy Policy, 4-step legal onboarding, state disclosure engine, legal footer

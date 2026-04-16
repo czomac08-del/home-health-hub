@@ -288,6 +288,53 @@ export type Database = {
         }
         Relationships: []
       }
+      disclosure_awareness: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          created_at: string
+          flagged_data_summary: string | null
+          id: string
+          property_id: string
+          state: string
+          trigger_category: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          created_at?: string
+          flagged_data_summary?: string | null
+          id?: string
+          property_id: string
+          state: string
+          trigger_category: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          created_at?: string
+          flagged_data_summary?: string | null
+          id?: string
+          property_id?: string
+          state?: string
+          trigger_category?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disclosure_awareness_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drought_cache: {
         Row: {
           created_at: string
@@ -792,6 +839,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      legal_acknowledgments: {
+        Row: {
+          accepted_at: string
+          age_confirmed: boolean
+          civic_consent: boolean | null
+          created_at: string
+          id: string
+          privacy_accepted: boolean
+          professional_disclaimer_accepted: boolean
+          state_selected: string | null
+          terms_accepted: boolean
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          age_confirmed?: boolean
+          civic_consent?: boolean | null
+          created_at?: string
+          id?: string
+          privacy_accepted?: boolean
+          professional_disclaimer_accepted?: boolean
+          state_selected?: string | null
+          terms_accepted?: boolean
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          age_confirmed?: boolean
+          civic_consent?: boolean | null
+          created_at?: string
+          id?: string
+          privacy_accepted?: boolean
+          professional_disclaimer_accepted?: boolean
+          state_selected?: string | null
+          terms_accepted?: boolean
+          user_id?: string
+        }
+        Relationships: []
       }
       legal_resources: {
         Row: {
@@ -1425,6 +1511,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      state_disclosure_requirements: {
+        Row: {
+          applies_to_sales: boolean
+          created_at: string
+          id: string
+          is_federal: boolean
+          legal_citation: string | null
+          penalty_for_nondisclosure: string | null
+          requirement_text: string
+          state: string
+          trigger_category: string
+        }
+        Insert: {
+          applies_to_sales?: boolean
+          created_at?: string
+          id?: string
+          is_federal?: boolean
+          legal_citation?: string | null
+          penalty_for_nondisclosure?: string | null
+          requirement_text: string
+          state: string
+          trigger_category: string
+        }
+        Update: {
+          applies_to_sales?: boolean
+          created_at?: string
+          id?: string
+          is_federal?: boolean
+          legal_citation?: string | null
+          penalty_for_nondisclosure?: string | null
+          requirement_text?: string
+          state?: string
+          trigger_category?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
