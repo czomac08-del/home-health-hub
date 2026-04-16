@@ -79,9 +79,9 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
 
       const { data: urlData } = await supabase.storage
         .from("property-records")
-        .createSignedUrl(path, 31536000); // 1 year
+        .createSignedUrl(path, 31536000);
 
-      const { error: insertError } = await supabase.from("property_records").insert({
+      const { data: insertData, error: insertError } = await supabase.from("property_records").insert({
         property_id: propertyId,
         system_type: systemType,
         record_type: uploadData.recordType,
@@ -92,12 +92,31 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
         url: urlData?.signedUrl || "",
         notes: uploadData.notes || null,
         uploaded_by_user_id: user.id,
-      });
+        consent_civic_sharing: civicConsent,
+      }).select().single();
       if (insertError) throw insertError;
 
-      toast.success("Record saved to this property's permanent history!");
+      setLastUploadedRecordId(insertData?.id || null);
+      toast.success("Record saved! Running AI extraction...");
       setShowUpload(false);
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
+
+      // Trigger AI extraction
+      if (urlData?.signedUrl) {
+        setExtracting(true);
+        try {
+          const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-document-data", {
+            body: { documentUrl: urlData.signedUrl, systemType },
+          });
+          if (!extractError && extractData?.extracted) {
+            setAiExtraction({ extracted: extractData.extracted, confidence: extractData.confidence });
+          }
+        } catch {
+          // Extraction is best-effort
+        } finally {
+          setExtracting(false);
+        }
+      }
 
       // Refresh records
       const { data } = await supabase
@@ -112,6 +131,16 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleConfirmExtraction = async (data: Record<string, any>) => {
+    if (!lastUploadedRecordId) return;
+    await supabase.from("property_records").update({
+      ai_extracted_data: data,
+      ai_verified: true,
+    }).eq("id", lastUploadedRecordId);
+    toast.success("AI-extracted data confirmed and saved!");
+    setAiExtraction(null);
   };
 
   const progress = Math.round((completedSteps.size / steps.length) * 100);
