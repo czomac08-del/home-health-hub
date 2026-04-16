@@ -31,6 +31,10 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     notes: "",
   });
   const [uploading, setUploading] = useState(false);
+  const [civicConsent, setCivicConsent] = useState(true);
+  const [aiExtraction, setAiExtraction] = useState<{ extracted: Record<string, any>; confidence: string } | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [lastUploadedRecordId, setLastUploadedRecordId] = useState<string | null>(null);
 
   const steps = getRecoverySteps(systemType, county, state, address);
 
