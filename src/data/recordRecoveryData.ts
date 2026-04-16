@@ -40,27 +40,22 @@ interface RecoveryStep {
   scriptPrompt?: string;
 }
 
-const WELL_DATABASES: Record<string, string> = {
-  NC: "https://www.nconemap.gov/pages/wells",
-  SC: "https://www.dhec.sc.gov/environment/water/groundwater",
-  GA: "https://epd.georgia.gov/water",
-  VA: "https://www.deq.virginia.gov/water/water-quantity/groundwater/well-information",
-  FL: "https://floridadep.gov/water/source-drinking-water/content/water-well-construction-permitting",
-  TX: "https://www.twdb.texas.gov/groundwater/data/gwdbrpt.asp",
-  TN: "https://www.tn.gov/environment/program-areas/wr-water-resources/groundwater/well-records.html",
-  NY: "https://www.dec.ny.gov/chemical/8560.html",
-  PA: "https://www.dep.pa.gov/Business/Water/DrinkingWater/WaterSupplyManagement/Pages/Well-Permitting.aspx",
-  OH: "https://ohiodnr.gov/wps/portal/gov/odnr/discover-and-learn/safety-conservation/about-ODNR/geologic-survey/water-well-log-search",
-  MI: "https://www.michigan.gov/egle/about/organization/water-resources/well-search",
-  IN: "https://www.in.gov/dnr/water/water-well-record-search/",
-  IL: "https://www.isgs.illinois.edu/sections/oil-gas-resources/isws-water-well-records",
-  WI: "https://dnr.wisconsin.gov/topic/Wells/drillersSearch.html",
-  MN: "https://mnwellindex.web.health.state.mn.us/",
-  CA: "https://data.cnra.ca.gov/dataset/well-completion-reports",
-  WA: "https://apps.ecology.wa.gov/wellconstructor/",
-  OR: "https://www.oregon.gov/owrd/pages/wr/groundwater_logs.aspx",
-  CO: "https://dwr.state.co.us/Tools/WellSearch",
-  AZ: "https://gisweb.azwater.gov/waterresourcedata/",
+const WELL_DATABASES: Record<string, { name: string; url: string }> = {
+  NC: { name: "NC DEQ Well Construction Database", url: "https://www.nconemap.gov/pages/wells" },
+  SC: { name: "SC DHEC Well Database", url: "https://scdhec.gov/environment/water/wells" },
+  GA: { name: "GA EPD Well Records", url: "https://epd.georgia.gov/water" },
+  VA: { name: "VA DEQ Well Database", url: "https://www.deq.virginia.gov/water/water-quantity/groundwater" },
+  FL: { name: "FL DEP Water Well Database", url: "https://floridadep.gov/water/source-drinking-water" },
+  TX: { name: "TX Water Development Board", url: "https://www.twdb.texas.gov/groundwater/data/gwdbrpt.asp" },
+  TN: { name: "TN Well Record Database", url: "https://www.tn.gov/environment/program-areas/wr-water-resources/groundwater.html" },
+  OH: { name: "OH DNR Well Log Search", url: "https://ohiodnr.gov/wps/portal/gov/odnr/discover-and-learn/safety-conservation/about-ODNR/geologic-survey/water-well-log-search" },
+  MI: { name: "MI EGLE Well Search", url: "https://www.michigan.gov/egle/about/organization/water-resources/well-search" },
+  IN: { name: "IN DNR Water Well Search", url: "https://www.in.gov/dnr/water/water-well-record-search/" },
+  WI: { name: "WI DNR Well Driller Search", url: "https://dnr.wisconsin.gov/topic/Wells/drillersSearch.html" },
+  MN: { name: "MN Well Index", url: "https://mnwellindex.web.health.state.mn.us/" },
+  WA: { name: "WA Ecology Well Constructor", url: "https://apps.ecology.wa.gov/wellconstructor/" },
+  OR: { name: "OR Water Resources Well Logs", url: "https://www.oregon.gov/owrd/pages/wr/groundwater_logs.aspx" },
+  CO: { name: "CO DWR Well Search", url: "https://dwr.state.co.us/Tools/WellSearch" },
 };
 
 export function getRecoverySteps(systemType: SystemRecordType, county: string, state: string, address: string): RecoveryStep[] {
@@ -70,14 +65,15 @@ export function getRecoverySteps(systemType: SystemRecordType, county: string, s
 
   // Step 1 — State/County digital database
   if (systemType === "well") {
-    const wellUrl = WELL_DATABASES[stateAbbr] || "https://www.ngwa.org/what-is-groundwater/Home-owners/find-well-record";
-    const isDefault = !WELL_DATABASES[stateAbbr];
+    const wellDb = WELL_DATABASES[stateAbbr];
+    const wellUrl = wellDb?.url || "https://wellowner.org/resources/well-record/";
+    const wellLabel = wellDb?.name || "Find Your State Well Database";
     steps.push({
-      title: "Search Your State Well Database",
-      description: `Search the ${state} well database by your property address or parcel number. Digital records typically begin around 1989 (varies by state). If your well predates this, proceed to Step 2.`,
+      title: wellDb ? `Search ${wellDb.name}` : "Search Your State Well Database",
+      description: `Search by your property address or parcel number. ${stateAbbr} digital records typically begin around 1989. If your well predates this, proceed to Step 2.`,
       directUrl: wellUrl,
-      directUrlLabel: isDefault ? "NGWA Well Record Finder" : `${stateAbbr} Well Database`,
-      tip: "Look for the state Department of Environmental Quality (DEQ) or equivalent. Many states have free online well record searches.",
+      directUrlLabel: wellLabel,
+      tip: wellDb ? `Search ${wellDb.name} for records matching your address or parcel number.` : "Look for the state Department of Environmental Quality (DEQ) or equivalent. Many states have free online well record searches.",
     });
   } else if (systemType === "septic") {
     steps.push({
@@ -135,7 +131,7 @@ export function getRecoverySteps(systemType: SystemRecordType, county: string, s
 
   // Step 5 — Professional assessment
   const assessments: Record<string, { desc: string; cost: string; url: string; urlLabel: string }> = {
-    well: { desc: "Licensed well contractor assessment — depth, static/pumping water level, flow rate, casing condition.", cost: "$150–$400", url: "https://www.ngwa.org/get-connected/find-a-member", urlLabel: "Find on NGWA" },
+    well: { desc: "Licensed well contractor assessment — depth, static/pumping water level, flow rate, casing condition.", cost: "$150–$400", url: "https://wellowner.org/resources/find-a-contractor/", urlLabel: "Find a Well Contractor" },
     septic: { desc: "Septic inspection — tank location, size, last pump date, leach field condition.", cost: "$200–$500", url: `https://www.google.com/search?q=${encodeURIComponent(`septic inspection contractor near ${county} ${stateAbbr}`)}`, urlLabel: "Find Septic Inspector" },
     electrical: { desc: "Licensed electrician panel inspection — amperage, breaker condition, wiring type, code compliance.", cost: "$100–$200", url: `https://www.google.com/search?q=${encodeURIComponent(`licensed electrician ${county} ${stateAbbr}`)}`, urlLabel: "Find Electrician" },
     plumbing: { desc: "Plumber assessment — pipe material, shutoff locations, water heater condition.", cost: "$100–$200", url: `https://www.google.com/search?q=${encodeURIComponent(`licensed plumber ${county} ${stateAbbr}`)}`, urlLabel: "Find Plumber" },
