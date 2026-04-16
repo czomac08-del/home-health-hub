@@ -53,5 +53,6 @@
 - [Home Insurance](mem://features/home-insurance) — Insurance Vault, AI assistant, Coverage Gap Analyzer, claims tracking
 - [Home Health Certification](mem://features/home-health-certification) — 85+ score and 80%+ completeness for certified status and discounts
 - [Warranty Intelligence](mem://features/warranty-intelligence) — Warranty Vault, Claim Assistant, CPSC recall cross-referencing
-- [Well Water Management](mem://features/well-water-management) — 5 well types, USDA drought monitor, usage timer, water quality tests
-- [Record Recovery System](mem://features/record-recovery-system) — Step-by-step guided recovery for missing records with permanent property storage
+- [Record Recovery System](mem://features/record-recovery-system) — State-specific direct links, step-by-step guides for missing records
+- [Well Water Management](mem://features/well-water-management) — Well type selection, drought monitoring, usage timer, testing schedule
+- [Civic Data Platform](mem://features/civic-data-platform) — AI document extraction, records requests, community aggregation, civic contributions
