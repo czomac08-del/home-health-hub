@@ -106,11 +106,6 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         try {
           switch (source) {
             case "RentCast": {
-              const { data } = await supabase.functions.invoke("rentcast-lookup", {
-                body: null,
-                headers: {},
-              });
-              // Use GET with query params
               const resp = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup?address=${encodeURIComponent(activeProperty.address)}`,
                 {
