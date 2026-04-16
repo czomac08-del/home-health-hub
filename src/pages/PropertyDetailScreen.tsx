@@ -20,8 +20,8 @@ const PropertyDetailScreen = () => {
   const navigate = useNavigate();
   const { activeProperty } = useAuth();
   const [systemCount, setSystemCount] = useState<number | null>(null);
-
   const propertyId = activeProperty?.id || "";
+  const propertyState = useMemo(() => activeProperty ? parseStateFromAddress(activeProperty.address) || "" : "", [activeProperty]);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -49,7 +49,6 @@ const PropertyDetailScreen = () => {
 
   const healthScore = activeProperty.health_score;
   const yearBuilt = activeProperty.year_built;
-  const propertyState = useMemo(() => parseStateFromAddress(activeProperty.address) || "", [activeProperty.address]);
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
