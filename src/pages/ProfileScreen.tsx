@@ -9,6 +9,8 @@ import { HouseholdProfileEditor } from "@/components/HouseholdProfileEditor";
 import { SmartHomeIntegrations } from "@/components/SmartHomeIntegrations";
 import { dismissAllDemoData } from "@/hooks/useDemoData";
 import CivicDashboard from "@/components/CivicDashboard";
+import DataPermanenceBanner from "@/components/DataPermanenceBanner";
+import CommunityImpactSection from "@/components/CommunityImpactSection";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -77,6 +79,11 @@ const ProfileScreen = () => {
           <h1 className="text-xl font-bold text-foreground">{profile?.full_name || "User"}</h1>
           <p className="text-sm text-muted-foreground">{profile?.email || user?.email}</p>
         </div>
+      </div>
+
+      {/* Data Permanence */}
+      <div className="mb-6">
+        <DataPermanenceBanner />
       </div>
 
       {/* My Properties */}
@@ -191,6 +198,9 @@ const ProfileScreen = () => {
               </div>
             </div>
           ))}
+          <div className="px-4 py-3 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground text-center">You've logged 3 maintenance records — every one adds to your home's story.</p>
+          </div>
         </div>
       </Section>
 
@@ -210,7 +220,12 @@ const ProfileScreen = () => {
       </Section>
 
       {/* Community Impact */}
-      <Section title="Community Impact">
+      <Section title="Your Impact">
+        <CommunityImpactSection />
+      </Section>
+
+      {/* Civic Data */}
+      <Section title="Civic Data">
         <CivicDashboard />
       </Section>
 
