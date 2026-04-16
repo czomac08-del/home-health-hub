@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,16 @@ interface Props {
   address: string;
 }
 
+interface ExtractionState {
+  tier: 1 | 2 | 3 | 4;
+  confirmedFields: Record<string, any>;
+  fieldsNeedingInput: Array<{ field: string; value: any; options?: string[] }>;
+  overallConfidence: number;
+  documentQuality: string;
+  fieldConfidences: Record<string, number>;
+  extracted: Record<string, any>;
+}
+
 const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }: Props) => {
   const { user } = useAuth();
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -32,13 +42,13 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
   });
   const [uploading, setUploading] = useState(false);
   const [civicConsent, setCivicConsent] = useState(true);
-  const [aiExtraction, setAiExtraction] = useState<{ extracted: Record<string, any>; confidence: string } | null>(null);
+  const [extractionState, setExtractionState] = useState<ExtractionState | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [lastUploadedRecordId, setLastUploadedRecordId] = useState<string | null>(null);
+  const [autoAddedCount, setAutoAddedCount] = useState(0);
 
   const steps = getRecoverySteps(systemType, county, state, address);
 
-  // Load existing records
   useEffect(() => {
     if (!propertyId) return;
     supabase
@@ -64,6 +74,15 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
       else next.add(idx);
       return next;
     });
+  };
+
+  // Auto-confirm and save extracted data to the record
+  const autoConfirmData = async (data: Record<string, any>, recordId: string) => {
+    await supabase.from("property_records").update({
+      ai_extracted_data: data,
+      ai_verified: true,
+    }).eq("id", recordId);
+    setAutoAddedCount(prev => prev + Object.keys(data).length);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,20 +115,49 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
       }).select().single();
       if (insertError) throw insertError;
 
-      setLastUploadedRecordId(insertData?.id || null);
-      toast.success("Record saved! Running AI extraction...");
+      const recordId = insertData?.id || null;
+      setLastUploadedRecordId(recordId);
+      toast.success("Record saved! AI is processing...");
       setShowUpload(false);
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
 
-      // Trigger AI extraction
-      if (urlData?.signedUrl) {
+      // Trigger AI extraction with source info
+      if (urlData?.signedUrl && recordId) {
         setExtracting(true);
         try {
           const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-document-data", {
-            body: { documentUrl: urlData.signedUrl, systemType },
+            body: { documentUrl: urlData.signedUrl, systemType, source: uploadData.source },
           });
-          if (!extractError && extractData?.extracted) {
-            setAiExtraction({ extracted: extractData.extracted, confidence: extractData.confidence });
+          if (!extractError && extractData) {
+            // New tiered response
+            if (extractData.tier !== undefined) {
+              const state: ExtractionState = {
+                tier: extractData.tier,
+                confirmedFields: extractData.confirmedFields || {},
+                fieldsNeedingInput: extractData.fieldsNeedingInput || [],
+                overallConfidence: extractData.overallConfidence || 0,
+                documentQuality: extractData.documentQuality || "unknown",
+                fieldConfidences: extractData.fieldConfidences || {},
+                extracted: extractData.extracted || {},
+              };
+              setExtractionState(state);
+
+              // Auto-confirm for tiers 1-3
+              if (state.tier <= 3 && Object.keys(state.confirmedFields).length > 0) {
+                await autoConfirmData(state.confirmedFields, recordId);
+                if (state.tier === 1) {
+                  // Silent — no notification
+                } else if (state.tier === 2) {
+                  toast.success(`${Object.keys(state.confirmedFields).length} fields auto-added to your profile`);
+                } else {
+                  toast("A few records were added that you may want to glance at", { icon: "⚠️" });
+                }
+              }
+            } else {
+              // Legacy response — use old confirm-all flow
+              setExtractionState(null);
+              // Still show legacy UI via the extracted/confidence props
+            }
           }
         } catch {
           // Extraction is best-effort
@@ -133,14 +181,15 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     }
   };
 
-  const handleConfirmExtraction = async (data: Record<string, any>) => {
+  const handleAutoConfirmed = async (data: Record<string, any>) => {
     if (!lastUploadedRecordId) return;
-    await supabase.from("property_records").update({
-      ai_extracted_data: data,
-      ai_verified: true,
-    }).eq("id", lastUploadedRecordId);
-    toast.success("AI-extracted data confirmed and saved!");
-    setAiExtraction(null);
+    await autoConfirmData(data, lastUploadedRecordId);
+    toast.success("All fields resolved and saved!");
+    setExtractionState(null);
+  };
+
+  const handleFieldResolved = async (field: string, value: any) => {
+    // Individual field resolved — will be batched via onAutoConfirmed
   };
 
   const progress = Math.round((completedSteps.size / steps.length) * 100);
@@ -149,6 +198,40 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     <div className="space-y-4">
       {/* Community Banner */}
       <CommunityBanner countyFips={`${state}-${county.toLowerCase().replace(/\s/g, "-")}`} systemType={systemType} />
+
+      {/* Discovery Status Card */}
+      {(autoAddedCount > 0 || extracting) && (
+        <div className="rounded-xl border border-[hsl(var(--brain-blue))]/20 bg-[hsl(var(--brain-blue))]/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="h-4 w-4 text-[hsl(var(--brain-blue))]" />
+            <span className="text-sm font-semibold text-foreground">
+              {extracting ? "🔍 Discovery Running" : "🔍 Discovery Complete"}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Records auto-added:</span>
+              <span className="font-bold text-foreground">{autoAddedCount}</span>
+            </div>
+            {extractionState?.tier === 3 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Optional reviews:</span>
+                <span className="font-medium text-[hsl(var(--health-amber))]">
+                  {Object.keys(extractionState.confirmedFields).length} (no rush)
+                </span>
+              </div>
+            )}
+            {extractionState?.tier === 4 && extractionState.fieldsNeedingInput.length > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Needs your input:</span>
+                <span className="font-bold text-primary">
+                  {extractionState.fieldsNeedingInput.length} ← tap to resolve
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Progress */}
       <div className="rounded-xl border border-border bg-card p-4">
@@ -170,10 +253,7 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
                 onClick={() => toggleStep(idx)}
                 className="w-full flex items-center gap-3 p-4 text-left hover:bg-secondary/30 transition-colors"
               >
-                <div
-                  onClick={(e) => { e.stopPropagation(); completeStep(idx); }}
-                  className="shrink-0"
-                >
+                <div onClick={(e) => { e.stopPropagation(); completeStep(idx); }} className="shrink-0">
                   {isCompleted ? (
                     <CheckCircle2 className="h-6 w-6 text-primary" />
                   ) : (
@@ -247,7 +327,7 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-foreground mb-1">Found something?</h3>
             <p className="text-xs text-muted-foreground mb-3">
-              Upload it here and we'll store it permanently with this property.
+              Upload it here — AI will automatically extract and add the data to your profile.
             </p>
             {!showUpload ? (
               <button
@@ -311,20 +391,25 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
         </div>
       </div>
 
-      {/* AI Extraction Results */}
+      {/* AI Extraction Status */}
       {extracting && (
         <div className="rounded-xl border border-[hsl(var(--brain-blue))]/30 bg-[hsl(var(--brain-blue))]/5 p-4 flex items-center gap-3">
           <Sparkles className="h-4 w-4 text-[hsl(var(--brain-blue))] animate-pulse" />
-          <span className="text-xs text-foreground">AI is extracting data from your document...</span>
+          <span className="text-xs text-foreground">AI is extracting and auto-adding data from your document...</span>
         </div>
       )}
 
-      {aiExtraction && (
+      {/* Tiered AI Extraction Results */}
+      {extractionState && (
         <AiExtractionResults
-          extracted={aiExtraction.extracted}
-          confidence={aiExtraction.confidence}
-          onConfirm={handleConfirmExtraction}
-          onEdit={() => {}}
+          tier={extractionState.tier}
+          confirmedFields={extractionState.confirmedFields}
+          fieldsNeedingInput={extractionState.fieldsNeedingInput}
+          overallConfidence={extractionState.overallConfidence}
+          documentQuality={extractionState.documentQuality}
+          fieldConfidences={extractionState.fieldConfidences}
+          onAutoConfirmed={handleAutoConfirmed}
+          onFieldResolved={handleFieldResolved}
         />
       )}
 
@@ -346,14 +431,21 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
-            Uploaded Records ({records.length})
+            Records Log ({records.length})
           </h3>
           <div className="space-y-2">
             {records.map((rec) => (
               <div key={rec.id} className="flex items-center gap-3 rounded-lg bg-secondary/30 p-3">
                 <FileText className="h-4 w-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">{rec.file_name || "Record"}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium text-foreground truncate">{rec.file_name || "Record"}</p>
+                    {rec.ai_verified && (
+                      <span className="text-[9px] bg-[hsl(var(--brain-blue))]/15 text-[hsl(var(--brain-blue))] px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                        🔒 AI Verified
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-muted-foreground">
                     {RECORD_TYPES.find(t => t.value === rec.record_type)?.label || rec.record_type}
                     {rec.document_date && ` · ${new Date(rec.document_date).toLocaleDateString()}`}

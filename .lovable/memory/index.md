@@ -56,3 +56,4 @@
 - [Record Recovery System](mem://features/record-recovery-system) — State-specific direct links, step-by-step guides for missing records
 - [Well Water Management](mem://features/well-water-management) — Well type selection, drought monitoring, usage timer, testing schedule
 - [Civic Data Platform](mem://features/civic-data-platform) — AI document extraction, records requests, community aggregation, civic contributions
+- [Autonomous Discovery](mem://features/autonomous-discovery) — 4-tier confidence model: auto-confirms 95%+, only asks about genuinely unclear fields
