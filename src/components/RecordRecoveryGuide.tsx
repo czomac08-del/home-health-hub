@@ -299,6 +299,7 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
                     className="w-full mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
+                <CivicConsentCheckbox checked={civicConsent} onChange={setCivicConsent} />
                 <label className={`cursor-pointer rounded-lg border-2 border-dashed border-primary/30 p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                   <FileText className="h-6 w-6 text-primary" />
                   <span className="text-xs text-muted-foreground">{uploading ? "Uploading..." : "Choose PDF, JPG, PNG, or HEIC"}</span>
@@ -309,6 +310,36 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
           </div>
         </div>
       </div>
+
+      {/* AI Extraction Results */}
+      {extracting && (
+        <div className="rounded-xl border border-[hsl(var(--brain-blue))]/30 bg-[hsl(var(--brain-blue))]/5 p-4 flex items-center gap-3">
+          <Sparkles className="h-4 w-4 text-[hsl(var(--brain-blue))] animate-pulse" />
+          <span className="text-xs text-foreground">AI is extracting data from your document...</span>
+        </div>
+      )}
+
+      {aiExtraction && (
+        <AiExtractionResults
+          extracted={aiExtraction.extracted}
+          confidence={aiExtraction.confidence}
+          onConfirm={handleConfirmExtraction}
+          onEdit={() => {}}
+        />
+      )}
+
+      {/* Records Request */}
+      {completedSteps.size >= 2 && (
+        <RecordsRequestCard
+          propertyId={propertyId}
+          systemType={systemType}
+          address={address}
+          county={county}
+          state={state}
+          userName=""
+          userEmail=""
+        />
+      )}
 
       {/* Existing Records */}
       {records.length > 0 && (
