@@ -9,6 +9,7 @@ import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "
 import type { ScanResult } from "@/components/AiPhotoScanner";
 import WarrantySection from "@/components/WarrantySection";
 import ApplianceScanner from "@/components/ApplianceScanner";
+import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -166,6 +167,11 @@ const SystemDetailScreen = () => {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Records Status & Recovery */}
+      <div className="mb-6">
+        <RecordsStatusSelector systemName={system.name} />
       </div>
 
       {/* Warranty Section */}

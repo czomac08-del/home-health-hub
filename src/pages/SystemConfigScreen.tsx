@@ -15,6 +15,7 @@ import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } f
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
+import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -414,6 +415,12 @@ const SystemConfigScreen = () => {
       {aiData && (
         <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
       )}
+
+      {/* Records Status & Recovery Guide */}
+      <RecordsStatusSelector
+        systemName={displayName}
+        hasDocuments={Object.values(docs).some(d => d !== null && d !== undefined)}
+      />
 
       {/* ═══ WATER SOURCE — TYPE SELECTOR ═══ */}
       {isWaterSource && (
