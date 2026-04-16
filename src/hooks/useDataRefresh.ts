@@ -117,12 +117,76 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               );
               const rcData = await resp.json();
               if (rcData?.found) {
-                return { source, status: "new_data", summary: "Property data available from RentCast", data: rcData };
+                // Write property data back to Supabase
+                const updates: Record<string, unknown> = {};
+                if (rcData.yearBuilt) updates.year_built = String(rcData.yearBuilt);
+                if (rcData.squareFootage) updates.square_footage = String(rcData.squareFootage);
+                if (Object.keys(updates).length > 0) {
+                  await supabase
+                    .from("properties")
+                    .update(updates)
+                    .eq("id", activeProperty.id);
+                }
+
+                // Create property records for discovered data
+                const recordInserts: Array<{
+                  property_id: string;
+                  uploaded_by_user_id: string;
+                  system_type: string;
+                  record_type: string;
+                  source: string;
+                  ai_verified: boolean;
+                  notes: string;
+                }> = [];
+
+                if (rcData.yearBuilt) {
+                  recordInserts.push({
+                    property_id: activeProperty.id,
+                    uploaded_by_user_id: user.id,
+                    system_type: "general",
+                    record_type: "property_details",
+                    source: "rentcast",
+                    ai_verified: true,
+                    notes: `Year built: ${rcData.yearBuilt}, Type: ${rcData.propertyType || "Unknown"}`,
+                  });
+                }
+                if (rcData.squareFootage) {
+                  recordInserts.push({
+                    property_id: activeProperty.id,
+                    uploaded_by_user_id: user.id,
+                    system_type: "general",
+                    record_type: "property_details",
+                    source: "rentcast",
+                    ai_verified: true,
+                    notes: `Square footage: ${rcData.squareFootage}, Bedrooms: ${rcData.bedrooms || "—"}, Bathrooms: ${rcData.bathrooms || "—"}`,
+                  });
+                }
+                if (rcData.lotSize) {
+                  recordInserts.push({
+                    property_id: activeProperty.id,
+                    uploaded_by_user_id: user.id,
+                    system_type: "general",
+                    record_type: "property_details",
+                    source: "rentcast",
+                    ai_verified: true,
+                    notes: `Lot size: ${rcData.lotSize} sq ft`,
+                  });
+                }
+
+                if (recordInserts.length > 0) {
+                  await supabase.from("property_records").insert(recordInserts);
+                }
+
+                return {
+                  source,
+                  status: "new_data",
+                  summary: `Found: ${rcData.yearBuilt ? `Built ${rcData.yearBuilt}` : ""}${rcData.squareFootage ? `, ${rcData.squareFootage} sq ft` : ""}${rcData.bedrooms ? `, ${rcData.bedrooms} bed` : ""}`,
+                  data: rcData,
+                };
               }
               return { source, status: "no_changes", summary: "No new property data" };
             }
             case "FEMA": {
-              // Extract state from address (last part before zip)
               const stateMatch = activeProperty.address.match(/,\s*([A-Z]{2})\s+\d{5}/i);
               const state = stateMatch?.[1]?.toUpperCase() || "";
               if (!state) return { source, status: "unavailable", summary: "Could not determine state from address" };
@@ -183,7 +247,6 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               return { source, status: "no_changes", summary: "No EPA facilities nearby" };
             }
             case "USDA Drought Monitor": {
-              // Already have drought-status edge function
               const resp = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/drought-status?fips=00000`,
                 {
@@ -222,6 +285,20 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         results_summary: Object.fromEntries(results.map((r) => [r.source, { status: r.status, summary: r.summary }])),
         triggered_by: "manual",
       });
+
+      // Refresh the properties in context so UI updates immediately
+      if (results.some((r) => r.source === "RentCast" && r.status === "new_data")) {
+        // Dynamically refresh properties from AuthContext
+        const { data: updatedProps } = await supabase
+          .from("properties")
+          .select("id, address, label, is_active, health_score, year_built, square_footage")
+          .eq("id", activeProperty.id)
+          .single();
+        if (updatedProps) {
+          // Trigger a window event so AuthContext can pick up changes
+          window.dispatchEvent(new CustomEvent("property-data-updated"));
+        }
+      }
 
       const result: RefreshResult = {
         scope,
