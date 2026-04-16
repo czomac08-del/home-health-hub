@@ -85,6 +85,86 @@ export type Database = {
           },
         ]
       }
+      civic_contributions: {
+        Row: {
+          county_fips: string
+          created_at: string
+          id: string
+          property_record_id: string
+          report_date: string | null
+          shared_at: string
+          user_id: string
+        }
+        Insert: {
+          county_fips: string
+          created_at?: string
+          id?: string
+          property_record_id: string
+          report_date?: string | null
+          shared_at?: string
+          user_id: string
+        }
+        Update: {
+          county_fips?: string
+          created_at?: string
+          id?: string
+          property_record_id?: string
+          report_date?: string | null
+          shared_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "civic_contributions_property_record_id_fkey"
+            columns: ["property_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_requests: {
+        Row: {
+          consolidated_letter_sent: boolean | null
+          county_fips: string
+          county_name: string
+          created_at: string
+          escalated_to_state: boolean | null
+          id: string
+          last_consolidated_at: string | null
+          request_count: number
+          state: string
+          system_type: string
+          updated_at: string
+        }
+        Insert: {
+          consolidated_letter_sent?: boolean | null
+          county_fips: string
+          county_name: string
+          created_at?: string
+          escalated_to_state?: boolean | null
+          id?: string
+          last_consolidated_at?: string | null
+          request_count?: number
+          state: string
+          system_type: string
+          updated_at?: string
+        }
+        Update: {
+          consolidated_letter_sent?: boolean | null
+          county_fips?: string
+          county_name?: string
+          created_at?: string
+          escalated_to_state?: boolean | null
+          id?: string
+          last_consolidated_at?: string | null
+          request_count?: number
+          state?: string
+          system_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contractor_jobs: {
         Row: {
           created_at: string
@@ -154,6 +234,57 @@ export type Database = {
           updated_at?: string
           user_id?: string
           work_performed?: string | null
+        }
+        Relationships: []
+      }
+      county_agencies: {
+        Row: {
+          accepts_email_requests: boolean | null
+          agency_name: string
+          agency_type: string
+          county_fips: string
+          county_name: string
+          created_at: string
+          email: string | null
+          id: string
+          mailing_address: string | null
+          notes: string | null
+          phone: string | null
+          records_portal_url: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          accepts_email_requests?: boolean | null
+          agency_name: string
+          agency_type?: string
+          county_fips: string
+          county_name: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          mailing_address?: string | null
+          notes?: string | null
+          phone?: string | null
+          records_portal_url?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          accepts_email_requests?: boolean | null
+          agency_name?: string
+          agency_type?: string
+          county_fips?: string
+          county_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          mailing_address?: string | null
+          notes?: string | null
+          phone?: string | null
+          records_portal_url?: string | null
+          state?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -829,6 +960,9 @@ export type Database = {
       }
       property_records: {
         Row: {
+          ai_extracted_data: Json | null
+          ai_verified: boolean
+          consent_civic_sharing: boolean
           created_at: string
           document_date: string | null
           file_name: string | null
@@ -845,6 +979,9 @@ export type Database = {
           verified: boolean
         }
         Insert: {
+          ai_extracted_data?: Json | null
+          ai_verified?: boolean
+          consent_civic_sharing?: boolean
           created_at?: string
           document_date?: string | null
           file_name?: string | null
@@ -861,6 +998,9 @@ export type Database = {
           verified?: boolean
         }
         Update: {
+          ai_extracted_data?: Json | null
+          ai_verified?: boolean
+          consent_civic_sharing?: boolean
           created_at?: string
           document_date?: string | null
           file_name?: string | null
@@ -933,6 +1073,68 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      records_requests: {
+        Row: {
+          agency_type: string
+          county_fips: string
+          created_at: string
+          id: string
+          is_part_of_community_request: boolean | null
+          notes: string | null
+          property_id: string
+          request_letter_text: string | null
+          response_due_date: string | null
+          response_received_at: string | null
+          sent_at: string | null
+          status: string
+          system_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_type: string
+          county_fips: string
+          created_at?: string
+          id?: string
+          is_part_of_community_request?: boolean | null
+          notes?: string | null
+          property_id: string
+          request_letter_text?: string | null
+          response_due_date?: string | null
+          response_received_at?: string | null
+          sent_at?: string | null
+          status?: string
+          system_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_type?: string
+          county_fips?: string
+          created_at?: string
+          id?: string
+          is_part_of_community_request?: boolean | null
+          notes?: string | null
+          property_id?: string
+          request_letter_text?: string | null
+          response_due_date?: string | null
+          response_received_at?: string | null
+          sent_at?: string | null
+          status?: string
+          system_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "records_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

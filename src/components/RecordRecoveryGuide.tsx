@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRecoverySteps, RECORD_TYPES, SOURCE_TYPES, type SystemRecordType } from "@/data/recordRecoveryData";
 import { Progress } from "@/components/ui/progress";
+import CivicConsentCheckbox from "@/components/CivicConsentCheckbox";
+import AiExtractionResults from "@/components/AiExtractionResults";
+import RecordsRequestCard from "@/components/RecordsRequestCard";
+import CommunityBanner from "@/components/CommunityBanner";
 
 interface Props {
   systemType: SystemRecordType;
@@ -27,6 +31,10 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     notes: "",
   });
   const [uploading, setUploading] = useState(false);
+  const [civicConsent, setCivicConsent] = useState(true);
+  const [aiExtraction, setAiExtraction] = useState<{ extracted: Record<string, any>; confidence: string } | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [lastUploadedRecordId, setLastUploadedRecordId] = useState<string | null>(null);
 
   const steps = getRecoverySteps(systemType, county, state, address);
 
@@ -71,9 +79,9 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
 
       const { data: urlData } = await supabase.storage
         .from("property-records")
-        .createSignedUrl(path, 31536000); // 1 year
+        .createSignedUrl(path, 31536000);
 
-      const { error: insertError } = await supabase.from("property_records").insert({
+      const { data: insertData, error: insertError } = await supabase.from("property_records").insert({
         property_id: propertyId,
         system_type: systemType,
         record_type: uploadData.recordType,
@@ -84,12 +92,31 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
         url: urlData?.signedUrl || "",
         notes: uploadData.notes || null,
         uploaded_by_user_id: user.id,
-      });
+        consent_civic_sharing: civicConsent,
+      }).select().single();
       if (insertError) throw insertError;
 
-      toast.success("Record saved to this property's permanent history!");
+      setLastUploadedRecordId(insertData?.id || null);
+      toast.success("Record saved! Running AI extraction...");
       setShowUpload(false);
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
+
+      // Trigger AI extraction
+      if (urlData?.signedUrl) {
+        setExtracting(true);
+        try {
+          const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-document-data", {
+            body: { documentUrl: urlData.signedUrl, systemType },
+          });
+          if (!extractError && extractData?.extracted) {
+            setAiExtraction({ extracted: extractData.extracted, confidence: extractData.confidence });
+          }
+        } catch {
+          // Extraction is best-effort
+        } finally {
+          setExtracting(false);
+        }
+      }
 
       // Refresh records
       const { data } = await supabase
@@ -106,10 +133,23 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     }
   };
 
+  const handleConfirmExtraction = async (data: Record<string, any>) => {
+    if (!lastUploadedRecordId) return;
+    await supabase.from("property_records").update({
+      ai_extracted_data: data,
+      ai_verified: true,
+    }).eq("id", lastUploadedRecordId);
+    toast.success("AI-extracted data confirmed and saved!");
+    setAiExtraction(null);
+  };
+
   const progress = Math.round((completedSteps.size / steps.length) * 100);
 
   return (
     <div className="space-y-4">
+      {/* Community Banner */}
+      <CommunityBanner countyFips={`${state}-${county.toLowerCase().replace(/\s/g, "-")}`} systemType={systemType} />
+
       {/* Progress */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-2">
@@ -259,6 +299,7 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
                     className="w-full mt-1 rounded-lg border border-border bg-card px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
+                <CivicConsentCheckbox checked={civicConsent} onChange={setCivicConsent} />
                 <label className={`cursor-pointer rounded-lg border-2 border-dashed border-primary/30 p-4 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                   <FileText className="h-6 w-6 text-primary" />
                   <span className="text-xs text-muted-foreground">{uploading ? "Uploading..." : "Choose PDF, JPG, PNG, or HEIC"}</span>
@@ -269,6 +310,36 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
           </div>
         </div>
       </div>
+
+      {/* AI Extraction Results */}
+      {extracting && (
+        <div className="rounded-xl border border-[hsl(var(--brain-blue))]/30 bg-[hsl(var(--brain-blue))]/5 p-4 flex items-center gap-3">
+          <Sparkles className="h-4 w-4 text-[hsl(var(--brain-blue))] animate-pulse" />
+          <span className="text-xs text-foreground">AI is extracting data from your document...</span>
+        </div>
+      )}
+
+      {aiExtraction && (
+        <AiExtractionResults
+          extracted={aiExtraction.extracted}
+          confidence={aiExtraction.confidence}
+          onConfirm={handleConfirmExtraction}
+          onEdit={() => {}}
+        />
+      )}
+
+      {/* Records Request */}
+      {completedSteps.size >= 2 && (
+        <RecordsRequestCard
+          propertyId={propertyId}
+          systemType={systemType}
+          address={address}
+          county={county}
+          state={state}
+          userName=""
+          userEmail=""
+        />
+      )}
 
       {/* Existing Records */}
       {records.length > 0 && (

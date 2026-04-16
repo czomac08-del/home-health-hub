@@ -8,6 +8,7 @@ import PhotoPrivacySettings, { type PrivacySettings } from "@/components/PhotoPr
 import { HouseholdProfileEditor } from "@/components/HouseholdProfileEditor";
 import { SmartHomeIntegrations } from "@/components/SmartHomeIntegrations";
 import { dismissAllDemoData } from "@/hooks/useDemoData";
+import CivicDashboard from "@/components/CivicDashboard";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -206,6 +207,11 @@ const ProfileScreen = () => {
       {/* Photo Privacy */}
       <Section title="Photo Privacy">
         <PhotoPrivacySettings settings={privacySettings} onChange={setPrivacySettings} />
+      </Section>
+
+      {/* Community Impact */}
+      <Section title="Community Impact">
+        <CivicDashboard />
       </Section>
 
       {/* Settings */}
