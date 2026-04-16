@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle } from "lucide-react";
 import ConstructionProfile from "@/components/ConstructionProfile";
@@ -11,9 +12,42 @@ import LegalFlag from "@/components/LegalFlag";
 import EditorialNote from "@/components/EditorialNote";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
 import RefreshButton from "@/components/RefreshButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
+  const { activeProperty } = useAuth();
+  const [systemCount, setSystemCount] = useState<number | null>(null);
+
+  const propertyId = activeProperty?.id || "";
+
+  useEffect(() => {
+    if (!propertyId) return;
+    supabase
+      .from("system_details")
+      .select("id", { count: "exact", head: true })
+      .eq("property_id", propertyId)
+      .then(({ count }) => setSystemCount(count ?? 0));
+  }, [propertyId]);
+
+  if (!activeProperty) {
+    return (
+      <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
+        <button onClick={() => navigate("/profile")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="h-4 w-4" /> Back to Profile
+        </button>
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <Home className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-foreground font-semibold mb-1">No property added yet</p>
+          <p className="text-sm text-muted-foreground">Add your home to start building its record.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const healthScore = activeProperty.health_score;
+  const yearBuilt = activeProperty.year_built;
 
   return (
     <div className="min-h-screen pb-32 max-w-lg mx-auto px-4 py-6">
@@ -31,26 +65,26 @@ const PropertyDetailScreen = () => {
             <Home className="h-7 w-7 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">123 Main St</h1>
-            <p className="text-sm text-muted-foreground">Primary Residence</p>
+            <h1 className="text-xl font-bold text-foreground">{activeProperty.address}</h1>
+            <p className="text-sm text-muted-foreground">{activeProperty.label || "Primary Residence"}</p>
             <span className="text-[10px] font-medium text-health-green bg-health-green/15 px-2 py-0.5 rounded-full mt-1 inline-block">Active</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Stat icon={<Heart className="h-3.5 w-3.5 text-primary" />} label="Health" value="78%" />
-          <Stat icon={<Shield className="h-3.5 w-3.5 text-primary" />} label="Systems" value="8" />
-          <Stat icon={<Calendar className="h-3.5 w-3.5 text-primary" />} label="Built" value="2005" />
+          <Stat icon={<Heart className="h-3.5 w-3.5 text-primary" />} label="Health" value={healthScore != null ? `${healthScore}%` : "—"} />
+          <Stat icon={<Shield className="h-3.5 w-3.5 text-primary" />} label="Systems" value={systemCount != null ? String(systemCount) : "—"} />
+          <Stat icon={<Calendar className="h-3.5 w-3.5 text-primary" />} label="Built" value={yearBuilt || "—"} />
         </div>
       </div>
 
       {/* Discovery Status */}
       <div className="mb-6">
-        <RecordsDiscoveryStatus propertyId="demo" />
+        <RecordsDiscoveryStatus propertyId={propertyId} />
       </div>
 
       {/* Verification Summary */}
       <div className="mb-6">
-        <VerificationSummary propertyId="demo" />
+        <VerificationSummary propertyId={propertyId} />
       </div>
 
       {/* Construction Profile */}
@@ -58,31 +92,28 @@ const PropertyDetailScreen = () => {
 
       {/* Property Timeline */}
       <div className="mt-6 mb-6">
-        <PropertyTimeline propertyId="demo" yearBuilt="2005" />
+        <PropertyTimeline propertyId={propertyId} yearBuilt={yearBuilt || undefined} />
       </div>
 
       {/* Permanent Archive */}
       <div className="mb-6">
-        <PermanentArchive propertyId="demo" />
+        <PermanentArchive propertyId={propertyId} />
       </div>
 
       {/* Beyond Public Records */}
       <div className="mb-6">
         <BeyondPublicRecords
           comparisons={[
-            { label: "Build year", publicStatus: "1968", chiqStatus: "1965", isCorrected: true },
-            { label: "Well record", publicStatus: null, chiqStatus: "Documented" },
-            { label: "Septic permit", publicStatus: "1981", chiqStatus: "Found + confirmed" },
-            { label: "Electrical panel", publicStatus: null, chiqStatus: "150A, upgraded 1994" },
-            { label: "Deck addition", publicStatus: null, chiqStatus: "Confirmed via satellite" },
-            { label: "Pipe material", publicStatus: null, chiqStatus: "Copper, replaced 1988" },
+            { label: "Build year", publicStatus: "County records", chiqStatus: yearBuilt || "Not yet found", isCorrected: !!yearBuilt },
+            { label: "Well record", publicStatus: null, chiqStatus: "Searching..." },
+            { label: "Septic permit", publicStatus: null, chiqStatus: "Searching..." },
           ]}
         />
       </div>
 
       {/* Missing Records Intelligence */}
       <div className="mb-6">
-        <MissingRecordsIntelligence propertyId="demo" yearBuilt="2005" county="Example County" state="NC" />
+        <MissingRecordsIntelligence propertyId={propertyId} yearBuilt={yearBuilt || undefined} county="" state="" />
       </div>
 
       {/* Legal Awareness Flags */}
@@ -90,25 +121,21 @@ const PropertyDetailScreen = () => {
       <div className="space-y-4 mb-6">
         <LegalFlag
           title="Worth Knowing — No Building Permit on Record"
-          description="Your deck addition doesn't appear to have a building permit on file. This is common for older properties and owner-built homes — in many cases it was legal at the time or simply wasn't required."
-          context="Unpermitted structures can affect your homeowner's insurance coverage, your ability to sell, and your property tax assessment. This is not necessarily a problem — many unpermitted structures are perfectly sound and can be retroactively permitted."
-          actions={[
-            { label: "Contact County Building Office", href: "https://www.gastongov.com/departments/inspections" },
-            { label: "Find a Real Estate Attorney", href: "https://www.ncbar.gov/public-resources/find-a-lawyer/" },
-          ]}
+          description="Some structures may not have building permits on file. This is common for older properties — in many cases it was legal at the time or simply wasn't required."
+          context="Unpermitted structures can affect insurance coverage, your ability to sell, and your property tax assessment. Many are perfectly sound and can be retroactively permitted."
+          actions={[]}
         />
-
         <EditorialNote
-          note="Based on everything we've found for this property, the missing well record is most likely explained by the drilling date predating NC's digitization program. This is extremely common for Gaston County properties built before 1990 and does not suggest anything was done improperly. Getting a licensed well contractor to document the current condition of your well is the most practical next step."
+          note="Records discovery is an ongoing process. As county databases are digitized, new records for your property may become available. Use the refresh button above to check for updates."
         />
       </div>
 
       {/* Quick Actions */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
       <div className="space-y-2 mb-8">
-        <ActionRow label="View All Systems" sub="8 systems configured" onClick={() => navigate("/systems")} />
-        <ActionRow label="Maintenance History" sub="3 recent entries" onClick={() => navigate("/profile")} />
-        <ActionRow label="Documents & Manuals" sub="6 document types" onClick={() => navigate("/systems")} />
+        <ActionRow label="View All Systems" sub={systemCount != null ? `${systemCount} systems documented` : "Loading..."} onClick={() => navigate("/systems")} />
+        <ActionRow label="Maintenance History" sub="View recent entries" onClick={() => navigate("/profile")} />
+        <ActionRow label="Documents & Manuals" sub="View document types" onClick={() => navigate("/systems")} />
       </div>
 
       {/* Sell / Transfer */}
