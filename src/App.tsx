@@ -157,10 +157,16 @@ const AppContent = () => {
             <Route path="/integrations" element={<ProtectedRoute><IntegrationsPage /></ProtectedRoute>} />
             <Route path="/api-docs" element={<ApiDocsPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/legal-onboarding" element={<ProtectedRoute><LegalOnboardingScreen /></ProtectedRoute>} />
             <Route path="/report" element={<ScoreReportPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
+
+        {/* Legal footer on authenticated pages */}
+        {showNav && <LegalFooter />}
       </div>
 
       {/* Mobile bottom nav — hidden on desktop via lg:hidden */}
