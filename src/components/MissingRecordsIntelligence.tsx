@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Search, UserCheck, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,10 +37,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   agricultural_rural: "Agricultural & Rural",
 };
 
-const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, state }: Props) => {
+const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) => {
   const { user } = useAuth();
   const [allRecordTypes, setAllRecordTypes] = useState<MissingRecord[]>([]);
-  const [foundRecords, setFoundRecords] = useState<string[]>([]);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 

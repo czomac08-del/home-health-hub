@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Clock, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
