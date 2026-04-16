@@ -35,8 +35,33 @@ interface RecoveryStep {
   description: string;
   tip?: string;
   searchTemplate?: string;
+  directUrl?: string;
+  directUrlLabel?: string;
   scriptPrompt?: string;
 }
+
+const WELL_DATABASES: Record<string, string> = {
+  NC: "https://www.nconemap.gov/pages/wells",
+  SC: "https://www.dhec.sc.gov/environment/water/groundwater",
+  GA: "https://epd.georgia.gov/water",
+  VA: "https://www.deq.virginia.gov/water/water-quantity/groundwater/well-information",
+  FL: "https://floridadep.gov/water/source-drinking-water/content/water-well-construction-permitting",
+  TX: "https://www.twdb.texas.gov/groundwater/data/gwdbrpt.asp",
+  TN: "https://www.tn.gov/environment/program-areas/wr-water-resources/groundwater/well-records.html",
+  NY: "https://www.dec.ny.gov/chemical/8560.html",
+  PA: "https://www.dep.pa.gov/Business/Water/DrinkingWater/WaterSupplyManagement/Pages/Well-Permitting.aspx",
+  OH: "https://ohiodnr.gov/wps/portal/gov/odnr/discover-and-learn/safety-conservation/about-ODNR/geologic-survey/water-well-log-search",
+  MI: "https://www.michigan.gov/egle/about/organization/water-resources/well-search",
+  IN: "https://www.in.gov/dnr/water/water-well-record-search/",
+  IL: "https://www.isgs.illinois.edu/sections/oil-gas-resources/isws-water-well-records",
+  WI: "https://dnr.wisconsin.gov/topic/Wells/drillersSearch.html",
+  MN: "https://mnwellindex.web.health.state.mn.us/",
+  CA: "https://data.cnra.ca.gov/dataset/well-completion-reports",
+  WA: "https://apps.ecology.wa.gov/wellconstructor/",
+  OR: "https://www.oregon.gov/owrd/pages/wr/groundwater_logs.aspx",
+  CO: "https://dwr.state.co.us/Tools/WellSearch",
+  AZ: "https://gisweb.azwater.gov/waterresourcedata/",
+};
 
 export function getRecoverySteps(systemType: SystemRecordType, county: string, state: string, address: string): RecoveryStep[] {
   const steps: RecoveryStep[] = [];
