@@ -175,14 +175,14 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
                     </div>
                   )}
 
-                  {step.searchTemplate && (
+                  {step.directUrl && (
                     <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent(step.searchTemplate)}`}
+                      href={step.directUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/30 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
                     >
-                      <Search className="h-3.5 w-3.5" /> Search Online
+                      <Search className="h-3.5 w-3.5" /> {step.directUrlLabel || "Search Online"}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
