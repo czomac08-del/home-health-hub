@@ -114,9 +114,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Listen for property data updates from refresh hook
-    const handlePropertyUpdate = () => {
-      const currentUser = user;
-      if (currentUser) void fetchProperties(currentUser.id);
+    const handlePropertyUpdate = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession?.user) void fetchProperties(currentSession.user.id);
     };
     window.addEventListener("property-data-updated", handlePropertyUpdate);
 
