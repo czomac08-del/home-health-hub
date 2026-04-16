@@ -1026,6 +1026,85 @@ export type Database = {
           },
         ]
       }
+      property_timeline_events: {
+        Row: {
+          category: string
+          confidence: string | null
+          created_at: string
+          description: string | null
+          event_date: string
+          icon_key: string | null
+          id: string
+          is_estimated: boolean
+          property_id: string
+          property_record_id: string | null
+          record_type_id: string | null
+          source: string | null
+          source_type: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          confidence?: string | null
+          created_at?: string
+          description?: string | null
+          event_date: string
+          icon_key?: string | null
+          id?: string
+          is_estimated?: boolean
+          property_id: string
+          property_record_id?: string | null
+          record_type_id?: string | null
+          source?: string | null
+          source_type?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          confidence?: string | null
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          icon_key?: string | null
+          id?: string
+          is_estimated?: boolean
+          property_id?: string
+          property_record_id?: string | null
+          record_type_id?: string | null
+          source?: string | null
+          source_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_timeline_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_timeline_events_property_record_id_fkey"
+            columns: ["property_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_timeline_events_record_type_id_fkey"
+            columns: ["record_type_id"]
+            isOneToOne: false
+            referencedRelation: "record_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       realtor_listings: {
         Row: {
           created_at: string
@@ -1071,6 +1150,98 @@ export type Database = {
           request_status?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      record_sources: {
+        Row: {
+          api_endpoint: string | null
+          contact_lookup_method: string | null
+          cost_to_obtain: string
+          created_at: string
+          id: string
+          priority_order: number
+          record_type_id: string
+          request_template: string | null
+          source_name: string
+          source_type: string
+          typical_digitization_year: number | null
+          typical_response_days: number | null
+        }
+        Insert: {
+          api_endpoint?: string | null
+          contact_lookup_method?: string | null
+          cost_to_obtain?: string
+          created_at?: string
+          id?: string
+          priority_order?: number
+          record_type_id: string
+          request_template?: string | null
+          source_name: string
+          source_type?: string
+          typical_digitization_year?: number | null
+          typical_response_days?: number | null
+        }
+        Update: {
+          api_endpoint?: string | null
+          contact_lookup_method?: string | null
+          cost_to_obtain?: string
+          created_at?: string
+          id?: string
+          priority_order?: number
+          record_type_id?: string
+          request_template?: string | null
+          source_name?: string
+          source_type?: string
+          typical_digitization_year?: number | null
+          typical_response_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "record_sources_record_type_id_fkey"
+            columns: ["record_type_id"]
+            isOneToOne: false
+            referencedRelation: "record_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      record_types: {
+        Row: {
+          category: string
+          category_order: number
+          created_at: string
+          description: string | null
+          digitization_notes: string | null
+          icon_name: string | null
+          id: string
+          safety_critical: boolean
+          subcategory: string
+          typical_digitization_year: number | null
+        }
+        Insert: {
+          category: string
+          category_order?: number
+          created_at?: string
+          description?: string | null
+          digitization_notes?: string | null
+          icon_name?: string | null
+          id?: string
+          safety_critical?: boolean
+          subcategory: string
+          typical_digitization_year?: number | null
+        }
+        Update: {
+          category?: string
+          category_order?: number
+          created_at?: string
+          description?: string | null
+          digitization_notes?: string | null
+          icon_name?: string | null
+          id?: string
+          safety_critical?: boolean
+          subcategory?: string
+          typical_digitization_year?: number | null
         }
         Relationships: []
       }
