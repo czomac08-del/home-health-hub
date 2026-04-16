@@ -9,10 +9,12 @@ interface SystemItem {
   icon: React.ReactNode;
   status: SystemStatus;
   detail: string;
+  route?: string;
 }
 
 const coreInfrastructure: SystemItem[] = [
-  { name: "Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure" },
+  { name: "Water Source", icon: <Waves className="h-5 w-5 text-primary" />, status: "configured", detail: "Municipal — Good pressure", route: "/system-config/Water%20Source" },
+  { name: "Well Water", icon: <Droplets className="h-5 w-5 text-primary" />, status: "unconfigured", detail: "Manage well type, drought & water quality", route: "/well-water" },
   { name: "HVAC", icon: <Fan className="h-5 w-5 text-primary" />, status: "configured", detail: "92% health — Excellent" },
   { name: "Electrical Panel", icon: <Zap className="h-5 w-5 text-primary" />, status: "configured", detail: "65% health — Needs inspection" },
   { name: "Plumbing", icon: <Droplets className="h-5 w-5 text-primary" />, status: "configured", detail: "78% health — Good" },
@@ -77,9 +79,10 @@ const SystemsScreen = () => {
       <div className="mb-6">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
         <div className="rounded-xl border border-border bg-card px-4">
-          {filterItems(coreInfrastructure).map((item) => (
+           {filterItems(coreInfrastructure).map((item) => (
             <SystemRow key={item.name} item={item} onClick={() => {
-              if (item.name === "Home Insurance") navigate("/insurance");
+              if (item.route) navigate(item.route);
+              else if (item.name === "Home Insurance") navigate("/insurance");
               else navigate(`/system-config/${encodeURIComponent(item.name)}`);
             }} />
           ))}

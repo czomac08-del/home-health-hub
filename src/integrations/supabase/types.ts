@@ -157,6 +157,39 @@ export type Database = {
         }
         Relationships: []
       }
+      drought_cache: {
+        Row: {
+          created_at: string
+          drought_description: string
+          drought_level: string
+          fetched_at: string
+          fips_code: string
+          id: string
+          raw_data: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drought_description?: string
+          drought_level?: string
+          fetched_at?: string
+          fips_code: string
+          id?: string
+          raw_data?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drought_description?: string
+          drought_level?: string
+          fetched_at?: string
+          fips_code?: string
+          id?: string
+          raw_data?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           category: string
@@ -918,6 +951,7 @@ export type Database = {
           user_id: string
           warranty_exp: string | null
           warranty_provider: string | null
+          well_type: string | null
         }
         Insert: {
           brand?: string | null
@@ -943,6 +977,7 @@ export type Database = {
           user_id: string
           warranty_exp?: string | null
           warranty_provider?: string | null
+          well_type?: string | null
         }
         Update: {
           brand?: string | null
@@ -968,6 +1003,7 @@ export type Database = {
           user_id?: string
           warranty_exp?: string | null
           warranty_provider?: string | null
+          well_type?: string | null
         }
         Relationships: [
           {
@@ -1153,6 +1189,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      water_quality_tests: {
+        Row: {
+          created_at: string
+          id: string
+          lab_name: string | null
+          notes: string | null
+          property_id: string
+          result: string
+          result_values: Json | null
+          test_date: string
+          test_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lab_name?: string | null
+          notes?: string | null
+          property_id: string
+          result?: string
+          result_values?: Json | null
+          test_date: string
+          test_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lab_name?: string | null
+          notes?: string | null
+          property_id?: string
+          result?: string
+          result_values?: Json | null
+          test_date?: string
+          test_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
