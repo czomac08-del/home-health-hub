@@ -44,6 +44,10 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import ApiDocsPage from "./pages/ApiDocsPage";
 import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import LegalOnboardingScreen from "./pages/LegalOnboardingScreen";
+import LegalFooter from "./components/LegalFooter";
 
 const queryClient = new QueryClient();
 
