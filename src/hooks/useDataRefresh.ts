@@ -102,7 +102,38 @@ export function useDataRefresh(scope: RefreshScope = "full") {
     const results: SourceResult[] = [];
 
     try {
-      // Run all source queries in parallel
+      // Step 1: Geocode address to get coordinates, county FIPS, and state
+      let geoState = parseStateFromAddress(activeProperty.address) || "";
+      let geoZip = parseZipFromAddress(activeProperty.address) || "";
+      let geoCounty = "";
+      let geoCountyFips = "";
+      let geoLat = "";
+      let geoLng = "";
+
+      try {
+        const geoResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode?address=${encodeURIComponent(activeProperty.address)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const geoData = await geoResp.json();
+        if (geoData?.matches?.length > 0) {
+          const match = geoData.matches[0];
+          geoLat = String(match.coordinates?.y || "");
+          geoLng = String(match.coordinates?.x || "");
+          geoCounty = geoData.county || match.county || "";
+          geoCountyFips = geoData.countyFips || match.countyFips || "";
+          if (geoData.state) geoState = geoData.state;
+        }
+      } catch (e) {
+        console.warn("Geocoding failed, using address parsing fallback:", e);
+      }
+
+      // Step 2: Run all source queries in parallel
       const promises = sources.map(async (source): Promise<SourceResult> => {
         try {
           switch (source) {
