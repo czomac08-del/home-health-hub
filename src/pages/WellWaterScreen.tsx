@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Droplets, AlertTriangle, CheckCircle2, Timer, Play, Pause, RotateCcw, Plus, FlaskConical, Calendar, Leaf, Sun, Snowflake, TreePine, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, Droplets, AlertTriangle, CheckCircle2, Timer, Play, Pause, RotateCcw, Plus, FlaskConical, Leaf, Sun, Snowflake, TreePine, Info, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
