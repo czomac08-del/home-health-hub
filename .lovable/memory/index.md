@@ -8,6 +8,7 @@
 - **UI Styling**: 12px radius buttons, 16px radius cards (with 3px top role accent bar), pill-shaped status badges.
 - **User Roles**: Homeowner, Realtor, Inspector, Contractor, Investor. Strictly enforced server-side via DB triggers.
 - **Routing**: `/welcome` is publicly accessible and uses non-blocking address scanning.
+- **Tone**: Celebrate what's documented, never emphasize what's missing. Data permanence: records belong to the property permanently.
 
 ## Memories
 - [System Organization](mem://features/system-organization) — Home systems divided into Core Infrastructure and Appliances & Extras
@@ -60,3 +61,4 @@
 - [True Record System](mem://features/true-record-system) — Multi-source verification engine with 0-100 confidence, permanent archive, satellite imagery
 - [Honest AI Responses](mem://features/honest-ai-responses) — Every empty state explains why, legal flags with calm blue borders, attorney referrals, editorial notes
 - [Legal Compliance System](mem://features/legal-compliance-system) — ToS, Privacy Policy, 4-step legal onboarding, state disclosure engine, legal footer
+- [Engagement & Community](mem://features/engagement-and-community) — Positive framing, Home Story timeline, quick check-ins, community impact, data permanence
