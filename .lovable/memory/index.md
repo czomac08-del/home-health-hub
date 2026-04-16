@@ -1,0 +1,57 @@
+# Project Memory
+
+## Core
+- **Identity**: 'ComingHomeIQ' (mobile: 'CHIQ'). Tagline: 'Your Home's Complete IQ'. 'Home Passport' refers to the report.
+- **Stack**: Supabase (Auth, PostgreSQL with RLS, Storage, Edge Functions), Gemini AI, Stripe.
+- **Theme/Colors**: Default Dark mode. Primary Orange #F47920, Navy #1B3A8C, Brain Blue #4BA9D9.
+- **Typography**: Nunito (700-900) for headings/buttons. DM Sans (400-600) for body/labels.
+- **UI Styling**: 12px radius buttons, 16px radius cards (with 3px top role accent bar), pill-shaped status badges.
+- **User Roles**: Homeowner, Realtor, Inspector, Contractor, Investor. Strictly enforced server-side via DB triggers.
+- **Routing**: `/welcome` is publicly accessible and uses non-blocking address scanning.
+
+## Memories
+- [System Organization](mem://features/system-organization) — Home systems divided into Core Infrastructure and Appliances & Extras
+- [DIY Guides](mem://features/diy-guides) — Interactive maintenance guides with smart YouTube matching and affiliate links
+- [AI Auto-Fill](mem://features/ai-auto-fill) — AI suggests system data marked with teal 'AI' badges and confirmation banners
+- [Dynamic System Specs](mem://features/dynamic-system-specs) — Progressive disclosure forms limiting visible fields to 5-6 at a time
+- [Buyer Report Details](mem://features/buyer-report-details) — Home Passport Report with 0-100 ring, timeline, and $9.99 paywall
+- [Professional Data Integration](mem://features/professional-data-integration) — Pros push verified inspection/job records to property passports
+- [AI Home Assistant](mem://features/ai-home-assistant) — Context-aware chatbot referencing home metadata and documents
+- [Dashboard Proactive Summary](mem://features/dashboard-proactive-summary) — 'This Week's IQ Updates' card with weather and maintenance tips
+- [Role-Based Routing](mem://navigation/role-based-routing) — Bypasses homeowner onboarding for professional roles
+- [Address Onboarding](mem://features/address-onboarding) — Non-blocking entry with 3s timeout and 'Use Anyway' fallback
+- [Interactive Scanning Experience](mem://features/interactive-scanning-experience) — 10-12s scanning animation with activity feed and privacy reminder
+- [Home Handover Experience](mem://features/home-handover-experience) — 6-step Exit Interview for sellers, Claim Your Home for buyers
+- [Breaker Panel Mapper](mem://features/breaker-panel-mapper) — Visual map for electrical panels (Teal=On, Red=Tripped) with warnings
+- [Physical Location Tracking](mem://features/physical-location-tracking) — Granular location and photo tracking for HVAC, Water, Electrical
+- [AI Vision & Scanning](mem://features/ai-vision-and-scanning) — Gemini OCR for specs, condition analysis, and manuals with confidence levels
+- [Emergency Preparedness Tools](mem://features/emergency-preparedness-tools) — Printable Shutoff Card and amber highlighted utility fields
+- [Onboarding Accessibility](mem://navigation/onboarding-accessibility) — /welcome route accessible without ProtectedRoute wrapper
+- [Photo Privacy](mem://security/photo-privacy) — Category-based visibility (Private/Shared/Pro) with Dashboard Privacy badge
+- [Role Governance](mem://security/role-governance) — Roles strictly assigned server-side via DB triggers, RLS blocks client edits
+- [Onboarding Wizard](mem://features/onboarding-wizard) — 7-step setup optimized for mobile Safari with 56px button height
+- [Manual Finder & Vault](mem://features/manual-finder-and-vault) — AI manual finder, built-in PDF viewer, Document Vault
+- [Multi-Profile Architecture](mem://features/multi-profile-architecture) — Toggle between Personal and Business profiles scoping data
+- [App Stability & Performance](mem://tech/app-stability-and-performance) — Non-blocking nav, skeleton UI, 2s timeout for protected routes
+- [Utility Services Hub](mem://features/utility-services-hub) — Centralized utility connections, Service Marketplace, Savings Tracker
+- [Water Management & Testing](mem://features/water-management-and-testing) — City vs Well branching, filtration tracking, testing logs
+- [Sewer & Waste Tracking](mem://features/sewer-and-waste-tracking) — City Sewer vs Septic configurations with progressive disclosure
+- [Household Profile Personalization](mem://features/household-profile-personalization) — Maintenance dynamically adjusted based on pets, allergies, etc.
+- [Smart Home Integrations](mem://features/smart-home-integrations) — Thermostat data triggers dashboard alerts (e.g., filter <20%)
+- [HVAC Air Quality](mem://features/hvac-air-quality) — Filter recommendations based on household profile, AI camera scanner
+- [Specialized Property Logic](mem://features/specialized-property-logic) — Support for manufactured/mobile homes and multi-unit properties
+- [Demo Data System](mem://features/demo-data-system) — Injectable sample data for Pro roles with persistent dismissal
+- [Responsive Navigation Architecture](mem://navigation/responsive-navigation-architecture) — Desktop left sidebar with 3px highlight, mobile bottom nav
+- [Responsive Layout Grid Strategy](mem://style/responsive-layout-grid-strategy) — Multi-column desktop grids, 180px Health Score ring
+- [Subscription Model](mem://business/subscription-model) — Role-based pricing tiers, 14-day trial, one-time Pay Per Report
+- [Realtor Tools](mem://features/realtor-tools) — Listing Manager, Digital Disclosure, Client Portal, CMA tool
+- [Inspector Tools](mem://features/inspector-tools) — State-specific digital checklists, PDF Report Builder, Pre-Inspection Intel
+- [Contractor Tools](mem://features/contractor-tools) — Estimate/Invoice builder, GPS-stamped phased photo documentation
+- [Investor Tools](mem://features/investor-tools) — 5-step Flip Analyzer, ROI tables, renovation budget tracker
+- [System Health Scoring](mem://logic/system-health-scoring) — Green (80+), Orange (60+), Amber (40+), Red (<40), Needs Attention <70
+- [Stripe Integration](mem://tech/stripe-integration) — Server-side mapping of plan IDs to Stripe Price IDs, bypass onboarding on success
+- [Home Insurance](mem://features/home-insurance) — Insurance Vault, AI assistant, Coverage Gap Analyzer, claims tracking
+- [Home Health Certification](mem://features/home-health-certification) — 85+ score and 80%+ completeness for certified status and discounts
+- [Warranty Intelligence](mem://features/warranty-intelligence) — Warranty Vault, Claim Assistant, CPSC recall cross-referencing
+- [Well Water Management](mem://features/well-water-management) — 5 well types, USDA drought monitor, usage timer, water quality tests
+- [Record Recovery System](mem://features/record-recovery-system) — Step-by-step guided recovery for missing records with permanent property storage
