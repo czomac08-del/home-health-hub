@@ -136,8 +136,8 @@ const HomeAIChat = () => {
       .eq("user_id", user.id)
       .then(({ data }) => {
         if (!ignore && data) setSystemDetails(data as SystemDetailRecord[]);
-      })
-      .finally(() => {
+        if (!ignore) setLoadingData(false);
+      }, () => {
         if (!ignore) setLoadingData(false);
       });
 
