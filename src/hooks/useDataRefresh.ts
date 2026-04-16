@@ -272,16 +272,23 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   summary: `Found: ${rcData.yearBuilt ? `Built ${rcData.yearBuilt}` : ""}${rcData.squareFootage ? `, ${rcData.squareFootage} sq ft` : ""}${rcData.bedrooms ? `, ${rcData.bedrooms} bed` : ""}${rcData.lastSalePrice ? `, last sale $${Number(rcData.lastSalePrice).toLocaleString()}` : ""}`,
                   data: rcData,
                 };
-              }
-              return { source, status: "no_changes", summary: "No new property data" };
+               }
+              // RentCast returned no data — graceful degradation
+              return {
+                source,
+                status: "no_changes",
+                summary: "Limited public records available for this area. This is common in rural counties. You can add your home's details manually.",
+              };
             }
             case "FEMA": {
-              const stateMatch = activeProperty.address.match(/,\s*([A-Z]{2})\s+\d{5}/i);
-              const state = stateMatch?.[1]?.toUpperCase() || "";
+              const state = geoState;
               if (!state) return { source, status: "unavailable", summary: "Could not determine state from address" };
 
+              const params = new URLSearchParams({ state });
+              if (geoCounty) params.set("county", geoCounty);
+
               const resp = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fema-disasters?state=${state}`,
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fema-disasters?${params}`,
                 {
                   headers: {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -291,17 +298,19 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               );
               const femaData = await resp.json();
               if (femaData?.total > 0) {
-                return { source, status: "new_data", summary: `${femaData.total} disaster declarations found in your state`, data: femaData };
+                return { source, status: "new_data", summary: `${femaData.total} disaster declarations found${geoCounty ? ` in ${geoCounty} County` : " in your state"}`, data: femaData };
               }
               return { source, status: "no_changes", summary: "No recent disaster declarations" };
             }
             case "NOAA": {
-              const stateMatch = activeProperty.address.match(/,\s*([A-Z]{2})\s+\d{5}/i);
-              const state = stateMatch?.[1]?.toUpperCase() || "";
+              const state = geoState;
               if (!state) return { source, status: "unavailable", summary: "Could not determine state from address" };
 
+              const params = new URLSearchParams({ state });
+              if (geoCounty) params.set("county", geoCounty);
+
               const resp = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/noaa-storms?state=${state}`,
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/noaa-storms?${params}`,
                 {
                   headers: {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -311,17 +320,21 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               );
               const noaaData = await resp.json();
               if (noaaData?.total > 0) {
-                return { source, status: "new_data", summary: `${noaaData.total} weather alerts in your area`, data: noaaData };
+                return { source, status: "new_data", summary: `${noaaData.total} weather alerts${geoCounty ? ` near ${geoCounty} County` : " in your area"}`, data: noaaData };
               }
               return { source, status: "no_changes", summary: "No severe weather alerts" };
             }
             case "EPA ECHO": {
-              const zipMatch = activeProperty.address.match(/\b(\d{5})\b/);
-              const zip = zipMatch?.[1] || "";
-              if (!zip) return { source, status: "unavailable", summary: "Could not determine ZIP from address" };
+              // Prefer lat/lng for precise radius search, fall back to ZIP
+              const useCoords = geoLat && geoLng;
+              const epaParams = useCoords
+                ? `lat=${geoLat}&lng=${geoLng}`
+                : `zip=${geoZip}`;
+
+              if (!useCoords && !geoZip) return { source, status: "unavailable", summary: "Could not determine location from address" };
 
               const resp = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/epa-echo?zip=${zip}`,
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/epa-echo?${epaParams}`,
                 {
                   headers: {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -336,17 +349,29 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               return { source, status: "no_changes", summary: "No EPA facilities nearby" };
             }
             case "USDA Drought Monitor": {
+              // Use actual county FIPS from geocoding
+              const fipsParam = geoCountyFips || "00000";
               const resp = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/drought-status?fips=00000`,
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/drought-status`,
                 {
+                  method: "POST",
                   headers: {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
                     apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    "Content-Type": "application/json",
                   },
+                  body: JSON.stringify({
+                    fips_code: fipsParam,
+                    address: activeProperty.address,
+                  }),
                 }
               );
               if (resp.ok) {
-                return { source, status: "no_changes", summary: "Drought data checked" };
+                const droughtData = await resp.json();
+                if (droughtData.drought_level && droughtData.drought_level !== "None") {
+                  return { source, status: "new_data", summary: `${droughtData.drought_description}${geoCounty ? ` in ${geoCounty} County` : ""}`, data: droughtData };
+                }
+                return { source, status: "no_changes", summary: "No drought conditions" };
               }
               return { source, status: "unavailable", summary: "Drought data temporarily unavailable" };
             }
