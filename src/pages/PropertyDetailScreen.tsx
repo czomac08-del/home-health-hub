@@ -4,6 +4,9 @@ import ConstructionProfile from "@/components/ConstructionProfile";
 import PropertyTimeline from "@/components/PropertyTimeline";
 import MissingRecordsIntelligence from "@/components/MissingRecordsIntelligence";
 import RecordsDiscoveryStatus from "@/components/RecordsDiscoveryStatus";
+import VerificationSummary from "@/components/VerificationSummary";
+import PermanentArchive from "@/components/PermanentArchive";
+import BeyondPublicRecords from "@/components/BeyondPublicRecords";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();

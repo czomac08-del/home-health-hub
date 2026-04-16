@@ -1,4 +1,4 @@
-import { Landmark, Shield, ChevronDown, ChevronRight } from "lucide-react";
+import { Landmark, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import ConfidenceBadge from "./ConfidenceBadge";
 

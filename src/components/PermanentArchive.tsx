@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Archive, Plus } from "lucide-react";
+import { Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import TrueRecordCard from "./TrueRecordCard";
