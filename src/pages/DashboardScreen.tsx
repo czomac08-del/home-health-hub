@@ -9,6 +9,8 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
+import HomeStoryTimeline from "@/components/HomeStoryTimeline";
+import QuickCheckInButton from "@/components/QuickCheckInButton";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -33,6 +35,9 @@ const DashboardScreen = () => {
   // Profile completeness based on how many systems are documented
   const assessedCount = systems.filter((s) => s.assessed).length;
   const profileCompleteness = Math.round((assessedCount / systems.length) * 100);
+  const documentedLabel = assessedCount > 0
+    ? `You've documented ${assessedCount} system${assessedCount !== 1 ? "s" : ""} — that's ${assessedCount} thing${assessedCount !== 1 ? "s" : ""} future you will thank you for.`
+    : "Start documenting your home to build your record.";
 
   const userName = profile?.full_name?.split(" ")[0] || "there";
   const address = activeProperty?.address || "No property added";
@@ -175,7 +180,7 @@ const DashboardScreen = () => {
               <ClipboardList className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-muted-foreground font-heading font-bold text-sm uppercase tracking-wider">Not Yet Documented</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">Tell us about these systems to get accurate health scores and maintenance recommendations.</p>
+            <p className="text-xs text-muted-foreground mb-3">Document these systems to build your home's story and unlock personalized recommendations.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {notDocumented.map((sys) => (
                 <SystemCard key={sys.id} id={sys.id} name={sys.name} health={null} status="Not Assessed Yet" flagged={false} assessed={false} onClick={() => navigate(`/system/${sys.id}`)} />
@@ -183,6 +188,9 @@ const DashboardScreen = () => {
             </div>
           </div>
         )}
+
+        {/* Home Story Timeline */}
+        <HomeStoryTimeline />
 
         {/* Utility Contacts */}
         <div className="lg:max-w-xl">
