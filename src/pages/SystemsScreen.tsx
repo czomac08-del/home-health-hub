@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import RefreshButton from "@/components/RefreshButton";
 
 type SystemStatus = "documented" | "unconfigured";
 
@@ -134,7 +135,10 @@ const SystemsScreen = () => {
 
   return (
     <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold text-foreground mb-2">Systems</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold text-foreground">Systems</h1>
+        <RefreshButton scope="full" variant="compact" />
+      </div>
       <p className="text-sm text-muted-foreground mb-6">
         {documentedCount > 0
           ? `You've documented ${documentedCount} system${documentedCount !== 1 ? "s" : ""} — that's ${documentedCount} thing${documentedCount !== 1 ? "s" : ""} future you (and future owners) will thank you for.`
