@@ -66,33 +66,41 @@ const WELL_DATABASES: Record<string, string> = {
 export function getRecoverySteps(systemType: SystemRecordType, county: string, state: string, address: string): RecoveryStep[] {
   const steps: RecoveryStep[] = [];
 
+  const stateAbbr = state.toUpperCase().trim();
+
   // Step 1 — State/County digital database
   if (systemType === "well") {
+    const wellUrl = WELL_DATABASES[stateAbbr] || "https://www.ngwa.org/what-is-groundwater/Home-owners/find-well-record";
+    const isDefault = !WELL_DATABASES[stateAbbr];
     steps.push({
       title: "Search Your State Well Database",
       description: `Search the ${state} well database by your property address or parcel number. Digital records typically begin around 1989 (varies by state). If your well predates this, proceed to Step 2.`,
-      searchTemplate: `${state} state well water database search`,
+      directUrl: wellUrl,
+      directUrlLabel: isDefault ? "NGWA Well Record Finder" : `${stateAbbr} Well Database`,
       tip: "Look for the state Department of Environmental Quality (DEQ) or equivalent. Many states have free online well record searches.",
     });
   } else if (systemType === "septic") {
     steps.push({
       title: "Search County Environmental Health Records",
       description: `Septic records are held at the county level. Search ${county} County Environmental Health online portal. Most counties have records for systems installed after 1985.`,
-      searchTemplate: `${county} county environmental health septic records ${state}`,
+      directUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} county environmental health septic records ${stateAbbr}`)}`,
+      directUrlLabel: `${county} County Health Records`,
       tip: "County health departments issue septic permits. Call them directly if online records aren't available.",
     });
   } else if (systemType === "roof") {
     steps.push({
       title: "Search County Permit Portal",
       description: `Roofing permits are filed with your local building department. Search the ${county} County permit portal. If your roof was replaced before 2000, proceed to Step 2.`,
-      searchTemplate: `${county} county building permit records search ${state}`,
+      directUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} county building permit portal ${stateAbbr}`)}`,
+      directUrlLabel: `${county} County Permits`,
     });
   } else {
     const label = systemType === "electrical" ? "Electrical" : systemType === "plumbing" ? "Plumbing" : systemType === "hvac" ? "HVAC" : "Building";
     steps.push({
       title: `Search County ${label} Permit Portal`,
       description: `Search your city or county permit portal. Many counties digitized permits from the late 1990s forward. For older permits, proceed to Step 2.`,
-      searchTemplate: `${county} county ${label.toLowerCase()} permit records search ${state}`,
+      directUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} county ${label.toLowerCase()} permit portal ${stateAbbr}`)}`,
+      directUrlLabel: `${county} County ${label} Permits`,
     });
   }
 
@@ -103,7 +111,8 @@ export function getRecoverySteps(systemType: SystemRecordType, county: string, s
   steps.push({
     title: "Contact Your County Office",
     description: `Contact the ${county} County ${office}. Staff can search both digital systems and paper archives for your records.`,
-    searchTemplate: `${county} county ${office.toLowerCase()} phone number ${state}`,
+    directUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} county ${office.toLowerCase()} phone number ${stateAbbr}`)}`,
+    directUrlLabel: `Find ${county} County Office`,
     scriptPrompt: `"I'm looking for permit records for a property at ${address}. The system was likely installed around [year]. Do you have any records on file, including paper records that may not be digitized?"`,
     tip: "Ask them to check BOTH their digital system AND any paper archives. Pre-1990 records are often in filing cabinets or microfiche that staff can manually search.",
   });
@@ -112,7 +121,8 @@ export function getRecoverySteps(systemType: SystemRecordType, county: string, s
   steps.push({
     title: "Search Property Deed & Title Records",
     description: "Check your county Register of Deeds, previous home inspection reports, seller's disclosure statement, HOA documents, and title insurance commitment letter.",
-    searchTemplate: `${county} county register of deeds ${state}`,
+    directUrl: `https://www.google.com/search?q=${encodeURIComponent(`${county} county register of deeds ${stateAbbr}`)}`,
+    directUrlLabel: `${county} County Register of Deeds`,
     tip: "Seller disclosure statements often mention system ages, repairs, and known issues — even if no formal record exists.",
   });
 
@@ -124,20 +134,22 @@ export function getRecoverySteps(systemType: SystemRecordType, county: string, s
   });
 
   // Step 5 — Professional assessment
-  const assessments: Record<string, { desc: string; cost: string }> = {
-    well: { desc: "Licensed well contractor assessment — depth, static/pumping water level, flow rate, casing condition.", cost: "$150–$400" },
-    septic: { desc: "Septic inspection — tank location, size, last pump date, leach field condition.", cost: "$200–$500" },
-    electrical: { desc: "Licensed electrician panel inspection — amperage, breaker condition, wiring type, code compliance.", cost: "$100–$200" },
-    plumbing: { desc: "Plumber assessment — pipe material, shutoff locations, water heater condition.", cost: "$100–$200" },
-    hvac: { desc: "HVAC technician inspection — unit age, efficiency rating, filter size, ductwork condition.", cost: "$75–$150" },
-    roof: { desc: "Roofing contractor inspection — material type, age estimate, condition, any active leaks.", cost: "$0–$200 (many roofers inspect free)" },
-    water_heater: { desc: "Plumber assessment — tank condition, anode rod, efficiency, age estimate.", cost: "$75–$150" },
-    building_permit: { desc: "General contractor walk-through — identify unpermitted work, code issues.", cost: "$100–$250" },
+  const assessments: Record<string, { desc: string; cost: string; url: string; urlLabel: string }> = {
+    well: { desc: "Licensed well contractor assessment — depth, static/pumping water level, flow rate, casing condition.", cost: "$150–$400", url: "https://www.ngwa.org/get-connected/find-a-member", urlLabel: "Find on NGWA" },
+    septic: { desc: "Septic inspection — tank location, size, last pump date, leach field condition.", cost: "$200–$500", url: `https://www.google.com/search?q=${encodeURIComponent(`septic inspection contractor near ${county} ${stateAbbr}`)}`, urlLabel: "Find Septic Inspector" },
+    electrical: { desc: "Licensed electrician panel inspection — amperage, breaker condition, wiring type, code compliance.", cost: "$100–$200", url: `https://www.google.com/search?q=${encodeURIComponent(`licensed electrician ${county} ${stateAbbr}`)}`, urlLabel: "Find Electrician" },
+    plumbing: { desc: "Plumber assessment — pipe material, shutoff locations, water heater condition.", cost: "$100–$200", url: `https://www.google.com/search?q=${encodeURIComponent(`licensed plumber ${county} ${stateAbbr}`)}`, urlLabel: "Find Plumber" },
+    hvac: { desc: "HVAC technician inspection — unit age, efficiency rating, filter size, ductwork condition.", cost: "$75–$150", url: `https://www.google.com/search?q=${encodeURIComponent(`HVAC contractor ${county} ${stateAbbr}`)}`, urlLabel: "Find HVAC Tech" },
+    roof: { desc: "Roofing contractor inspection — material type, age estimate, condition, any active leaks.", cost: "$0–$200 (many roofers inspect free)", url: `https://www.google.com/search?q=${encodeURIComponent(`roofing contractor ${county} ${stateAbbr}`)}`, urlLabel: "Find Roofer" },
+    water_heater: { desc: "Plumber assessment — tank condition, anode rod, efficiency, age estimate.", cost: "$75–$150", url: `https://www.google.com/search?q=${encodeURIComponent(`plumber water heater ${county} ${stateAbbr}`)}`, urlLabel: "Find Plumber" },
+    building_permit: { desc: "General contractor walk-through — identify unpermitted work, code issues.", cost: "$100–$250", url: `https://www.google.com/search?q=${encodeURIComponent(`general contractor ${county} ${stateAbbr}`)}`, urlLabel: "Find Contractor" },
   };
   const a = assessments[systemType] || assessments.hvac;
   steps.push({
     title: "Get a Professional Assessment",
     description: `${a.desc} Typical cost: ${a.cost}.`,
+    directUrl: a.url,
+    directUrlLabel: a.urlLabel,
     tip: "A professional assessment creates a baseline record for your property — even if original records can't be found.",
   });
 
