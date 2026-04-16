@@ -9,6 +9,7 @@
 - **User Roles**: Homeowner, Realtor, Inspector, Contractor, Investor. Strictly enforced server-side via DB triggers.
 - **Routing**: `/welcome` is publicly accessible and uses non-blocking address scanning.
 - **Tone**: Celebrate what's documented, never emphasize what's missing. Data permanence: records belong to the property permanently.
+- **Nationwide**: All 50 states + 3,143 counties. No hardcoded state/county assumptions. Geocode via Census Bureau → Nominatim fallback. State data in `src/data/stateData.ts`.
 
 ## Memories
 - [System Organization](mem://features/system-organization) — Home systems divided into Core Infrastructure and Appliances & Extras
@@ -63,3 +64,4 @@
 - [Legal Compliance System](mem://features/legal-compliance-system) — ToS, Privacy Policy, 4-step legal onboarding, state disclosure engine, legal footer
 - [Engagement & Community](mem://features/engagement-and-community) — Positive framing, Home Story timeline, quick check-ins, community impact, data permanence
 - [Data Refresh System](mem://features/data-refresh-system) — Platform-wide "Check for New Records" with FEMA/NOAA/EPA/RentCast, 24h cooldown, refresh_logs audit trail
+- [Nationwide Data Architecture](mem://features/nationwide-data-architecture) — Census geocoder with FIPS resolution, 50-state digitization cutoffs, graceful degradation for rural counties
