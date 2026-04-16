@@ -15,6 +15,8 @@ interface Property {
   label: string;
   is_active: boolean;
   health_score: number | null;
+  year_built: string | null;
+  square_footage: string | null;
 }
 
 interface AuthContextType {
@@ -63,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProperties = async (userId: string) => {
     const { data } = await supabase
       .from("properties")
-      .select("id, address, label, is_active, health_score")
+      .select("id, address, label, is_active, health_score, year_built, square_footage")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
     if (data) {
