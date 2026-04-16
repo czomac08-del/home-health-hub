@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info } from "lucide-react";
 import { systems } from "./DashboardScreen";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -18,6 +18,20 @@ const iconMap: Record<string, ReactNode> = {
   plumbing: <Droplets className="h-6 w-6 text-primary" />,
   electrical: <Zap className="h-6 w-6 text-primary" />,
   roof: <Home className="h-6 w-6 text-primary" />,
+};
+
+const systemPrompts: Record<string, string> = {
+  hvac: "Tell us about your HVAC system to get an accurate health score. Scan the label on your unit or enter details manually.",
+  plumbing: "Tell us about your plumbing to get an accurate health score. Add your water heater age, pipe material, or upload an inspection report.",
+  electrical: "Tell us about your electrical panel to get an accurate health score. Scan your panel label or enter details manually.",
+  roof: "Tell us about your roof to get an accurate health score. Add your roof age, material type, or last inspection date.",
+};
+
+const systemNotDocumentedLabels: Record<string, string> = {
+  hvac: "HVAC Not Documented",
+  plumbing: "Plumbing Not Documented",
+  electrical: "Panel Not Documented",
+  roof: "Roof Not Documented",
 };
 
 const systemDetails: Record<string, {
@@ -69,6 +83,8 @@ const SystemDetailScreen = () => {
     );
   }
 
+  const isAssessed = system.assessed && system.health !== null;
+
   const toggleStep = (i: number) => {
     setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
   };
@@ -79,7 +95,6 @@ const SystemDetailScreen = () => {
   };
 
   const handleConfirmScan = (fields: Record<string, string>) => {
-    // In a real implementation, this would save to the database
     console.log("Saving scanned fields:", fields);
     setScanReview(null);
   };
@@ -96,24 +111,45 @@ const SystemDetailScreen = () => {
           {iconMap[system.id]}
           <h1 className="text-2xl font-bold text-foreground">{system.name}</h1>
         </div>
-        <HealthRing percentage={system.health} size={130} strokeWidth={9} />
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Calendar className="h-4 w-4" />
-          <span>Last serviced: {details.lastService}</span>
-        </div>
+        <HealthRing percentage={isAssessed ? system.health : null} size={130} strokeWidth={9} />
+        {isAssessed ? (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Calendar className="h-4 w-4" />
+            <span>Last serviced: {details.lastService}</span>
+          </div>
+        ) : (
+          <span className="text-sm font-medium text-muted-foreground">
+            {systemNotDocumentedLabels[system.id] || "Not Documented"}
+          </span>
+        )}
       </div>
 
-      {/* AI Recommendation */}
-      <div className="rounded-xl border-l-4 border-primary bg-primary/5 p-4 flex items-start gap-3 mb-4">
-        <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-        <div>
-          <h3 className="text-primary font-semibold text-sm mb-1">AI Recommendation</h3>
-          <p className="text-sm text-foreground leading-relaxed">{details.aiRecommendation}</p>
+      {/* Not Assessed prompt — shown when no user data exists */}
+      {!isAssessed && (
+        <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-start gap-3 mb-6">
+          <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-foreground font-semibold text-sm mb-1">No Data Yet</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {systemPrompts[system.id] || `Tell us about your ${system.name} to get an accurate health score.`}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Alert */}
-      {details.warning && system.health < 70 && (
+      {/* AI Recommendation — ONLY shown when assessed */}
+      {isAssessed && (
+        <div className="rounded-xl border-l-4 border-primary bg-primary/5 p-4 flex items-start gap-3 mb-4">
+          <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-primary font-semibold text-sm mb-1">AI Recommendation</h3>
+            <p className="text-sm text-foreground leading-relaxed">{details.aiRecommendation}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Alert — ONLY shown when assessed AND health < 70 */}
+      {isAssessed && details.warning && system.health !== null && system.health < 70 && (
         <div className="rounded-xl border-l-4 border-destructive bg-destructive/10 p-4 flex items-start gap-3 mb-6">
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div>
@@ -123,7 +159,7 @@ const SystemDetailScreen = () => {
         </div>
       )}
 
-      {details.warning && system.health >= 70 && (
+      {isAssessed && details.warning && system.health !== null && system.health >= 70 && (
         <div className="rounded-xl border-l-4 border-[hsl(var(--health-amber))] bg-[hsl(var(--health-amber))]/10 p-4 flex items-start gap-3 mb-6">
           <AlertTriangle className="h-5 w-5 text-[hsl(var(--health-amber))] shrink-0 mt-0.5" />
           <div>
