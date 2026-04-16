@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { RefreshCw, X, Check, DollarSign, Clock } from "lucide-react";
+import { RefreshCw, X, Check, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -148,7 +148,7 @@ const RefreshAllButton = ({ className = "" }: { className?: string }) => {
                   </div>
                   <div className="shrink-0 ml-3">
                     {p.freeAvailable ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-500">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-500 dark:text-emerald-400">
                         <Check className="h-3 w-3" /> Free
                       </span>
                     ) : (
@@ -166,7 +166,7 @@ const RefreshAllButton = ({ className = "" }: { className?: string }) => {
               {pricing.free.length > 0 && (
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{pricing.free.length} free refresh{pricing.free.length > 1 ? "es" : ""}</span>
-                  <span className="text-green-500 font-medium">$0.00</span>
+                  <span className="text-emerald-500 dark:text-emerald-400 font-medium">$0.00</span>
                 </div>
               )}
               {pricing.paidCount > 0 && (
