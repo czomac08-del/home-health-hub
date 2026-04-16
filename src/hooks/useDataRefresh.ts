@@ -118,7 +118,7 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               const rcData = await resp.json();
               if (rcData?.found) {
                 // Write property data back to Supabase
-                const updates: Record<string, unknown> = {};
+                const updates: { year_built?: string; square_footage?: string } = {};
                 if (rcData.yearBuilt) updates.year_built = String(rcData.yearBuilt);
                 if (rcData.squareFootage) updates.square_footage = String(rcData.squareFootage);
                 if (Object.keys(updates).length > 0) {
@@ -286,18 +286,9 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         triggered_by: "manual",
       });
 
-      // Refresh the properties in context so UI updates immediately
+      // Trigger property refresh in AuthContext so UI updates immediately
       if (results.some((r) => r.source === "RentCast" && r.status === "new_data")) {
-        // Dynamically refresh properties from AuthContext
-        const { data: updatedProps } = await supabase
-          .from("properties")
-          .select("id, address, label, is_active, health_score, year_built, square_footage")
-          .eq("id", activeProperty.id)
-          .single();
-        if (updatedProps) {
-          // Trigger a window event so AuthContext can pick up changes
-          window.dispatchEvent(new CustomEvent("property-data-updated"));
-        }
+        window.dispatchEvent(new CustomEvent("property-data-updated"));
       }
 
       const result: RefreshResult = {
