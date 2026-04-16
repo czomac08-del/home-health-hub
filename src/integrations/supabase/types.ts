@@ -827,6 +827,65 @@ export type Database = {
           },
         ]
       }
+      property_records: {
+        Row: {
+          created_at: string
+          document_date: string | null
+          file_name: string | null
+          id: string
+          notes: string | null
+          property_id: string
+          record_type: string
+          source: string
+          storage_path: string | null
+          system_type: string
+          updated_at: string
+          uploaded_by_user_id: string
+          url: string | null
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          document_date?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          property_id: string
+          record_type?: string
+          source?: string
+          storage_path?: string | null
+          system_type: string
+          updated_at?: string
+          uploaded_by_user_id: string
+          url?: string | null
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          document_date?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string
+          record_type?: string
+          source?: string
+          storage_path?: string | null
+          system_type?: string
+          updated_at?: string
+          uploaded_by_user_id?: string
+          url?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_records_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       realtor_listings: {
         Row: {
           created_at: string
