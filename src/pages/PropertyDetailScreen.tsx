@@ -7,6 +7,9 @@ import RecordsDiscoveryStatus from "@/components/RecordsDiscoveryStatus";
 import VerificationSummary from "@/components/VerificationSummary";
 import PermanentArchive from "@/components/PermanentArchive";
 import BeyondPublicRecords from "@/components/BeyondPublicRecords";
+import LegalFlag from "@/components/LegalFlag";
+import EditorialNote from "@/components/EditorialNote";
+import LegalDisclaimer from "@/components/LegalDisclaimer";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
