@@ -137,7 +137,7 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   source: string;
                   ai_verified: boolean;
                   notes: string;
-                  ai_extracted_data: Record<string, unknown>;
+                  ai_extracted_data: Record<string, string | number | boolean | null>;
                 }> = [];
 
                 if (rcData.yearBuilt) {
