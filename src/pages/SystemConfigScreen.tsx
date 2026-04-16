@@ -416,6 +416,12 @@ const SystemConfigScreen = () => {
         <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
       )}
 
+      {/* Records Status & Recovery Guide */}
+      <RecordsStatusSelector
+        systemName={displayName}
+        hasDocuments={Object.values(docs).some(d => d !== null && d !== undefined)}
+      />
+
       {/* ═══ WATER SOURCE — TYPE SELECTOR ═══ */}
       {isWaterSource && (
         <div className="mb-6">
