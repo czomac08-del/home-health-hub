@@ -50,9 +50,9 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
     Promise.all([
       supabase.from("record_types").select("subcategory, category, typical_digitization_year, digitization_notes, safety_critical"),
       supabase.from("property_records").select("record_type, system_type").eq("property_id", propertyId),
-    ]).then(([typesRes, recordsRes]) => {
+    ]).then(([typesRes]) => {
       setAllRecordTypes((typesRes.data as MissingRecord[]) || []);
-      setFoundRecords((recordsRes.data || []).map((r: any) => `${r.system_type}-${r.record_type}`));
+      setLoading(false);
       setLoading(false);
     });
   }, [propertyId, user]);
