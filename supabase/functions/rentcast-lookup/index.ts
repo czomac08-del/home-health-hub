@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
     }
 
     const rentcastUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address.trim())}`;
+    console.log("RentCast request URL:", rentcastUrl);
+
     const resp = await fetch(rentcastUrl, {
       headers: { "X-Api-Key": apiKey, Accept: "application/json" },
     });
@@ -42,6 +44,7 @@ Deno.serve(async (req) => {
     }
 
     const data = await resp.json();
+    console.log("RentCast raw response:", JSON.stringify(data));
 
     // RentCast returns an array; take first result
     const property = Array.isArray(data) ? data[0] : data;
@@ -56,14 +59,24 @@ Deno.serve(async (req) => {
     const result = {
       found: true,
       yearBuilt: property.yearBuilt ?? null,
-      squareFootage: property.squareFootage ?? null,
+      squareFootage: property.squareFootage ?? property.livingArea ?? null,
       lotSize: property.lotSize ?? null,
       propertyType: property.propertyType ?? null,
       bedrooms: property.bedrooms ?? null,
-      bathrooms: property.bathrooms ?? null,
+      bathrooms: property.bathrooms ?? property.bathsFull ?? null,
       estimatedValue: property.price ?? property.estimatedValue ?? null,
       formattedAddress: property.formattedAddress ?? property.addressLine1 ?? null,
+      // Sale history fields
+      lastSaleDate: property.lastSaleDate ?? null,
+      lastSalePrice: property.lastSalePrice ?? null,
+      priorSales: property.priorSales ?? property.salesHistory ?? [],
+      // Additional details
+      county: property.county ?? null,
+      state: property.state ?? null,
+      zipCode: property.zipCode ?? null,
     };
+
+    console.log("Mapped result:", JSON.stringify(result));
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
