@@ -147,6 +147,9 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
 
   return (
     <div className="space-y-4">
+      {/* Community Banner */}
+      <CommunityBanner countyFips={`${state}-${county.toLowerCase().replace(/\s/g, "-")}`} systemType={systemType} />
+
       {/* Progress */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-2">
