@@ -1,6 +1,7 @@
-import { RefreshCw, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertCircle, Clock, DollarSign } from "lucide-react";
 import { useDataRefresh, type RefreshScope, type SourceResult } from "@/hooks/useDataRefresh";
 import { useState } from "react";
+import PurchaseRefreshModal from "./PurchaseRefreshModal";
 
 interface RefreshButtonProps {
   scope?: RefreshScope;
@@ -44,6 +45,7 @@ const SourceResultRow = ({ result }: { result: SourceResult }) => {
 const RefreshButton = ({ scope = "full", variant = "compact", className = "" }: RefreshButtonProps) => {
   const { isRefreshing, lastRefresh, lastResult, cooldownEnd, canRefresh, refresh, sources } = useDataRefresh(scope);
   const [showResults, setShowResults] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   const handleClick = async () => {
     if (!canRefresh) return;
@@ -144,24 +146,39 @@ const RefreshButton = ({ scope = "full", variant = "compact", className = "" }: 
   }
 
   // Compact variant — for system pages
+  const cooldownActive = !canRefresh && cooldownEnd && cooldownEnd > new Date();
   return (
     <div className={`space-y-2 ${className}`}>
-      <button
-        onClick={handleClick}
-        disabled={!canRefresh || isRefreshing}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-        {isRefreshing
-          ? "Checking..."
-          : lastRefresh
-            ? `Last checked: ${formatDate(lastRefresh)}`
-            : "Check for New Records"}
-      </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={handleClick}
+          disabled={!canRefresh || isRefreshing}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
+          {isRefreshing
+            ? "Checking..."
+            : canRefresh
+              ? "Check for New Records"
+              : lastRefresh
+                ? `Last checked: ${formatDate(lastRefresh)}`
+                : "Check for New Records"}
+        </button>
 
-      {!canRefresh && cooldownEnd && cooldownEnd > new Date() && (
+        {cooldownActive && (
+          <button
+            onClick={() => setShowPurchaseModal(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+          >
+            <DollarSign className="h-3 w-3" />
+            Refresh now — $5
+          </button>
+        )}
+      </div>
+
+      {cooldownActive && (
         <p className="text-[10px] text-muted-foreground">
-          Next refresh in {formatTimeUntil(cooldownEnd)}
+          Next free refresh in {formatTimeUntil(cooldownEnd!)}
         </p>
       )}
 
@@ -172,6 +189,12 @@ const RefreshButton = ({ scope = "full", variant = "compact", className = "" }: 
           ))}
         </div>
       )}
+
+      <PurchaseRefreshModal
+        open={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        nextFreeRefreshLabel={cooldownEnd ? `in ${formatTimeUntil(cooldownEnd)}` : "now"}
+      />
     </div>
   );
 };
