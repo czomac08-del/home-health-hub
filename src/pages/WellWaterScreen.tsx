@@ -11,6 +11,7 @@ import {
 } from "@/data/wellWaterData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import WellTypeIdentificationGuide from "@/components/WellTypeIdentificationGuide";
 
 /* ─── Well Type Selector ─── */
 const WellTypeSelector = ({ selected, onSelect }: { selected: string | null; onSelect: (id: string) => void }) => (
@@ -382,6 +383,9 @@ const WellWaterScreen = () => {
 
       {/* Well Type Selector */}
       <WellTypeSelector selected={wellType} onSelect={saveWellType} />
+
+      {/* Visual Identification Guide */}
+      <WellTypeIdentificationGuide />
 
       {/* Current Conditions */}
       {wellType && (
