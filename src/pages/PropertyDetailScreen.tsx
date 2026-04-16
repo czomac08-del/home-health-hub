@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle } from "lucide-react";
 import ConstructionProfile from "@/components/ConstructionProfile";
+import PropertyTimeline from "@/components/PropertyTimeline";
+import MissingRecordsIntelligence from "@/components/MissingRecordsIntelligence";
+import RecordsDiscoveryStatus from "@/components/RecordsDiscoveryStatus";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -30,8 +33,23 @@ const PropertyDetailScreen = () => {
         </div>
       </div>
 
+      {/* Discovery Status */}
+      <div className="mb-6">
+        <RecordsDiscoveryStatus propertyId="demo" />
+      </div>
+
       {/* Construction Profile */}
       <ConstructionProfile />
+
+      {/* Property Timeline */}
+      <div className="mt-6 mb-6">
+        <PropertyTimeline propertyId="demo" yearBuilt="2005" />
+      </div>
+
+      {/* Missing Records Intelligence */}
+      <div className="mb-6">
+        <MissingRecordsIntelligence propertyId="demo" yearBuilt="2005" county="Example County" state="NC" />
+      </div>
 
       {/* Quick Actions */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
