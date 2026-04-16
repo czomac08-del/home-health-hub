@@ -84,8 +84,8 @@ const DiscountPotentialSection = ({ healthScore, profileCompleteness, totalSyste
           <div className="rounded-xl bg-bg-secondary border border-border p-3 flex items-center gap-3">
             <Target className="h-5 w-5 text-primary shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{tasksToComplete} more systems to configure</p>
-              <p className="text-xs text-muted-foreground">Complete your system profiles to increase your score</p>
+              <p className="text-sm font-medium text-foreground">{configuredSystems} system{configuredSystems !== 1 ? "s" : ""} documented so far</p>
+              <p className="text-xs text-muted-foreground">Each one you add brings you closer to certification</p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>

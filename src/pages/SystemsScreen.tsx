@@ -136,7 +136,9 @@ const SystemsScreen = () => {
     <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold text-foreground mb-2">Systems</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        We only show documented system details here. Right now, {documentedCount} systems have real information on file.
+        {documentedCount > 0
+          ? `You've documented ${documentedCount} system${documentedCount !== 1 ? "s" : ""} — that's ${documentedCount} thing${documentedCount !== 1 ? "s" : ""} future you (and future owners) will thank you for.`
+          : "Start documenting your home systems to build your property's permanent record."}
       </p>
 
       <div className="relative mb-6">

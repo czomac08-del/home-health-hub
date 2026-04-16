@@ -10,6 +10,7 @@ import type { ScanResult } from "@/components/AiPhotoScanner";
 import WarrantySection from "@/components/WarrantySection";
 import ApplianceScanner from "@/components/ApplianceScanner";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
+import QuickCheckInButton from "@/components/QuickCheckInButton";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -121,6 +122,11 @@ const SystemDetailScreen = () => {
           <span className="text-sm font-medium text-muted-foreground">
             {systemNotDocumentedLabels[system.id] || "Not Documented"}
           </span>
+        )}
+        {isAssessed && (
+          <div className="mt-2">
+            <QuickCheckInButton systemName={system.name} />
+          </div>
         )}
       </div>
 
