@@ -1,6 +1,7 @@
-import { RefreshCw, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertCircle, Clock, DollarSign } from "lucide-react";
 import { useDataRefresh, type RefreshScope, type SourceResult } from "@/hooks/useDataRefresh";
 import { useState } from "react";
+import PurchaseRefreshModal from "./PurchaseRefreshModal";
 
 interface RefreshButtonProps {
   scope?: RefreshScope;
@@ -44,6 +45,7 @@ const SourceResultRow = ({ result }: { result: SourceResult }) => {
 const RefreshButton = ({ scope = "full", variant = "compact", className = "" }: RefreshButtonProps) => {
   const { isRefreshing, lastRefresh, lastResult, cooldownEnd, canRefresh, refresh, sources } = useDataRefresh(scope);
   const [showResults, setShowResults] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   const handleClick = async () => {
     if (!canRefresh) return;
