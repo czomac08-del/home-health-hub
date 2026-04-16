@@ -793,6 +793,51 @@ export type Database = {
           },
         ]
       }
+      legal_resources: {
+        Row: {
+          attorney_type: string
+          created_at: string
+          id: string
+          issue_type: string
+          legal_aid_name: string | null
+          legal_aid_phone: string | null
+          legal_aid_url: string | null
+          notes: string | null
+          referral_phone: string | null
+          referral_service_name: string
+          referral_url: string | null
+          state: string
+        }
+        Insert: {
+          attorney_type: string
+          created_at?: string
+          id?: string
+          issue_type: string
+          legal_aid_name?: string | null
+          legal_aid_phone?: string | null
+          legal_aid_url?: string | null
+          notes?: string | null
+          referral_phone?: string | null
+          referral_service_name: string
+          referral_url?: string | null
+          state: string
+        }
+        Update: {
+          attorney_type?: string
+          created_at?: string
+          id?: string
+          issue_type?: string
+          legal_aid_name?: string | null
+          legal_aid_phone?: string | null
+          legal_aid_url?: string | null
+          notes?: string | null
+          referral_phone?: string | null
+          referral_service_name?: string
+          referral_url?: string | null
+          state?: string
+        }
+        Relationships: []
+      }
       maintenance_history: {
         Row: {
           action: string

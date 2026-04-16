@@ -7,6 +7,9 @@ import RecordsDiscoveryStatus from "@/components/RecordsDiscoveryStatus";
 import VerificationSummary from "@/components/VerificationSummary";
 import PermanentArchive from "@/components/PermanentArchive";
 import BeyondPublicRecords from "@/components/BeyondPublicRecords";
+import LegalFlag from "@/components/LegalFlag";
+import EditorialNote from "@/components/EditorialNote";
+import LegalDisclaimer from "@/components/LegalDisclaimer";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -78,6 +81,24 @@ const PropertyDetailScreen = () => {
         <MissingRecordsIntelligence propertyId="demo" yearBuilt="2005" county="Example County" state="NC" />
       </div>
 
+      {/* Legal Awareness Flags */}
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Legal Awareness</h2>
+      <div className="space-y-4 mb-6">
+        <LegalFlag
+          title="Worth Knowing — No Building Permit on Record"
+          description="Your deck addition doesn't appear to have a building permit on file. This is common for older properties and owner-built homes — in many cases it was legal at the time or simply wasn't required."
+          context="Unpermitted structures can affect your homeowner's insurance coverage, your ability to sell, and your property tax assessment. This is not necessarily a problem — many unpermitted structures are perfectly sound and can be retroactively permitted."
+          actions={[
+            { label: "Contact County Building Office", href: "https://www.gastongov.com/departments/inspections" },
+            { label: "Find a Real Estate Attorney", href: "https://www.ncbar.gov/public-resources/find-a-lawyer/" },
+          ]}
+        />
+
+        <EditorialNote
+          note="Based on everything we've found for this property, the missing well record is most likely explained by the drilling date predating NC's digitization program. This is extremely common for Gaston County properties built before 1990 and does not suggest anything was done improperly. Getting a licensed well contractor to document the current condition of your well is the most practical next step."
+        />
+      </div>
+
       {/* Quick Actions */}
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
       <div className="space-y-2 mb-8">
@@ -102,6 +123,8 @@ const PropertyDetailScreen = () => {
           Prepare to Sell / Transfer Home
         </button>
       </div>
+
+      <LegalDisclaimer />
     </div>
   );
 };

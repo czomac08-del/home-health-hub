@@ -58,3 +58,4 @@
 - [Well Water Management](mem://features/well-water-management) — Well type identification, depth tracking, water quality testing
 - [Autonomous Discovery](mem://features/autonomous-discovery) — 4-tier confidence model for AI extraction, auto-confirm high confidence
 - [True Record System](mem://features/true-record-system) — Multi-source verification engine with 0-100 confidence, permanent archive, satellite imagery
+- [Honest AI Responses](mem://features/honest-ai-responses) — Every empty state explains why, legal flags with calm blue borders, attorney referrals, editorial notes
