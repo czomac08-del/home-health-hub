@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search } from "lucide-react";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, ExternalLink, Upload, FileText, Lightbulb, MessageSquare, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRecoverySteps, RECORD_TYPES, SOURCE_TYPES, type SystemRecordType } from "@/data/recordRecoveryData";
 import { Progress } from "@/components/ui/progress";
+import CivicConsentCheckbox from "@/components/CivicConsentCheckbox";
+import AiExtractionResults from "@/components/AiExtractionResults";
+import RecordsRequestCard from "@/components/RecordsRequestCard";
+import CommunityBanner from "@/components/CommunityBanner";
 
 interface Props {
   systemType: SystemRecordType;
