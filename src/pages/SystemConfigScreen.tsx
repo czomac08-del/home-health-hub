@@ -16,6 +16,7 @@ import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/c
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
+import SaveButtonMessage from "@/components/SaveButtonMessage";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -639,6 +640,7 @@ const SystemConfigScreen = () => {
             <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
               <Save className="h-5 w-5" /> Save to Passport
             </button>
+            <SaveButtonMessage />
             <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
               Cancel
             </button>
