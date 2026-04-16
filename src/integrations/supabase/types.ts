@@ -1512,6 +1512,50 @@ export type Database = {
           },
         ]
       }
+      refresh_logs: {
+        Row: {
+          created_at: string
+          id: string
+          property_id: string
+          refresh_scope: string
+          results_summary: Json
+          sources_queried: string[]
+          triggered_by: string
+          updates_found: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          property_id: string
+          refresh_scope?: string
+          results_summary?: Json
+          sources_queried?: string[]
+          triggered_by?: string
+          updates_found?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          property_id?: string
+          refresh_scope?: string
+          results_summary?: Json
+          sources_queried?: string[]
+          triggered_by?: string
+          updates_found?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refresh_logs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       state_disclosure_requirements: {
         Row: {
           applies_to_sales: boolean
