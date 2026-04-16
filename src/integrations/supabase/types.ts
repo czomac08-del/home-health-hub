@@ -875,6 +875,80 @@ export type Database = {
           },
         ]
       }
+      permanent_archive: {
+        Row: {
+          ai_analysis: string | null
+          confidence_score: number
+          created_at: string
+          description: string | null
+          documents: Json | null
+          evidence_sources: Json | null
+          existed_from: string | null
+          existed_until: string | null
+          homeowner_notes: string | null
+          id: string
+          property_id: string
+          record_type: string
+          removal_reason: string | null
+          satellite_images: Json | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          documents?: Json | null
+          evidence_sources?: Json | null
+          existed_from?: string | null
+          existed_until?: string | null
+          homeowner_notes?: string | null
+          id?: string
+          property_id: string
+          record_type: string
+          removal_reason?: string | null
+          satellite_images?: Json | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          documents?: Json | null
+          evidence_sources?: Json | null
+          existed_from?: string | null
+          existed_until?: string | null
+          homeowner_notes?: string | null
+          id?: string
+          property_id?: string
+          record_type?: string
+          removal_reason?: string | null
+          satellite_images?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permanent_archive_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1543,6 +1617,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      verification_events: {
+        Row: {
+          ai_analysis: string | null
+          confidence_after: number | null
+          confidence_before: number | null
+          created_at: string
+          evidence_notes: string | null
+          evidence_url: string | null
+          field_path: string
+          field_value: string | null
+          id: string
+          property_id: string
+          result: string
+          source_name: string | null
+          source_priority: number
+          source_type: string
+          source_weight: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          confidence_after?: number | null
+          confidence_before?: number | null
+          created_at?: string
+          evidence_notes?: string | null
+          evidence_url?: string | null
+          field_path: string
+          field_value?: string | null
+          id?: string
+          property_id: string
+          result?: string
+          source_name?: string | null
+          source_priority?: number
+          source_type?: string
+          source_weight?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          confidence_after?: number | null
+          confidence_before?: number | null
+          created_at?: string
+          evidence_notes?: string | null
+          evidence_url?: string | null
+          field_path?: string
+          field_value?: string | null
+          id?: string
+          property_id?: string
+          result?: string
+          source_name?: string | null
+          source_priority?: number
+          source_type?: string
+          source_weight?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       warranties: {
         Row: {
