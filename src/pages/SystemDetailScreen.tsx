@@ -169,6 +169,11 @@ const SystemDetailScreen = () => {
         </div>
       </div>
 
+      {/* Records Status & Recovery */}
+      <div className="mb-6">
+        <RecordsStatusSelector systemName={system.name} />
+      </div>
+
       {/* Warranty Section */}
       <div className="mb-6">
         <WarrantySection
