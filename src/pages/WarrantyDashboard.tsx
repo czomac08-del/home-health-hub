@@ -4,6 +4,7 @@ import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Clock } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
+import RefreshButton from "@/components/RefreshButton";
 
 interface WarrantyRow {
   id: string;
@@ -85,7 +86,8 @@ const WarrantyDashboard = () => {
       <h1 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
         <Shield className="h-6 w-6 text-primary" /> My Warranties
       </h1>
-      <p className="text-sm text-muted-foreground mb-6">All warranties across your home in one place.</p>
+      <p className="text-sm text-muted-foreground mb-4">All warranties across your home in one place.</p>
+      <RefreshButton scope="warranties" variant="compact" className="mb-6" />
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3 mb-6">

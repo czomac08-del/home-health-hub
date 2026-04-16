@@ -11,6 +11,7 @@ import PrivacyBadge from "@/components/PrivacyBadge";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
 import HomeStoryTimeline from "@/components/HomeStoryTimeline";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
+import RefreshButton from "@/components/RefreshButton";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -138,6 +139,9 @@ const DashboardScreen = () => {
             </div>
           </div>
         </div>
+
+        {/* Check for New Records */}
+        <RefreshButton scope="full" variant="card" className="mb-6" />
 
         {/* Certification Card */}
         <CertificationCard
