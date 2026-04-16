@@ -137,6 +137,7 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   source: string;
                   ai_verified: boolean;
                   notes: string;
+                  ai_extracted_data: Record<string, string | number | boolean | null>;
                 }> = [];
 
                 if (rcData.yearBuilt) {
@@ -148,28 +149,80 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                     source: "rentcast",
                     ai_verified: true,
                     notes: `Year built: ${rcData.yearBuilt}, Type: ${rcData.propertyType || "Unknown"}`,
+                    ai_extracted_data: {
+                      yearBuilt: rcData.yearBuilt,
+                      propertyType: rcData.propertyType,
+                      bedrooms: rcData.bedrooms,
+                      bathrooms: rcData.bathrooms,
+                      squareFootage: rcData.squareFootage,
+                      lotSize: rcData.lotSize,
+                      estimatedValue: rcData.estimatedValue,
+                    },
                   });
                 }
-                if (rcData.squareFootage) {
-                  recordInserts.push({
+
+                // Add sale history as timeline events
+                const timelineInserts: Array<{
+                  property_id: string;
+                  user_id: string;
+                  event_date: string;
+                  title: string;
+                  description: string;
+                  category: string;
+                  source: string;
+                  source_type: string;
+                  confidence: string;
+                  is_estimated: boolean;
+                }> = [];
+
+                if (rcData.lastSaleDate && rcData.lastSalePrice) {
+                  timelineInserts.push({
                     property_id: activeProperty.id,
-                    uploaded_by_user_id: user.id,
-                    system_type: "general",
-                    record_type: "property_details",
-                    source: "rentcast",
-                    ai_verified: true,
-                    notes: `Square footage: ${rcData.squareFootage}, Bedrooms: ${rcData.bedrooms || "—"}, Bathrooms: ${rcData.bathrooms || "—"}`,
+                    user_id: user.id,
+                    event_date: rcData.lastSaleDate,
+                    title: `Sold for $${Number(rcData.lastSalePrice).toLocaleString()}`,
+                    description: `Last recorded sale on ${rcData.lastSaleDate}. Price: $${Number(rcData.lastSalePrice).toLocaleString()}.`,
+                    category: "property_history",
+                    source: "RentCast",
+                    source_type: "public_records",
+                    confidence: "high",
+                    is_estimated: false,
                   });
                 }
-                if (rcData.lotSize) {
-                  recordInserts.push({
+
+                if (Array.isArray(rcData.priorSales)) {
+                  for (const sale of rcData.priorSales) {
+                    if (sale.date || sale.saleDate) {
+                      const saleDate = sale.date || sale.saleDate;
+                      const salePrice = sale.price || sale.salePrice || 0;
+                      timelineInserts.push({
+                        property_id: activeProperty.id,
+                        user_id: user.id,
+                        event_date: saleDate,
+                        title: salePrice ? `Sold for $${Number(salePrice).toLocaleString()}` : "Property sale recorded",
+                        description: `Recorded sale on ${saleDate}${salePrice ? `. Price: $${Number(salePrice).toLocaleString()}` : ""}.`,
+                        category: "property_history",
+                        source: "RentCast",
+                        source_type: "public_records",
+                        confidence: "high",
+                        is_estimated: false,
+                      });
+                    }
+                  }
+                }
+
+                if (rcData.yearBuilt) {
+                  timelineInserts.push({
                     property_id: activeProperty.id,
-                    uploaded_by_user_id: user.id,
-                    system_type: "general",
-                    record_type: "property_details",
-                    source: "rentcast",
-                    ai_verified: true,
-                    notes: `Lot size: ${rcData.lotSize} sq ft`,
+                    user_id: user.id,
+                    event_date: String(rcData.yearBuilt),
+                    title: "Home constructed",
+                    description: `Original construction — ${rcData.propertyType || "Residential"}, ${rcData.squareFootage ? rcData.squareFootage + " sq ft" : ""}${rcData.lotSize ? `, lot: ${(rcData.lotSize / 43560).toFixed(2)} acres` : ""}.`,
+                    category: "structure_construction",
+                    source: "RentCast",
+                    source_type: "public_records",
+                    confidence: "high",
+                    is_estimated: false,
                   });
                 }
 
@@ -177,10 +230,14 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   await supabase.from("property_records").insert(recordInserts);
                 }
 
+                if (timelineInserts.length > 0) {
+                  await supabase.from("property_timeline_events").insert(timelineInserts);
+                }
+
                 return {
                   source,
                   status: "new_data",
-                  summary: `Found: ${rcData.yearBuilt ? `Built ${rcData.yearBuilt}` : ""}${rcData.squareFootage ? `, ${rcData.squareFootage} sq ft` : ""}${rcData.bedrooms ? `, ${rcData.bedrooms} bed` : ""}`,
+                  summary: `Found: ${rcData.yearBuilt ? `Built ${rcData.yearBuilt}` : ""}${rcData.squareFootage ? `, ${rcData.squareFootage} sq ft` : ""}${rcData.bedrooms ? `, ${rcData.bedrooms} bed` : ""}${rcData.lastSalePrice ? `, last sale $${Number(rcData.lastSalePrice).toLocaleString()}` : ""}`,
                   data: rcData,
                 };
               }

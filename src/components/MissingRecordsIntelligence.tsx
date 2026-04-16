@@ -57,6 +57,23 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
     });
   }, [propertyId, user]);
 
+  // Categories where the relevant date is recent transactions, not build year
+  // For these, only show pre-digitization warning if digitization year > ~2000
+  const TRANSACTION_CATEGORIES = ["property_history", "land_title", "insurance_claims"];
+
+  const predatesDigital = (rt: MissingRecord) => {
+    if (!builtYear || !rt.typical_digitization_year) return false;
+    // For transaction-based categories (sales, appraisals, listings),
+    // don't flag as pre-digital if records from the last 20+ years exist
+    if (TRANSACTION_CATEGORIES.includes(rt.category)) {
+      // Only flag if digitization year is very recent (post-2010) — meaning
+      // even modern records may not exist digitally for this county
+      return rt.typical_digitization_year > 2010;
+    }
+    // For construction/permit records, the build year is the relevant date
+    return builtYear < rt.typical_digitization_year;
+  };
+
   // Group by category
   const categories = allRecordTypes.reduce<Record<string, MissingRecord[]>>((acc, rt) => {
     if (!acc[rt.category]) acc[rt.category] = [];
@@ -67,22 +84,15 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
   // Calculate completeness per category
   const categoryStats = Object.entries(categories).map(([cat, types]) => {
     const total = types.length;
-    // For now, count based on what we have in property_records
-    const found = 0; // We'd match against actual records in production
-    const missing = types.filter((t) => {
-      if (!builtYear || !t.typical_digitization_year) return false;
-      return builtYear < t.typical_digitization_year;
-    });
+    const found = 0;
+    const missing = types.filter(predatesDigital);
     const safetyCritical = types.filter((t) => t.safety_critical);
     return { category: cat, total, found, missing, safetyCritical, types };
   });
 
   const totalTypes = allRecordTypes.length;
   const totalGaps = categoryStats.reduce((sum, c) => sum + c.missing.length, 0);
-  const totalSafety = categoryStats.reduce((sum, c) => sum + c.safetyCritical.filter(s => {
-    if (!builtYear || !s.typical_digitization_year) return false;
-    return builtYear < s.typical_digitization_year;
-  }).length, 0);
+  const totalSafety = categoryStats.reduce((sum, c) => sum + c.safetyCritical.filter(predatesDigital).length, 0);
 
   if (loading) {
     return (
@@ -141,7 +151,7 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
                         {gapCount} gap{gapCount !== 1 ? "s" : ""}
                       </span>
                     )}
-                    {safetyCritical.some(s => builtYear && s.typical_digitization_year && builtYear < s.typical_digitization_year) && (
+                    {safetyCritical.some(predatesDigital) && (
                       <AlertTriangle className="h-3 w-3 text-destructive" />
                     )}
                   </div>
@@ -166,7 +176,7 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
               {isExpanded && (
                 <div className="ml-4 mb-2 space-y-1.5 py-2">
                   {types.map((rt) => {
-                    const isGap = builtYear && rt.typical_digitization_year && builtYear < rt.typical_digitization_year;
+                    const isGap = predatesDigital(rt);
                     return (
                       <div
                         key={rt.subcategory}
@@ -191,9 +201,14 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county }: Props) =>
                           )}
                           {isGap && builtYear && rt.typical_digitization_year && (
                             <p className="text-muted-foreground/70 mt-0.5">
-                              Your home ({builtYear}) predates digital records ({rt.typical_digitization_year}+).
+                              {TRANSACTION_CATEGORIES.includes(rt.category)
+                                ? `Digital records for this category may not be available in your county yet.`
+                                : `Your home (${builtYear}) predates digital records (${rt.typical_digitization_year}+).`}
                               {county && ` Request sent to ${county} to search paper archives.`}
                             </p>
+                          )}
+                          {!isGap && !rt.typical_digitization_year && (
+                            <p className="text-muted-foreground/70 mt-0.5">Not on record</p>
                           )}
                         </div>
                       </div>
