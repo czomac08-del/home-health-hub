@@ -62,3 +62,4 @@
 - [Honest AI Responses](mem://features/honest-ai-responses) — Every empty state explains why, legal flags with calm blue borders, attorney referrals, editorial notes
 - [Legal Compliance System](mem://features/legal-compliance-system) — ToS, Privacy Policy, 4-step legal onboarding, state disclosure engine, legal footer
 - [Engagement & Community](mem://features/engagement-and-community) — Positive framing, Home Story timeline, quick check-ins, community impact, data permanence
+- [Data Refresh System](mem://features/data-refresh-system) — Platform-wide "Check for New Records" with FEMA/NOAA/EPA/RentCast, 24h cooldown, refresh_logs audit trail
