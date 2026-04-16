@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { getDigitizationCutoff, STATE_NAMES, RECORD_TYPE_TO_DIGITIZATION_FIELD } from "@/data/stateData";
 
 interface MissingRecord {
   subcategory: string;
