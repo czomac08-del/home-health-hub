@@ -113,7 +113,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Listen for property data updates from refresh hook
+    const handlePropertyUpdate = () => {
+      const currentUser = user;
+      if (currentUser) void fetchProperties(currentUser.id);
+    };
+    window.addEventListener("property-data-updated", handlePropertyUpdate);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("property-data-updated", handlePropertyUpdate);
+    };
   }, []);
 
   const signOut = async () => {
