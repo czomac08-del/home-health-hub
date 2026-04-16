@@ -3,18 +3,20 @@ import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
 import CertificationCard from "@/components/CertificationCard";
-import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench } from "lucide-react";
+import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench, ClipboardList } from "lucide-react";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
 
+// assessed = true means user has entered data for this system
+// When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
 const defaultSystems = [
-  { id: "hvac", name: "HVAC", health: 92, status: "Excellent", flagged: false },
-  { id: "plumbing", name: "Plumbing", health: 78, status: "Good", flagged: false },
-  { id: "electrical", name: "Electrical", health: 65, status: "Fair — Needs Attention", flagged: true },
-  { id: "roof", name: "Roof", health: 55, status: "Poor — Action Required", flagged: true },
+  { id: "hvac", name: "HVAC", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "plumbing", name: "Plumbing", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "electrical", name: "Electrical", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "roof", name: "Roof", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
 ];
 
 const DashboardScreen = () => {
@@ -23,12 +25,14 @@ const DashboardScreen = () => {
   const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
 
   const systems = defaultSystems;
-  const needsAttention = systems.filter((s) => s.health < 70);
-  const healthySystems = systems.filter((s) => s.health >= 70);
-  const currentHealthScore = activeProperty?.health_score || 87;
-  // Profile completeness: simple calculation based on configured systems
-  const configuredCount = systems.filter((s) => !s.flagged).length;
-  const profileCompleteness = Math.round((configuredCount / systems.length) * 100);
+  // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
+  const needsAttention = systems.filter((s) => s.assessed && s.health !== null && s.health < 70);
+  const healthySystems = systems.filter((s) => s.assessed && s.health !== null && s.health >= 70);
+  const notDocumented = systems.filter((s) => !s.assessed || s.health === null);
+  const currentHealthScore = activeProperty?.health_score || null;
+  // Profile completeness based on how many systems are documented
+  const assessedCount = systems.filter((s) => s.assessed).length;
+  const profileCompleteness = Math.round((assessedCount / systems.length) * 100);
 
   const userName = profile?.full_name?.split(" ")[0] || "there";
   const address = activeProperty?.address || "No property added";
@@ -85,7 +89,7 @@ const DashboardScreen = () => {
           {/* Health Score */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
             <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Your Home IQ Score</h2>
-            <HealthRing percentage={activeProperty?.health_score || 87} size={180} strokeWidth={12} label="Home IQ" />
+            <HealthRing percentage={assessedCount > 0 ? (activeProperty?.health_score || 78) : null} size={180} strokeWidth={12} label={assessedCount > 0 ? "Home IQ" : "Add system info to get your score"} />
           </div>
 
           {/* This Week Summary */}
@@ -102,54 +106,83 @@ const DashboardScreen = () => {
             </div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
             <div className="space-y-2">
-              {[
-                { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-orange", action: "Set Reminder" },
-                { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-warning", action: "Find a Pro" },
-                { icon: Wrench, text: "Well water test is overdue", color: "text-danger", action: "Schedule Test" },
-              ].map((tip) => (
-                <div key={tip.text} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <tip.icon className={`h-3.5 w-3.5 ${tip.color} shrink-0`} />
-                    <span className="text-xs text-foreground truncate">{tip.text}</span>
+              {assessedCount > 0 ? (
+                [
+                  { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-orange", action: "Set Reminder" },
+                  { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-warning", action: "Find a Pro" },
+                  { icon: Wrench, text: "Well water test is overdue", color: "text-danger", action: "Schedule Test" },
+                ].map((tip) => (
+                  <div key={tip.text} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <tip.icon className={`h-3.5 w-3.5 ${tip.color} shrink-0`} />
+                      <span className="text-xs text-foreground truncate">{tip.text}</span>
+                    </div>
+                    <button className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
+                      {tip.action} <ChevronRight className="h-2.5 w-2.5" />
+                    </button>
                   </div>
-                  <button className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
-                    {tip.action} <ChevronRight className="h-2.5 w-2.5" />
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-xs text-muted-foreground">Add details about your home systems to get personalized recommendations.</p>
+                  <button onClick={() => navigate("/systems")} className="mt-2 text-xs font-heading font-bold text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+                    Document Your Systems →
                   </button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
 
         {/* Certification Card */}
         <CertificationCard
-          healthScore={currentHealthScore}
+          healthScore={assessedCount > 0 ? (currentHealthScore || 78) : 0}
           profileCompleteness={profileCompleteness}
-          systems={systems.map((s) => ({ name: s.name, health: s.health }))}
+          systems={systems.filter(s => s.assessed).map((s) => ({ name: s.name, health: s.health || 0 }))}
         />
 
-        {/* Needs Attention */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-orange" />
-            <h3 className="text-orange font-heading font-bold text-sm uppercase tracking-wider">Needs Attention</h3>
+        {/* Needs Attention — only for assessed systems with real issues */}
+        {needsAttention.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-4 w-4 text-orange" />
+              <h3 className="text-orange font-heading font-bold text-sm uppercase tracking-wider">Needs Attention</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {needsAttention.map((sys) => (
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {needsAttention.map((sys) => (
-              <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
-            ))}
-          </div>
-        </div>
+        )}
 
-        {/* All Systems */}
-        <div className="mb-6">
-          <h3 className="text-foreground font-heading font-bold text-lg mb-4">All Systems</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {healthySystems.map((sys) => (
-              <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} onClick={() => navigate(`/system/${sys.id}`)} />
-            ))}
+        {/* All Systems — assessed and healthy */}
+        {healthySystems.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-foreground font-heading font-bold text-lg mb-4">All Systems</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {healthySystems.map((sys) => (
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} onClick={() => navigate(`/system/${sys.id}`)} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Not Yet Documented — systems with no user data */}
+        {notDocumented.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-muted-foreground font-heading font-bold text-sm uppercase tracking-wider">Not Yet Documented</h3>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">Tell us about these systems to get accurate health scores and maintenance recommendations.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {notDocumented.map((sys) => (
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={null} status="Not Assessed Yet" flagged={false} assessed={false} onClick={() => navigate(`/system/${sys.id}`)} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Utility Contacts */}
         <div className="lg:max-w-xl">
