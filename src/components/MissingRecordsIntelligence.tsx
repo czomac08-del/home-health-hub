@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDigitizationCutoff, STATE_NAMES, RECORD_TYPE_TO_DIGITIZATION_FIELD } from "@/data/stateData";
+import { getDigitizationCutoff, STATE_NAMES } from "@/data/stateData";
 
 interface MissingRecord {
   subcategory: string;
@@ -210,12 +210,12 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, state }: Pr
                           {isGap && rt.digitization_notes && (
                             <p className="text-muted-foreground mt-0.5">{rt.digitization_notes}</p>
                           )}
-                          {isGap && builtYear && rt.typical_digitization_year && (
+                          {isGap && builtYear && (
                             <p className="text-muted-foreground/70 mt-0.5">
                               {TRANSACTION_CATEGORIES.includes(rt.category)
                                 ? `Digital records for this category may not be available in your county yet.`
-                                : `Your home (${builtYear}) predates digital records (${rt.typical_digitization_year}+).`}
-                              {county && ` Request sent to ${county} to search paper archives.`}
+                                : `${stateName || "Your state"} ${rt.subcategory.toLowerCase()} records weren't digitized until ${getCutoffYear(rt) || "unknown"}. Your home was built in ${builtYear}.`}
+                              {county && ` Request sent to ${county} County to search paper archives.`}
                             </p>
                           )}
                           {!isGap && !rt.typical_digitization_year && (
