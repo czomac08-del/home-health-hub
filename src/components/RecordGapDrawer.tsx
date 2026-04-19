@@ -501,6 +501,62 @@ const RecordGapDrawer = ({
             </section>
           )}
 
+          {tab === "research" && (
+            <section className="space-y-3">
+              <BackLink onClick={() => setTab("overview")} />
+              <div className="flex items-center gap-2 -mt-1">
+                <Sparkles className="h-4 w-4 text-teal-400" />
+                <h3 className="text-sm font-bold text-foreground">AI Research: {record.subcategory}</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Researching public sources for {county ? `${county} County, ` : ""}{stateName}{yearBuilt ? ` (built ${yearBuilt})` : ""}.
+              </p>
+
+              <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-3 max-h-[420px] overflow-y-auto">
+                {chatMsgs.length === 0 && !chatLoading && (
+                  <p className="text-xs text-muted-foreground italic">Starting research…</p>
+                )}
+                {chatMsgs.map((m, i) => (
+                  <div key={i} className={`text-xs ${m.role === "user" ? "text-right" : ""}`}>
+                    <div className={`inline-block max-w-[92%] text-left rounded-lg px-3 py-2 ${
+                      m.role === "user" ? "bg-primary/15 text-foreground" : "bg-background border border-border text-foreground/90"
+                    }`}>
+                      {m.role === "assistant" ? (
+                        <div className="prose prose-xs prose-invert max-w-none [&_*]:text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h3]:font-semibold [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_strong]:text-foreground">
+                          <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <span>{m.content}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && chatMsgs[chatMsgs.length - 1]?.content === "" && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Researching…
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                  placeholder="Ask a follow-up… (e.g., 'is there a state-level backup?')"
+                  disabled={chatLoading}
+                  className="text-xs"
+                />
+                <Button onClick={sendChatMessage} disabled={chatLoading || !chatInput.trim()} size="sm">
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                AI guidance based on your property context. Always verify with the official county/state agency.
+              </p>
+            </section>
+          )}
+
           {/* Status footer */}
           <div className="border-t border-border pt-4 mt-4 flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Current status</span>
