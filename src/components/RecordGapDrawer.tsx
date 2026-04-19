@@ -266,6 +266,7 @@ const RecordGapDrawer = ({
     address: activeProperty?.address,
     county,
     state: stateAbbr,
+    country: "US",
     yearBuilt,
     agency: agency
       ? { name: agency.name, email: agency.email, phone: agency.phone, address: agency.address, portal: agency.portal }
