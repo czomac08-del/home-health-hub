@@ -2,6 +2,18 @@ import { useNavigate } from "react-router-dom";
 import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart, Database, MapPin, Globe, DollarSign, AlertTriangle, FileWarning, Award, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import SEO from "@/components/SEO";
+
+const landingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ComingHomeIQ",
+  "description": "The complete property intelligence platform for homeowners, realtors, inspectors, and investors.",
+  "url": "https://cominghomeiq.com",
+  "applicationCategory": "HomeApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+};
 
 const tiers = [
   { name: "Free", price: "$0", features: ["1 property", "Basic health score", "DIY guides", "System tracking"], cta: "Get Started Free" },
