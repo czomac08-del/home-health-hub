@@ -11,6 +11,7 @@ import { dismissAllDemoData } from "@/hooks/useDemoData";
 import CivicDashboard from "@/components/CivicDashboard";
 import DataPermanenceBanner from "@/components/DataPermanenceBanner";
 import CommunityImpactSection from "@/components/CommunityImpactSection";
+import DevResetButton from "@/components/DevResetButton";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -258,6 +259,11 @@ const ProfileScreen = () => {
       >
         <MessageSquare className="h-4 w-4" /> Send Feedback
       </button>
+
+      {/* Dev Reset */}
+      <div className="mt-2">
+        <DevResetButton />
+      </div>
 
       {/* Sign Out */}
       <button
