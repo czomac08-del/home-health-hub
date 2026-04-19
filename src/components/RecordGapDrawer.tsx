@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Upload, Mail, PencilLine, XCircle, Copy, CheckCircle2, Loader2, ShieldAlert, Building2 } from "lucide-react";
+import { AlertTriangle, Upload, Mail, PencilLine, XCircle, Copy, CheckCircle2, Loader2, ShieldAlert, Building2, Sparkles, Send } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -35,7 +36,9 @@ interface Props {
   onStatusChange: (subcategory: string, status: GapStatus) => void;
 }
 
-type Tab = "overview" | "upload" | "request" | "manual" | "dismiss";
+type Tab = "overview" | "upload" | "request" | "manual" | "dismiss" | "research";
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
 
 const STATUS_LABELS: Record<GapStatus, { label: string; tone: string }> = {
   not_found: { label: "Not Found", tone: "bg-muted text-muted-foreground" },
