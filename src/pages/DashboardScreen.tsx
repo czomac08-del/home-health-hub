@@ -13,6 +13,7 @@ import HomeStoryTimeline from "@/components/HomeStoryTimeline";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
 import RefreshButton from "@/components/RefreshButton";
 import RefreshAllButton from "@/components/RefreshAllButton";
+import DroughtAlertBanner from "@/components/DroughtAlertBanner";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -92,6 +93,9 @@ const DashboardScreen = () => {
 
       {/* Main content */}
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
+        <div className="mb-4">
+          <DroughtAlertBanner />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Health Score */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
