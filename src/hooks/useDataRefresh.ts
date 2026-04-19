@@ -133,8 +133,10 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         console.warn("Geocoding failed, using address parsing fallback:", e);
       }
 
-      // Step 2: Run all source queries in parallel
-      const promises = sources.map(async (source): Promise<SourceResult> => {
+      // Step 2: Run RentCast FIRST so its geocode fallback can backfill
+      // state/county/FIPS/coords for FEMA/NOAA/EPA when RentCast has no
+      // coverage for this rural address. Then run the rest in parallel.
+      const runSource = async (source: string): Promise<SourceResult> => {
         try {
           switch (source) {
             case "RentCast": {
@@ -273,7 +275,26 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   data: rcData,
                 };
                }
-              // RentCast returned no data — graceful degradation
+              // RentCast returned no data — use geocode fallback if available
+              if (rcData?.fallback) {
+                const fb = rcData.fallback;
+                // Backfill geo state/county/fips/coords from fallback so other
+                // sources (FEMA/NOAA/EPA) can run for this rural address.
+                if (fb.state && !geoState) geoState = fb.state;
+                if (fb.county && !geoCounty) geoCounty = fb.county;
+                if (fb.countyFips && !geoCountyFips) geoCountyFips = fb.countyFips;
+                if (fb.zipCode && !geoZip) geoZip = fb.zipCode;
+                if (fb.coordinates) {
+                  if (!geoLat) geoLat = String(fb.coordinates.lat);
+                  if (!geoLng) geoLng = String(fb.coordinates.lng);
+                }
+                return {
+                  source,
+                  status: "no_changes",
+                  summary: fb.message,
+                  data: fb,
+                };
+              }
               return {
                 source,
                 status: "no_changes",
@@ -381,10 +402,18 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         } catch {
           return { source, status: "unavailable", summary: "Could not reach this data source" };
         }
-      });
+      };
 
-      const sourceResults = await Promise.all(promises);
-      results.push(...sourceResults);
+      // Run RentCast first so its fallback can backfill geo data
+      if (sources.includes("RentCast")) {
+        results.push(await runSource("RentCast"));
+      }
+      // Run remaining sources in parallel
+      const remaining = sources.filter((s) => s !== "RentCast");
+      if (remaining.length > 0) {
+        const rest = await Promise.all(remaining.map(runSource));
+        results.push(...rest);
+      }
 
       const updatesFound = results.filter((r) => r.status === "new_data").length;
       const now = new Date().toISOString();
@@ -400,8 +429,8 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         triggered_by: "manual",
       });
 
-      // Trigger property refresh in AuthContext so UI updates immediately
-      if (results.some((r) => r.source === "RentCast" && r.status === "new_data")) {
+      // Update UI whenever ANY source returned data (RentCast OR fallback)
+      if (results.some((r) => r.status === "new_data" || r.data)) {
         window.dispatchEvent(new CustomEvent("property-data-updated"));
       }
 
