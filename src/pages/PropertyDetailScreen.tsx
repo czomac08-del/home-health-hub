@@ -114,7 +114,7 @@ const PropertyDetailScreen = () => {
 
       {/* Missing Records Intelligence */}
       <div className="mb-6">
-        <MissingRecordsIntelligence propertyId={propertyId} yearBuilt={yearBuilt || undefined} county="" state={propertyState} />
+        <MissingRecordsIntelligence propertyId={propertyId} yearBuilt={yearBuilt || undefined} county={undefined} state={propertyState} />
       </div>
 
       {/* Legal Awareness Flags */}
