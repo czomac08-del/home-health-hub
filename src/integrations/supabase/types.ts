@@ -1080,6 +1080,48 @@ export type Database = {
           },
         ]
       }
+      professional_license_boards: {
+        Row: {
+          board_name: string
+          board_phone: string | null
+          board_url: string | null
+          country: string
+          created_at: string
+          dissolved_licensee_process: string | null
+          id: string
+          notes: string | null
+          profession_type: string
+          retention_years_required: number | null
+          state: string | null
+        }
+        Insert: {
+          board_name: string
+          board_phone?: string | null
+          board_url?: string | null
+          country?: string
+          created_at?: string
+          dissolved_licensee_process?: string | null
+          id?: string
+          notes?: string | null
+          profession_type: string
+          retention_years_required?: number | null
+          state?: string | null
+        }
+        Update: {
+          board_name?: string
+          board_phone?: string | null
+          board_url?: string | null
+          country?: string
+          created_at?: string
+          dissolved_licensee_process?: string | null
+          id?: string
+          notes?: string | null
+          profession_type?: string
+          retention_years_required?: number | null
+          state?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1559,34 +1601,73 @@ export type Database = {
       state_disclosure_requirements: {
         Row: {
           applies_to_sales: boolean
+          country: string
           created_at: string
+          has_online_portal: boolean | null
           id: string
           is_federal: boolean
+          jurisdiction_type: string
           legal_citation: string | null
+          legal_escalation_path: Json | null
+          notes: string | null
+          online_portal_url: string | null
+          oversight_body_name: string | null
+          oversight_body_url: string | null
           penalty_for_nondisclosure: string | null
+          professional_retention_rules: Json | null
+          public_records_law_citation: string | null
+          public_records_law_name: string | null
           requirement_text: string
+          response_timeframe_days: number | null
+          response_timeframe_unit: string | null
           state: string
           trigger_category: string
         }
         Insert: {
           applies_to_sales?: boolean
+          country?: string
           created_at?: string
+          has_online_portal?: boolean | null
           id?: string
           is_federal?: boolean
+          jurisdiction_type?: string
           legal_citation?: string | null
+          legal_escalation_path?: Json | null
+          notes?: string | null
+          online_portal_url?: string | null
+          oversight_body_name?: string | null
+          oversight_body_url?: string | null
           penalty_for_nondisclosure?: string | null
+          professional_retention_rules?: Json | null
+          public_records_law_citation?: string | null
+          public_records_law_name?: string | null
           requirement_text: string
+          response_timeframe_days?: number | null
+          response_timeframe_unit?: string | null
           state: string
           trigger_category: string
         }
         Update: {
           applies_to_sales?: boolean
+          country?: string
           created_at?: string
+          has_online_portal?: boolean | null
           id?: string
           is_federal?: boolean
+          jurisdiction_type?: string
           legal_citation?: string | null
+          legal_escalation_path?: Json | null
+          notes?: string | null
+          online_portal_url?: string | null
+          oversight_body_name?: string | null
+          oversight_body_url?: string | null
           penalty_for_nondisclosure?: string | null
+          professional_retention_rules?: Json | null
+          public_records_law_citation?: string | null
+          public_records_law_name?: string | null
           requirement_text?: string
+          response_timeframe_days?: number | null
+          response_timeframe_unit?: string | null
           state?: string
           trigger_category?: string
         }
