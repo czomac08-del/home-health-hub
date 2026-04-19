@@ -1,8 +1,15 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const PrivacyPolicyPage = () => (
   <div className="min-h-screen bg-background">
+    <SEO
+      title="Privacy Policy — ComingHomeIQ"
+      description="How ComingHomeIQ collects, uses, and protects your personal information and property data. Read our full privacy policy including CCPA rights and data retention practices."
+      path="/privacy"
+      type="article"
+    />
     <div className="max-w-3xl mx-auto px-6 py-12">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8">
         <ArrowLeft className="h-4 w-4" /> Back

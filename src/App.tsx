@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import WelcomeScreen from "./pages/WelcomeScreen";
 import OnboardingWizard from "./pages/OnboardingWizard";
@@ -187,9 +188,10 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
         <ProfileSwitcherProvider>
           <RoleProvider>
             <Toaster />
@@ -198,10 +200,11 @@ const App = () => (
               <AppContent />
             </BrowserRouter>
           </RoleProvider>
-        </ProfileSwitcherProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </ProfileSwitcherProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
