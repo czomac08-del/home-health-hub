@@ -3,6 +3,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+
+interface FallbackData {
+  source: "geocode_fallback";
+  message: string;
+  state?: string | null;
+  county?: string | null;
+  countyFips?: string | null;
+  zipCode?: string | null;
+  coordinates?: { lat: number; lng: number } | null;
+  formattedAddress?: string | null;
+}
+
+async function getGeocodeFallback(address: string): Promise<FallbackData | null> {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/functions/v1/geocode?address=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      }
+    );
+    if (!resp.ok) return null;
+    const geo = await resp.json();
+    const match = geo?.matches?.[0];
+    if (!match && !geo?.state) return null;
+
+    return {
+      source: "geocode_fallback",
+      message:
+        "Limited RentCast coverage for this area — showing verified public data from other sources.",
+      state: geo.state || match?.state || null,
+      county: geo.county || match?.county || null,
+      countyFips: geo.countyFips || match?.countyFips || null,
+      zipCode: geo.zipCode || match?.zipCode || null,
+      coordinates: match?.coordinates
+        ? { lat: match.coordinates.y, lng: match.coordinates.x }
+        : null,
+      formattedAddress: match?.matchedAddress || geo.matchedAddress || null,
+    };
+  } catch (err) {
+    console.error("Geocode fallback failed:", err);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -21,9 +70,11 @@ Deno.serve(async (req) => {
 
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
     if (!apiKey) {
+      console.warn("RENTCAST_API_KEY missing — going straight to geocode fallback");
+      const fallback = await getGeocodeFallback(address);
       return new Response(
-        JSON.stringify({ error: "RentCast API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ found: false, fallback, reason: "no_api_key" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -34,24 +85,32 @@ Deno.serve(async (req) => {
       headers: { "X-Api-Key": apiKey, Accept: "application/json" },
     });
 
+    // Failure path (400/404/etc) — fall through to geocode-derived fallback
     if (!resp.ok) {
       const errText = await resp.text();
-      console.error("RentCast API error:", resp.status, errText);
+      console.error("RentCast API error:", resp.status, errText, "— falling back to geocoder");
+      const fallback = await getGeocodeFallback(address);
       return new Response(
-        JSON.stringify({ error: "RentCast API request failed", status: resp.status }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          found: false,
+          fallback,
+          reason: "rentcast_error",
+          rentcastStatus: resp.status,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await resp.json();
     console.log("RentCast raw response:", JSON.stringify(data));
 
-    // RentCast returns an array; take first result
     const property = Array.isArray(data) ? data[0] : data;
 
+    // Empty result path — also fall through to geocode fallback
     if (!property) {
+      const fallback = await getGeocodeFallback(address);
       return new Response(
-        JSON.stringify({ found: false }),
+        JSON.stringify({ found: false, fallback, reason: "no_results" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -66,11 +125,9 @@ Deno.serve(async (req) => {
       bathrooms: property.bathrooms ?? property.bathsFull ?? null,
       estimatedValue: property.price ?? property.estimatedValue ?? null,
       formattedAddress: property.formattedAddress ?? property.addressLine1 ?? null,
-      // Sale history fields
       lastSaleDate: property.lastSaleDate ?? null,
       lastSalePrice: property.lastSalePrice ?? null,
       priorSales: property.priorSales ?? property.salesHistory ?? [],
-      // Additional details
       county: property.county ?? null,
       state: property.state ?? null,
       zipCode: property.zipCode ?? null,

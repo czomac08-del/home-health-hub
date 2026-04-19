@@ -273,7 +273,26 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   data: rcData,
                 };
                }
-              // RentCast returned no data — graceful degradation
+              // RentCast returned no data — use geocode fallback if available
+              if (rcData?.fallback) {
+                const fb = rcData.fallback;
+                // Backfill geo state/county/fips/coords from fallback so other
+                // sources (FEMA/NOAA/EPA) can run for this rural address.
+                if (fb.state && !geoState) geoState = fb.state;
+                if (fb.county && !geoCounty) geoCounty = fb.county;
+                if (fb.countyFips && !geoCountyFips) geoCountyFips = fb.countyFips;
+                if (fb.zipCode && !geoZip) geoZip = fb.zipCode;
+                if (fb.coordinates) {
+                  if (!geoLat) geoLat = String(fb.coordinates.lat);
+                  if (!geoLng) geoLng = String(fb.coordinates.lng);
+                }
+                return {
+                  source,
+                  status: "no_changes",
+                  summary: fb.message,
+                  data: fb,
+                };
+              }
               return {
                 source,
                 status: "no_changes",
