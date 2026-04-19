@@ -123,6 +123,12 @@ const RecordGapDrawer = ({
   // Dismiss form
   const [dismissReason, setDismissReason] = useState("");
 
+  // Research chat
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [researchStarted, setResearchStarted] = useState(false);
+
   const stateAbbr = (state || "").toUpperCase();
   const stateName = STATE_NAMES[stateAbbr] || stateAbbr;
 
@@ -130,6 +136,7 @@ const RecordGapDrawer = ({
     setStatus(initialStatus);
     setTab("overview");
     setMDate(""); setMRef(""); setMContractor(""); setMNotes(""); setDismissReason("");
+    setChatMsgs([]); setChatInput(""); setResearchStarted(false);
   }, [record?.subcategory, initialStatus]);
 
   // Look up county agency
