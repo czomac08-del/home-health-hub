@@ -133,8 +133,10 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         console.warn("Geocoding failed, using address parsing fallback:", e);
       }
 
-      // Step 2: Run all source queries in parallel
-      const promises = sources.map(async (source): Promise<SourceResult> => {
+      // Step 2: Run RentCast FIRST so its geocode fallback can backfill
+      // state/county/FIPS/coords for FEMA/NOAA/EPA when RentCast has no
+      // coverage for this rural address. Then run the rest in parallel.
+      const runSource = async (source: string): Promise<SourceResult> => {
         try {
           switch (source) {
             case "RentCast": {
