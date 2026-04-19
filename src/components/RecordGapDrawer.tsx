@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Upload, Mail, PencilLine, XCircle, Copy, CheckCircle2, Loader2, ShieldAlert, Building2 } from "lucide-react";
+import { AlertTriangle, Upload, Mail, PencilLine, XCircle, Copy, CheckCircle2, Loader2, ShieldAlert, Building2, Sparkles, Send } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -35,7 +36,9 @@ interface Props {
   onStatusChange: (subcategory: string, status: GapStatus) => void;
 }
 
-type Tab = "overview" | "upload" | "request" | "manual" | "dismiss";
+type Tab = "overview" | "upload" | "request" | "manual" | "dismiss" | "research";
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
 
 const STATUS_LABELS: Record<GapStatus, { label: string; tone: string }> = {
   not_found: { label: "Not Found", tone: "bg-muted text-muted-foreground" },
@@ -120,6 +123,12 @@ const RecordGapDrawer = ({
   // Dismiss form
   const [dismissReason, setDismissReason] = useState("");
 
+  // Research chat
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [researchStarted, setResearchStarted] = useState(false);
+
   const stateAbbr = (state || "").toUpperCase();
   const stateName = STATE_NAMES[stateAbbr] || stateAbbr;
 
@@ -127,6 +136,7 @@ const RecordGapDrawer = ({
     setStatus(initialStatus);
     setTab("overview");
     setMDate(""); setMRef(""); setMContractor(""); setMNotes(""); setDismissReason("");
+    setChatMsgs([]); setChatInput(""); setResearchStarted(false);
   }, [record?.subcategory, initialStatus]);
 
   // Look up county agency
@@ -248,6 +258,105 @@ const RecordGapDrawer = ({
     onOpenChange(false);
   };
 
+  const buildResearchContext = () => ({
+    recordType: record.subcategory,
+    category: record.category,
+    safetyCritical: record.safety_critical,
+    digitizationCutoffYear: record.typical_digitization_year,
+    address: activeProperty?.address,
+    county,
+    state: stateAbbr,
+    yearBuilt,
+    agency: agency
+      ? { name: agency.name, email: agency.email, phone: agency.phone, address: agency.address, portal: agency.portal }
+      : null,
+  });
+
+  const streamResearchChat = async (history: ChatMsg[]) => {
+    setChatLoading(true);
+    // Append empty assistant placeholder
+    setChatMsgs((prev) => [...prev, { role: "assistant", content: "" }]);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/record-research-chat`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: history, context: buildResearchContext() }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        if (resp.status === 429) toast({ title: "Too many requests", description: "Please wait a moment and try again.", variant: "destructive" });
+        else if (resp.status === 402) toast({ title: "AI credits exhausted", description: "Add credits in Settings → Workspace → Usage.", variant: "destructive" });
+        else toast({ title: "Research failed", description: "Could not reach AI assistant.", variant: "destructive" });
+        setChatMsgs((prev) => prev.slice(0, -1));
+        setChatLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let done = false;
+      let acc = "";
+      while (!done) {
+        const { value, done: d } = await reader.read();
+        if (d) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") { done = true; break; }
+          try {
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              acc += delta;
+              setChatMsgs((prev) => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: acc } : m));
+            }
+          } catch {
+            buf = line + "\n" + buf;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Research failed", variant: "destructive" });
+      setChatMsgs((prev) => prev.slice(0, -1));
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const startResearch = async () => {
+    setTab("research");
+    if (researchStarted) return;
+    setResearchStarted(true);
+    const initial: ChatMsg = {
+      role: "user",
+      content: `Please research the "${record.subcategory}" record for my property and follow your first-response format.`,
+    };
+    setChatMsgs([initial]);
+    await streamResearchChat([initial]);
+  };
+
+  const sendChatMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const next: ChatMsg[] = [...chatMsgs, { role: "user", content: text }];
+    setChatMsgs(next);
+    setChatInput("");
+    await streamResearchChat(next);
+  };
+
+
   const statusMeta = STATUS_LABELS[status];
 
   return (
@@ -303,7 +412,15 @@ const RecordGapDrawer = ({
                   <ActionButton icon={<PencilLine className="h-4 w-4" />} label="Add What You Know" onClick={() => setTab("manual")} />
                   <ActionButton icon={<XCircle className="h-4 w-4" />} label="Mark as Not Applicable" onClick={() => setTab("dismiss")} variant="ghost" />
                 </div>
+                <button
+                  onClick={startResearch}
+                  className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold border-2 border-teal-500/60 text-teal-400 bg-teal-500/5 hover:bg-teal-500/10 transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Ask AI to Research This
+                </button>
               </section>
+
             </>
           )}
 
@@ -381,6 +498,62 @@ const RecordGapDrawer = ({
               <Button onClick={handleDismiss} disabled={submitting} variant="destructive" className="w-full">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark as Not Applicable"}
               </Button>
+            </section>
+          )}
+
+          {tab === "research" && (
+            <section className="space-y-3">
+              <BackLink onClick={() => setTab("overview")} />
+              <div className="flex items-center gap-2 -mt-1">
+                <Sparkles className="h-4 w-4 text-teal-400" />
+                <h3 className="text-sm font-bold text-foreground">AI Research: {record.subcategory}</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Researching public sources for {county ? `${county} County, ` : ""}{stateName}{yearBuilt ? ` (built ${yearBuilt})` : ""}.
+              </p>
+
+              <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-3 max-h-[420px] overflow-y-auto">
+                {chatMsgs.length === 0 && !chatLoading && (
+                  <p className="text-xs text-muted-foreground italic">Starting research…</p>
+                )}
+                {chatMsgs.map((m, i) => (
+                  <div key={i} className={`text-xs ${m.role === "user" ? "text-right" : ""}`}>
+                    <div className={`inline-block max-w-[92%] text-left rounded-lg px-3 py-2 ${
+                      m.role === "user" ? "bg-primary/15 text-foreground" : "bg-background border border-border text-foreground/90"
+                    }`}>
+                      {m.role === "assistant" ? (
+                        <div className="prose prose-xs prose-invert max-w-none [&_*]:text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs [&_h3]:font-semibold [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_strong]:text-foreground">
+                          <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <span>{m.content}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && chatMsgs[chatMsgs.length - 1]?.content === "" && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Researching…
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                  placeholder="Ask a follow-up… (e.g., 'is there a state-level backup?')"
+                  disabled={chatLoading}
+                  className="text-xs"
+                />
+                <Button onClick={sendChatMessage} disabled={chatLoading || !chatInput.trim()} size="sm">
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                AI guidance based on your property context. Always verify with the official county/state agency.
+              </p>
             </section>
           )}
 
