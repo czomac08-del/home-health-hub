@@ -45,28 +45,36 @@ async function lookupFips(address: string): Promise<string | null> {
 async function fetchDroughtData(fips: string): Promise<DroughtResult> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const url = `https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByArea?aoi=${fips}&startdate=${formatDate(thirtyDaysAgo)}&enddate=${formatDate(now)}&statisticsType=1`;
+  // Force JSON output (default is CSV/Map for some endpoints)
+  const url = `https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByAreaPercent?aoi=${fips}&startdate=${formatDate(thirtyDaysAgo)}&enddate=${formatDate(now)}&statisticsType=1`;
 
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     return { drought_level: "None", drought_description: "No drought", raw_data: {} };
   }
 
-  const data = await res.json();
+  const text = await res.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // Upstream returned CSV/HTML — treat as no-data rather than crashing.
+    console.error("USDM non-JSON response:", text.slice(0, 200));
+    return { drought_level: "None", drought_description: "No drought", raw_data: {} };
+  }
+
   if (!Array.isArray(data) || data.length === 0) {
     return { drought_level: "None", drought_description: "No drought", raw_data: {} };
   }
 
-  // Get the most recent entry
-  const latest = data[data.length - 1];
+  const latest = data[data.length - 1] as Record<string, number>;
 
-  // Determine highest active drought level
   let level = "None";
-  if (latest.D4 > 0) level = "D4";
-  else if (latest.D3 > 0) level = "D3";
-  else if (latest.D2 > 0) level = "D2";
-  else if (latest.D1 > 0) level = "D1";
-  else if (latest.D0 > 0) level = "D0";
+  if (Number(latest.D4) > 0) level = "D4";
+  else if (Number(latest.D3) > 0) level = "D3";
+  else if (Number(latest.D2) > 0) level = "D2";
+  else if (Number(latest.D1) > 0) level = "D1";
+  else if (Number(latest.D0) > 0) level = "D0";
 
   return {
     drought_level: level,
