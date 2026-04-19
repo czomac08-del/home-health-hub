@@ -49,6 +49,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import LegalOnboardingScreen from "./pages/LegalOnboardingScreen";
 import LegalFooter from "./components/LegalFooter";
+import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 
 const queryClient = new QueryClient();
 
@@ -161,6 +162,7 @@ const AppContent = () => {
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/legal-onboarding" element={<ProtectedRoute><LegalOnboardingScreen /></ProtectedRoute>} />
+            <Route path="/home-defense" element={<ProtectedRoute><HomeDefenseHubScreen /></ProtectedRoute>} />
             <Route path="/report" element={<ScoreReportPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
