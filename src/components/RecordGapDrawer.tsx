@@ -258,6 +258,105 @@ const RecordGapDrawer = ({
     onOpenChange(false);
   };
 
+  const buildResearchContext = () => ({
+    recordType: record.subcategory,
+    category: record.category,
+    safetyCritical: record.safety_critical,
+    digitizationCutoffYear: record.typical_digitization_year,
+    address: activeProperty?.address,
+    county,
+    state: stateAbbr,
+    yearBuilt,
+    agency: agency
+      ? { name: agency.name, email: agency.email, phone: agency.phone, address: agency.address, portal: agency.portal }
+      : null,
+  });
+
+  const streamResearchChat = async (history: ChatMsg[]) => {
+    setChatLoading(true);
+    // Append empty assistant placeholder
+    setChatMsgs((prev) => [...prev, { role: "assistant", content: "" }]);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/record-research-chat`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: history, context: buildResearchContext() }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        if (resp.status === 429) toast({ title: "Too many requests", description: "Please wait a moment and try again.", variant: "destructive" });
+        else if (resp.status === 402) toast({ title: "AI credits exhausted", description: "Add credits in Settings → Workspace → Usage.", variant: "destructive" });
+        else toast({ title: "Research failed", description: "Could not reach AI assistant.", variant: "destructive" });
+        setChatMsgs((prev) => prev.slice(0, -1));
+        setChatLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let done = false;
+      let acc = "";
+      while (!done) {
+        const { value, done: d } = await reader.read();
+        if (d) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") { done = true; break; }
+          try {
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              acc += delta;
+              setChatMsgs((prev) => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: acc } : m));
+            }
+          } catch {
+            buf = line + "\n" + buf;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Research failed", variant: "destructive" });
+      setChatMsgs((prev) => prev.slice(0, -1));
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const startResearch = async () => {
+    setTab("research");
+    if (researchStarted) return;
+    setResearchStarted(true);
+    const initial: ChatMsg = {
+      role: "user",
+      content: `Please research the "${record.subcategory}" record for my property and follow your first-response format.`,
+    };
+    setChatMsgs([initial]);
+    await streamResearchChat([initial]);
+  };
+
+  const sendChatMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    const next: ChatMsg[] = [...chatMsgs, { role: "user", content: text }];
+    setChatMsgs(next);
+    setChatInput("");
+    await streamResearchChat(next);
+  };
+
+
   const statusMeta = STATUS_LABELS[status];
 
   return (
@@ -313,7 +412,15 @@ const RecordGapDrawer = ({
                   <ActionButton icon={<PencilLine className="h-4 w-4" />} label="Add What You Know" onClick={() => setTab("manual")} />
                   <ActionButton icon={<XCircle className="h-4 w-4" />} label="Mark as Not Applicable" onClick={() => setTab("dismiss")} variant="ghost" />
                 </div>
+                <button
+                  onClick={startResearch}
+                  className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold border-2 border-teal-500/60 text-teal-400 bg-teal-500/5 hover:bg-teal-500/10 transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Ask AI to Research This
+                </button>
               </section>
+
             </>
           )}
 
