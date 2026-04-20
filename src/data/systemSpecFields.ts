@@ -176,10 +176,26 @@ const applianceFields: SpecField[] = [
   { key: "purchaseStore", label: "Purchase Store", type: "text" },
 ];
 
+const chimneyFields: SpecField[] = [
+  { key: "chimneyType", label: "Chimney / Fireplace Type", type: "select", options: ["Wood-burning", "Gas", "Propane", "Oil", "Pellet stove", "Decorative / Non-functional"] },
+  { key: "numFlues", label: "Number of Flues", type: "number" },
+  { key: "linerType", label: "Liner Type", type: "select", options: ["Clay tile", "Stainless steel", "Cast-in-place", "None / Unknown"] },
+  { key: "lastInspectionDate", label: "Last Professional Inspection Date", type: "date" },
+  { key: "inspectionLevel", label: "Inspection Level (NFPA 211)", type: "select", options: ["Level I", "Level II", "Level III", "Unknown"] },
+  { key: "lastSweepingDate", label: "Last Cleaning / Sweeping Date", type: "date" },
+  { key: "fireboxCondition", label: "Firebox Condition", type: "select", options: ["Good", "Fair", "Needs Repair", "Unknown"] },
+  { key: "capPresent", label: "Chimney Cap Present", type: "select", options: ["Yes", "No", "Unknown"] },
+  { key: "crownCondition", label: "Crown Condition", type: "select", options: ["Good", "Cracked", "Missing", "Unknown"] },
+  { key: "damperWorking", label: "Damper Working", type: "select", options: ["Yes", "No", "Unknown"] },
+  { key: "estimatedAge", label: "Estimated Age (years, if known)", type: "number" },
+  { key: "knownRepairs", label: "Known Repairs (description + date)", type: "text", placeholder: "e.g. Crown sealed, 2022" },
+];
+
 // Map system display names to their spec fields
 export function getSpecFields(systemName: string): SpecField[] {
   const lower = systemName.toLowerCase();
   if (lower.includes("hvac")) return hvacFields;
+  if (lower.includes("chimney") || lower.includes("fireplace")) return chimneyFields;
   if (lower.includes("well") || lower.includes("water source")) return wellWaterFields;
   if (lower.includes("water filter")) return waterFilterFields;
   if (lower.includes("water softener")) return waterSoftenerFields;
