@@ -42,6 +42,7 @@ const coreInfrastructure: SystemItem[] = [
   { name: "Sewer and Waste", icon: <Gauge className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
   { name: "Water Heater", icon: <Flame className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
   { name: "Natural Gas / Propane", icon: <Flame className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
+  { name: "Chimney & Fireplace", icon: <Flame className="h-5 w-5 text-primary" />, documentedDetail: "Documented — review details", emptyDetail: "Not yet documented" },
   { name: "Home Insurance", icon: <Shield className="h-5 w-5 text-primary" />, route: "/insurance", documentedDetail: "Review policies & coverage", emptyDetail: "Add policy details" },
 ];
 

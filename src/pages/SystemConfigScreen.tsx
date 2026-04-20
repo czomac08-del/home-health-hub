@@ -15,6 +15,7 @@ import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } f
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
+import ChimneyIntelligence from "@/components/ChimneyIntelligence";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import SaveButtonMessage from "@/components/SaveButtonMessage";
 import RefreshButton from "@/components/RefreshButton";
@@ -487,6 +488,11 @@ const SystemConfigScreen = () => {
               onFilterSizeChange={(size) => setSpec("filterSize", size)}
               onHouseholdFactorsChange={setHvacHouseholdFactors}
             />
+          )}
+
+          {/* ── Chimney & Fireplace Intelligence ── */}
+          {(displayName.toLowerCase().includes("chimney") || displayName.toLowerCase().includes("fireplace")) && (
+            <ChimneyIntelligence specs={specs} homeYearBuilt={activeProperty?.year_built} />
           )}
 
           {/* ── Specifications (contextual fields based on type) — hidden for city water ── */}
