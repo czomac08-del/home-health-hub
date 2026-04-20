@@ -36,6 +36,7 @@ interface WizardData {
   hasPool: boolean;
   hasSecurity: boolean;
   hasSmartHome: boolean;
+  hasChimney: boolean;
   manufacturedFields: Record<string, string | boolean>;
 }
 
@@ -45,6 +46,7 @@ const defaultData: WizardData = {
   hvacType: "", fuelType: "", propaneTankOwned: true, knowsFilterLocation: true,
   hasGenerator: false, hasSolar: false, septicOrSewer: "",
   hasGarage: false, garageDoors: 1, hasPool: false, hasSecurity: false, hasSmartHome: false,
+  hasChimney: false,
   manufacturedFields: {},
 };
 
@@ -147,6 +149,7 @@ const OnboardingWizard = () => {
       if (data.hasPool) systems.push("Pool / Hot Tub");
       if (data.hasSecurity) systems.push("Security System");
       if (data.hasSmartHome) systems.push("Smart Home");
+      if (data.hasChimney) systems.push("Chimney & Fireplace");
       systems.push("Roof");
       systems.push("Water Heater");
 
@@ -372,6 +375,7 @@ const OnboardingWizard = () => {
             <ToggleRow label="Pool or hot tub?" checked={data.hasPool} onChange={v => update("hasPool", v)} />
             <ToggleRow label="Security system?" checked={data.hasSecurity} onChange={v => update("hasSecurity", v)} />
             <ToggleRow label="Smart home devices?" checked={data.hasSmartHome} onChange={v => update("hasSmartHome", v)} />
+            <ToggleRow label="Chimney or fireplace?" checked={data.hasChimney} onChange={v => update("hasChimney", v)} />
           </div>
         );
 
