@@ -3,6 +3,8 @@ import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Use
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
+import { useState } from "react";
+import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
 
 const landingJsonLd = {
   "@context": "https://schema.org",
@@ -66,6 +68,7 @@ const industryStats = [
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -186,15 +189,27 @@ const LandingPage = () => {
         <p className="text-muted-foreground text-center mb-10">One platform, five powerful experiences.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {roles.map((r) => (
-            <div key={r.key} className={`rounded-2xl border border-border bg-card p-6 ${r.accent} hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200`}>
+            <button
+              key={r.key}
+              type="button"
+              onClick={() => setSelectedRole(r.key as RoleKey)}
+              className={`text-left rounded-2xl border border-border bg-card p-6 ${r.accent} hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary`}
+            >
               <div className="h-11 w-11 rounded-xl bg-muted border border-border flex items-center justify-center mb-4">
                 <r.icon className="h-6 w-6 text-primary" />
               </div>
               <h3 className="text-lg font-heading font-bold text-foreground mb-2">{r.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{r.desc}</p>
-            </div>
+              <p className="text-xs font-heading font-bold text-primary mt-3">Learn more →</p>
+            </button>
           ))}
         </div>
+        <RoleDetailModal
+          roleKey={selectedRole}
+          open={selectedRole !== null}
+          onOpenChange={(open) => { if (!open) setSelectedRole(null); }}
+          onGetStarted={() => navigate(user ? "/home" : "/auth")}
+        />
       </section>
 
       {/* Features */}
