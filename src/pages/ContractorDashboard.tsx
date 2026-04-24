@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
+import ProPartnerWidget from "@/components/ProPartnerWidget";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
@@ -375,6 +376,10 @@ const ContractorDashboard = () => {
       </div>
 
       {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
+
+      <div className="mb-6">
+        <ProPartnerWidget />
+      </div>
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

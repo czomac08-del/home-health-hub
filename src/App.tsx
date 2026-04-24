@@ -54,10 +54,11 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import LegalOnboardingScreen from "./pages/LegalOnboardingScreen";
 import LegalFooter from "./components/LegalFooter";
 import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
+import JoinReferralScreen from "./pages/JoinReferralScreen";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
+const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -132,6 +133,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/join" element={<JoinReferralScreen />} />
             <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
             <Route path="/verify-email" element={<VerifyEmailScreen />} />

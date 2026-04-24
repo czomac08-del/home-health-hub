@@ -14,6 +14,7 @@ import QuickCheckInButton from "@/components/QuickCheckInButton";
 import RefreshButton from "@/components/RefreshButton";
 import RefreshAllButton from "@/components/RefreshAllButton";
 import DroughtAlertBanner from "@/components/DroughtAlertBanner";
+import ShareAndSaveWidget from "@/components/ShareAndSaveWidget";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -205,6 +206,11 @@ const DashboardScreen = () => {
         {/* Utility Contacts */}
         <div className="lg:max-w-xl">
           <UtilityContactsCard onViewAll={() => navigate("/utilities")} />
+        </div>
+
+        {/* Share & Save referral widget */}
+        <div className="mt-6 lg:max-w-xl">
+          <ShareAndSaveWidget />
         </div>
       </div>
       <HomeAIChat />

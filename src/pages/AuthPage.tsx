@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { UserRole } from "@/contexts/RoleContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import { friendlyAuthError, getDeviceToken } from "@/lib/authErrors";
+import { captureReferralFromUrl, attributeSignupReferral, getStoredReferralCode } from "@/lib/referrals";
 
 const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string; accent: string }[] = [
   { key: "homeowner", icon: Home, title: "Homeowner", desc: "Manage and protect your home", accent: "border-t-primary" },
@@ -25,12 +26,22 @@ const AuthPage = () => {
   const [role, setRole] = useState<UserRole>("homeowner");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingReferralCode, setPendingReferralCode] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) navigate("/home", { replace: true });
   }, [user, navigate]);
+
+  // Capture ?ref= on the auth page too (in case invitee landed here directly)
+  // and surface any code stored from a previous /join visit.
+  useEffect(() => {
+    captureReferralFromUrl();
+    setPendingReferralCode(getStoredReferralCode());
+    setIsSignUp(getStoredReferralCode() ? true : false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +57,12 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
+        // Attribute the referral now if we have a session, otherwise it will
+        // attribute on first sign-in via the AuthContext effect.
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await attributeSignupReferral(newUser.id);
+        }
         toast.success("Account created! Check your email to verify.");
         navigate("/verify-email", { state: { email } });
       } else {
