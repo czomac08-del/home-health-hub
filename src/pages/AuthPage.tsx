@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Home, Briefcase, ClipboardList, Wrench, Building2, Eye, EyeOff, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import type { UserRole } from "@/contexts/RoleContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import { friendlyAuthError, getDeviceToken } from "@/lib/authErrors";
 
 const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string; accent: string }[] = [
   { key: "homeowner", icon: Home, title: "Homeowner", desc: "Manage and protect your home", accent: "border-t-primary" },
@@ -39,17 +40,64 @@ const AuthPage = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName, role } },
+          options: {
+            data: { full_name: fullName, role },
+            emailRedirectTo: `${window.location.origin}/home`,
+          },
         });
         if (error) throw error;
-        toast.success("Account created! Redirecting...");
+        toast.success("Account created! Check your email to verify.");
+        navigate("/verify-email", { state: { email } });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          const msg = (error.message || "").toLowerCase();
+          if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed")) {
+            navigate("/verify-email", { state: { email } });
+            return;
+          }
+          throw error;
+        }
+
+        // Check if 2FA is enabled and this device is not trusted
+        const { data: { user: signedInUser } } = await supabase.auth.getUser();
+        if (signedInUser) {
+          const { data: settings } = await supabase
+            .from("user_security_settings")
+            .select("two_factor_enabled")
+            .eq("user_id", signedInUser.id)
+            .maybeSingle();
+
+          if (settings?.two_factor_enabled) {
+            const token = getDeviceToken();
+            const { data: trusted } = await supabase
+              .from("trusted_devices")
+              .select("id, expires_at")
+              .eq("user_id", signedInUser.id)
+              .eq("device_token", token)
+              .gt("expires_at", new Date().toISOString())
+              .maybeSingle();
+
+            if (!trusted) {
+              // Sign out, send OTP, route to verify screen
+              await supabase.auth.signOut();
+              const { error: otpErr } = await supabase.auth.signInWithOtp({ email });
+              if (otpErr) throw otpErr;
+              navigate("/two-factor", { state: { email } });
+              return;
+            }
+
+            // Bump last_used
+            await supabase.from("trusted_devices")
+              .update({ last_used_at: new Date().toISOString() })
+              .eq("id", trusted.id);
+          }
+        }
+
         toast.success("Welcome back!");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Authentication failed");
+    } catch (err: unknown) {
+      toast.error(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -62,13 +110,13 @@ const AuthPage = () => {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error(result.error instanceof Error ? result.error.message : "Google sign in failed");
+        toast.error(friendlyAuthError(result.error));
         setLoading(false);
         return;
       }
       if (result.redirected) return;
-    } catch (err: any) {
-      toast.error(err.message || "Google sign in failed");
+    } catch (err: unknown) {
+      toast.error(friendlyAuthError(err));
       setLoading(false);
     }
   };
@@ -166,10 +214,18 @@ const AuthPage = () => {
               minLength={6}
               className="w-full rounded-xl border border-border bg-card py-3.5 px-4 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground p-1">
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+
+          {!isSignUp && (
+            <div className="flex justify-end -mt-1">
+              <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                Forgot your password?
+              </Link>
+            </div>
+          )}
 
           <button
             type="submit"

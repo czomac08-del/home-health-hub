@@ -12,6 +12,10 @@ import { ProfileSwitcherProvider } from "@/contexts/ProfileSwitcherContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
+import ForgotPasswordScreen from "./pages/ForgotPasswordScreen";
+import ResetPasswordScreen from "./pages/ResetPasswordScreen";
+import VerifyEmailScreen from "./pages/VerifyEmailScreen";
+import TwoFactorVerifyScreen from "./pages/TwoFactorVerifyScreen";
 import ScanningScreen from "./pages/ScanningScreen";
 import DashboardScreen from "./pages/DashboardScreen";
 import SystemDetailScreen from "./pages/SystemDetailScreen";
@@ -53,7 +57,7 @@ import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
+const hideNavRoutes = ["/", "/auth", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -128,6 +132,10 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+            <Route path="/reset-password" element={<ResetPasswordScreen />} />
+            <Route path="/verify-email" element={<VerifyEmailScreen />} />
+            <Route path="/two-factor" element={<TwoFactorVerifyScreen />} />
             <Route path="/scanning" element={<ProtectedRoute><ScanningScreen /></ProtectedRoute>} />
             <Route path="/welcome" element={<WelcomeScreen />} />
             <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />

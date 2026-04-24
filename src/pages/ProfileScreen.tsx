@@ -12,6 +12,7 @@ import CivicDashboard from "@/components/CivicDashboard";
 import DataPermanenceBanner from "@/components/DataPermanenceBanner";
 import CommunityImpactSection from "@/components/CommunityImpactSection";
 import DevResetButton from "@/components/DevResetButton";
+import AccountSecuritySection from "@/components/AccountSecuritySection";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -239,6 +240,11 @@ const ProfileScreen = () => {
           <div className="border-t border-border/50 my-3" />
           <ToggleRow icon={<CalendarClock className="h-4 w-4" />} label="Maintenance Reminders" description="Get notified when service is due" enabled={reminders} onToggle={() => setReminders(!reminders)} />
         </div>
+      </Section>
+
+      {/* Security */}
+      <Section title="Security">
+        <AccountSecuritySection />
       </Section>
 
       {/* Demo Data */}
