@@ -1554,6 +1554,87 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          referrer_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          referrer_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          referrer_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          conversion_date: string | null
+          converted_to_paid: boolean
+          created_at: string
+          id: string
+          notes: string | null
+          referral_code: string
+          referred_user_id: string
+          referrer_type: string
+          referrer_user_id: string
+          retained_3_months: boolean
+          reward_amount_cents: number | null
+          reward_issued: boolean
+          reward_type: string | null
+          signup_date: string
+          updated_at: string
+        }
+        Insert: {
+          conversion_date?: string | null
+          converted_to_paid?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referral_code: string
+          referred_user_id: string
+          referrer_type?: string
+          referrer_user_id: string
+          retained_3_months?: boolean
+          reward_amount_cents?: number | null
+          reward_issued?: boolean
+          reward_type?: string | null
+          signup_date?: string
+          updated_at?: string
+        }
+        Update: {
+          conversion_date?: string | null
+          converted_to_paid?: boolean
+          created_at?: string
+          id?: string
+          notes?: string | null
+          referral_code?: string
+          referred_user_id?: string
+          referrer_type?: string
+          referrer_user_id?: string
+          retained_3_months?: boolean
+          reward_amount_cents?: number | null
+          reward_issued?: boolean
+          reward_type?: string | null
+          signup_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       refresh_logs: {
         Row: {
           created_at: string
@@ -2160,6 +2241,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: {
+        Args: { _full_name: string; _referrer_type: string; _user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
