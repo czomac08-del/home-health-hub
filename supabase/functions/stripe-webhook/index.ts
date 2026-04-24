@@ -8,10 +8,8 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 // computed from those flags in the UI. No money is moved automatically yet.
 const RETENTION_MS = 1000 * 60 * 60 * 24 * 90; // ~3 months
 
-async function markReferralConverted(
-  supabase: ReturnType<typeof createClient>,
-  referredUserId: string,
-) {
+// deno-lint-ignore no-explicit-any
+async function markReferralConverted(supabase: any, referredUserId: string) {
   // Find the (at most one) referral row for this user that hasn't converted yet.
   const { data: ref } = await supabase
     .from("referrals")
@@ -40,10 +38,8 @@ async function markReferralConverted(
   }
 }
 
-async function findUserIdForCustomer(
-  supabase: ReturnType<typeof createClient>,
-  customerId: string | null,
-): Promise<string | null> {
+// deno-lint-ignore no-explicit-any
+async function findUserIdForCustomer(supabase: any, customerId: string | null): Promise<string | null> {
   if (!customerId) return null;
   const { data } = await supabase
     .from("subscriptions")
