@@ -5,6 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
 import { useState } from "react";
 import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
+import FeatureDetailModal, { type FeatureKey } from "@/components/FeatureDetailModal";
 
 const landingJsonLd = {
   "@context": "https://schema.org",
@@ -69,6 +70,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureKey | null>(null);
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -217,20 +219,31 @@ const LandingPage = () => {
         <h2 className="text-2xl font-heading font-black text-foreground text-center mb-10">Why ComingHomeIQ?</h2>
         <div className="grid md:grid-cols-3 gap-5">
           {[
-            { icon: Shield, title: "Protect Your Investment", desc: "Track system health, maintenance history, and warranties in one place." },
-            { icon: TrendingUp, title: "Increase Home Value", desc: "Homes with complete passports sell faster and for more money." },
-            { icon: FileText, title: "Seamless Transfers", desc: "Transfer your home's complete history to new owners with privacy protection." },
-            { icon: Check, title: "Verified Data", desc: "Inspector and contractor findings get verified badges for trust." },
-            { icon: Users, title: "Professional Network", desc: "Connect with trusted local pros for maintenance and repairs." },
-            { icon: Zap, title: "AI-Powered Insights", desc: "Get predictive maintenance recommendations before problems happen." },
+            { key: "protect" as FeatureKey, icon: Shield, title: "Protect Your Investment", desc: "Track system health, maintenance history, and warranties in one place." },
+            { key: "value" as FeatureKey, icon: TrendingUp, title: "Increase Home Value", desc: "Homes with complete passports sell faster and for more money." },
+            { key: "transfer" as FeatureKey, icon: FileText, title: "Seamless Transfers", desc: "Transfer your home's complete history to new owners with privacy protection." },
+            { key: "verified" as FeatureKey, icon: Check, title: "Verified Data", desc: "Inspector and contractor findings get verified badges for trust." },
+            { key: "network" as FeatureKey, icon: Users, title: "Professional Network", desc: "Connect with trusted local pros for maintenance and repairs." },
+            { key: "ai" as FeatureKey, icon: Zap, title: "AI-Powered Insights", desc: "Get predictive maintenance recommendations before problems happen." },
           ].map((f) => (
-            <div key={f.title} className="rounded-2xl border border-border bg-card p-5 hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200">
+            <button
+              key={f.title}
+              type="button"
+              onClick={() => setSelectedFeature(f.key)}
+              className="text-left rounded-2xl border border-border bg-card p-5 hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+            >
               <f.icon className="h-5 w-5 text-primary mb-3" />
               <h3 className="text-sm font-heading font-bold text-foreground mb-1">{f.title}</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-            </div>
+              <p className="text-xs font-heading font-bold text-primary mt-3">Learn more →</p>
+            </button>
           ))}
         </div>
+        <FeatureDetailModal
+          featureKey={selectedFeature}
+          open={selectedFeature !== null}
+          onOpenChange={(open) => { if (!open) setSelectedFeature(null); }}
+        />
       </section>
 
       {/* Founding Member / Beta Community */}
