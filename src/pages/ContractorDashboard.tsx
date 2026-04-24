@@ -6,6 +6,7 @@ import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import ProPartnerWidget from "@/components/ProPartnerWidget";
+import PendingRewardsCard from "@/components/PendingRewardsCard";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
@@ -379,6 +380,9 @@ const ContractorDashboard = () => {
 
       <div className="mb-6">
         <ProPartnerWidget />
+        <div className="mt-4">
+          <PendingRewardsCard />
+        </div>
       </div>
 
       <div className="relative mb-4">
