@@ -8,18 +8,61 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 // computed from those flags in the UI. No money is moved automatically yet.
 const RETENTION_MS = 1000 * 60 * 60 * 24 * 90; // ~3 months
 
+// Phase 2 reward economics — pending approval queue, no auto-Stripe action.
+// Homeowner: 1 free month on referee's first paid invoice.
+// Contractor: $50 account credit once referee is retained for 3 months.
+const HOMEOWNER_REWARD = {
+  reward_type: "free_month",
+  reward_amount_cents: null as number | null,
+  reward_description: "1 free month of Pro",
+};
+const CONTRACTOR_RETENTION_REWARD = {
+  reward_type: "account_credit",
+  reward_amount_cents: 5000,
+  reward_description: "$50 account credit (3-month retention)",
+};
+
+// deno-lint-ignore no-explicit-any
+async function queueRewardIfNeeded(
+  supabase: any,
+  ref: { id: string; referrer_user_id: string; referred_user_id: string; referrer_type: string },
+  trigger: "first_paid" | "retention_3mo",
+) {
+  const isContractor = ref.referrer_type === "contractor";
+  // Homeowner program rewards on first paid; contractor program rewards on retention.
+  if (trigger === "first_paid" && isContractor) return;
+  if (trigger === "retention_3mo" && !isContractor) return;
+
+  const reward = isContractor ? CONTRACTOR_RETENTION_REWARD : HOMEOWNER_REWARD;
+
+  await supabase.from("referral_rewards").upsert(
+    {
+      referral_id: ref.id,
+      referrer_user_id: ref.referrer_user_id,
+      referred_user_id: ref.referred_user_id,
+      referrer_type: ref.referrer_type,
+      trigger_event: trigger,
+      status: "pending",
+      ...reward,
+    },
+    { onConflict: "referral_id,trigger_event", ignoreDuplicates: true },
+  );
+}
+
 // deno-lint-ignore no-explicit-any
 async function markReferralConverted(supabase: any, referredUserId: string) {
   // Find the (at most one) referral row for this user that hasn't converted yet.
   const { data: ref } = await supabase
     .from("referrals")
-    .select("id, signup_date, converted_to_paid, retained_3_months")
+    .select("id, signup_date, converted_to_paid, retained_3_months, referrer_user_id, referred_user_id, referrer_type")
     .eq("referred_user_id", referredUserId)
     .maybeSingle();
 
   if (!ref) return;
 
   const updates: Record<string, unknown> = {};
+  const justConverted = !ref.converted_to_paid;
+  let justRetained = false;
   if (!ref.converted_to_paid) {
     updates.converted_to_paid = true;
     updates.conversion_date = new Date().toISOString();
@@ -31,11 +74,15 @@ async function markReferralConverted(supabase: any, referredUserId: string) {
     Date.now() - new Date(ref.signup_date).getTime() >= RETENTION_MS
   ) {
     updates.retained_3_months = true;
+    justRetained = true;
   }
 
   if (Object.keys(updates).length > 0) {
     await supabase.from("referrals").update(updates).eq("id", ref.id);
   }
+
+  if (justConverted) await queueRewardIfNeeded(supabase, ref, "first_paid");
+  if (justRetained) await queueRewardIfNeeded(supabase, ref, "retention_3mo");
 }
 
 // deno-lint-ignore no-explicit-any
