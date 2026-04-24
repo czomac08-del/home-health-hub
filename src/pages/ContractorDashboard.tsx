@@ -376,6 +376,10 @@ const ContractorDashboard = () => {
 
       {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
+      <div className="mb-6">
+        <ProPartnerWidget />
+      </div>
+
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input type="text" value={searchAddr} onChange={e => setSearchAddr(e.target.value)} placeholder="Search clients or properties..."
