@@ -59,7 +59,7 @@ import JoinReferralScreen from "./pages/JoinReferralScreen";
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
-// Note: /join is also a no-nav route (public landing for invitees)
+// Note: /join is also a no-nav route (public landing for invitees) — added below
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
