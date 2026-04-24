@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
+import ProPartnerWidget from "@/components/ProPartnerWidget";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
