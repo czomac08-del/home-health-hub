@@ -89,13 +89,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid plan" }), { status: 400, headers: corsHeaders });
     }
 
-    const priceId = billingPeriod === "annual" ? plan.annual : plan.monthly;
+    const subPriceId = billingPeriod === "annual" ? plan.annual : plan.monthly;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email!,
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: subPriceId, quantity: 1 }],
       subscription_data: {
         trial_period_days: 14,
         metadata: { user_id: user.id, plan_id: planId, billing_period: billingPeriod },
