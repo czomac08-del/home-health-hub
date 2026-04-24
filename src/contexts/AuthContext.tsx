@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { attributeSignupReferral } from "@/lib/referrals";
 
 interface Profile {
   full_name: string;
@@ -103,6 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent("auth:signed_in"));
             }, 300);
+            // Attribute any pending referral code to this newly signed-in user.
+            // No-op if no code is stored or the user is already attributed.
+            void attributeSignupReferral(s.user.id);
           }
         } else {
           setProfile(null);
