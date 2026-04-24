@@ -18,10 +18,10 @@ const STATE_FIPS_TO_ABBR: Record<string, string> = {
 interface GeoResult {
   matchedAddress: string;
   coordinates: { x: number; y: number };
-  county?: string;
-  countyFips?: string;
-  state?: string;
-  stateFips?: string;
+  county?: string | null;
+  countyFips?: string | null;
+  state?: string | null;
+  stateFips?: string | null;
 }
 
 /**
