@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_profiles: {
         Row: {
           business_name: string | null
@@ -1581,6 +1596,74 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_rewards: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          issued_at: string | null
+          referral_id: string
+          referred_user_id: string
+          referrer_type: string
+          referrer_user_id: string
+          reward_amount_cents: number | null
+          reward_description: string
+          reward_type: string
+          status: string
+          stripe_reference: string | null
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          issued_at?: string | null
+          referral_id: string
+          referred_user_id: string
+          referrer_type: string
+          referrer_user_id: string
+          reward_amount_cents?: number | null
+          reward_description: string
+          reward_type: string
+          status?: string
+          stripe_reference?: string | null
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          issued_at?: string | null
+          referral_id?: string
+          referred_user_id?: string
+          referrer_type?: string
+          referrer_user_id?: string
+          reward_amount_cents?: number | null
+          reward_description?: string
+          reward_type?: string
+          status?: string
+          stripe_reference?: string | null
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           conversion_date: string | null
@@ -2252,6 +2335,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
