@@ -15,6 +15,7 @@ import RefreshButton from "@/components/RefreshButton";
 import RefreshAllButton from "@/components/RefreshAllButton";
 import DroughtAlertBanner from "@/components/DroughtAlertBanner";
 import ShareAndSaveWidget from "@/components/ShareAndSaveWidget";
+import PendingRewardsCard from "@/components/PendingRewardsCard";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -211,6 +212,9 @@ const DashboardScreen = () => {
         {/* Share & Save referral widget */}
         <div className="mt-6 lg:max-w-xl">
           <ShareAndSaveWidget />
+          <div className="mt-4">
+            <PendingRewardsCard />
+          </div>
         </div>
       </div>
       <HomeAIChat />
