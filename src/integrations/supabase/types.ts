@@ -544,6 +544,97 @@ export type Database = {
         }
         Relationships: []
       }
+      home_checkup_items: {
+        Row: {
+          answer: string
+          checkup_id: string
+          created_at: string
+          id: string
+          item_id: string
+          notes: string | null
+          photo_url: string | null
+          section_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          checkup_id: string
+          created_at?: string
+          id?: string
+          item_id: string
+          notes?: string | null
+          photo_url?: string | null
+          section_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          checkup_id?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          notes?: string | null
+          photo_url?: string | null
+          section_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_checkup_items_checkup_id_fkey"
+            columns: ["checkup_id"]
+            isOneToOne: false
+            referencedRelation: "home_checkups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_checkups: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_section: number
+          id: string
+          property_id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_section?: number
+          id?: string
+          property_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_section?: number
+          id?: string
+          property_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_checkups_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       household_profiles: {
         Row: {
           activity_level: string | null
