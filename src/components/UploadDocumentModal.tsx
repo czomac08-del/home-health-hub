@@ -5,6 +5,7 @@ import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import InspectionFindingsReview, { type InspectionReportData } from "./InspectionFindingsReview";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -42,6 +43,7 @@ export default function UploadDocumentModal({
   const [isDragging, setIsDragging] = useState(false);
   const [extracted, setExtracted] = useState<Record<string, any>>({});
   const [confidence, setConfidence] = useState<string>("");
+  const [inspectionReport, setInspectionReport] = useState<InspectionReportData | null>(null);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -52,6 +54,7 @@ export default function UploadDocumentModal({
     setNotes("");
     setExtracted({});
     setConfidence("");
+    setInspectionReport(null);
     setRecordId(null);
     setErrorMsg("");
   };
@@ -130,6 +133,7 @@ export default function UploadDocumentModal({
         } else {
           setExtracted(ext?.extracted || {});
           setConfidence(ext?.confidence || "low");
+          setInspectionReport(ext?.inspectionReport || null);
         }
       }
       setStep("review");
@@ -146,9 +150,12 @@ export default function UploadDocumentModal({
       return;
     }
     try {
+      const merged = inspectionReport
+        ? { ...extracted, inspection_report: inspectionReport }
+        : extracted;
       await supabase
         .from("property_records")
-        .update({ ai_verified: true, ai_extracted_data: extracted })
+        .update({ ai_verified: true, ai_extracted_data: merged })
         .eq("id", recordId);
       toast.success("Document saved to your home record");
       setStep("saved");
@@ -295,31 +302,41 @@ export default function UploadDocumentModal({
               </div>
             </div>
 
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Extracted details {confidence && <span className="ml-1 normal-case font-normal">({confidence} confidence)</span>}
-              </p>
-              {extractedEntries.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  AI couldn't extract structured details from this document. Your file is still saved.
+            {inspectionReport && inspectionReport.findings?.length > 0 ? (
+              <div className="max-h-[60vh] overflow-y-auto">
+                <InspectionFindingsReview data={inspectionReport} />
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Extracted details {confidence && <span className="ml-1 normal-case font-normal">({confidence} confidence)</span>}
                 </p>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {extractedEntries.map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
-                      <span className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</span>
-                      <span className="text-xs font-medium text-foreground text-right truncate max-w-[60%]">{String(v)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                {extractedEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    AI couldn't extract structured details from this document. Your file is still saved.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {extractedEntries.map(([k, v]) => (
+                      <div key={k} className="flex justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
+                        <span className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</span>
+                        <span className="text-xs font-medium text-foreground text-right truncate max-w-[60%]">{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
                 Save file only
               </Button>
-              <Button onClick={handleConfirm} className="flex-1" disabled={extractedEntries.length === 0}>
+              <Button
+                onClick={handleConfirm}
+                className="flex-1"
+                disabled={extractedEntries.length === 0 && !inspectionReport}
+              >
                 Confirm & Save
               </Button>
             </div>
