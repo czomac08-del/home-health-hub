@@ -211,6 +211,11 @@ export default function InspectionReviewViewer() {
           <span className="hidden sm:inline">Share Report</span>
         </Button>
 
+        <PrintFindingsButton
+          filter={printFilter}
+          onFilterChange={setPrintFilter}
+        />
+
         {reportUrl && (
           <Button asChild variant="outline" size="sm" className="h-8">
             <a href={reportUrl} target="_blank" rel="noopener noreferrer">
@@ -249,6 +254,9 @@ export default function InspectionReviewViewer() {
             storagePath={storagePath}
             initialReport={report}
             yearBuilt={yearBuilt}
+            printFilter={printFilter}
+            onPrintFilterChange={setPrintFilter}
+            onReportLoaded={setPrintableReport}
           />
         )}
         <p className="text-[10px] text-muted-foreground italic border-t border-border pt-3">
