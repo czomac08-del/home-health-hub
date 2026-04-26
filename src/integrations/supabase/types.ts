@@ -2089,6 +2089,39 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_applications: {
+        Row: {
+          audience_size: string | null
+          created_at: string
+          email: string
+          id: string
+          message: string | null
+          name: string
+          platform: string | null
+          status: string
+        }
+        Insert: {
+          audience_size?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          message?: string | null
+          name: string
+          platform?: string | null
+          status?: string
+        }
+        Update: {
+          audience_size?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string | null
+          name?: string
+          platform?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       permanent_archive: {
         Row: {
           ai_analysis: string | null
@@ -3054,6 +3087,7 @@ export type Database = {
           plan_type: string
           status: string
           stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
           stripe_subscription_id: string | null
           trial_end: string | null
           updated_at: string
@@ -3071,6 +3105,7 @@ export type Database = {
           plan_type?: string
           status?: string
           stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
           stripe_subscription_id?: string | null
           trial_end?: string | null
           updated_at?: string
@@ -3088,6 +3123,7 @@ export type Database = {
           plan_type?: string
           status?: string
           stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
           stripe_subscription_id?: string | null
           trial_end?: string | null
           updated_at?: string

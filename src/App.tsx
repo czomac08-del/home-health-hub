@@ -59,6 +59,9 @@ import JoinReferralScreen from "./pages/JoinReferralScreen";
 import AdminRewardsPage from "./pages/AdminRewardsPage";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import InspectionReviewViewer from "./pages/InspectionReviewViewer";
+import SubToLandingPage from "./pages/SubToLandingPage";
+import ContrarianLandingPage from "./pages/ContrarianLandingPage";
+import PartnersPage from "./pages/PartnersPage";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
@@ -67,7 +70,7 @@ import SEO from "./components/SEO";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding"];
+const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners"];
 const hideNavPrefixes = ["/inspection-review/"];
 
 /**
@@ -86,6 +89,9 @@ const PUBLIC_INDEXABLE_ROUTES = new Set<string>([
   "/inspector",
   "/contractor",
   "/investor",
+  "/subto",
+  "/contrarian",
+  "/partners",
 ]);
 const PUBLIC_INDEXABLE_PREFIXES = ["/report/"]; // shared certification reports stay indexable
 
@@ -247,6 +253,9 @@ const AppContent = () => {
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
             <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/inspection-review/:id/viewer" element={<ProtectedRoute><InspectionReviewViewer /></ProtectedRoute>} />
+            <Route path="/subto" element={<SubToLandingPage />} />
+            <Route path="/contrarian" element={<ContrarianLandingPage />} />
+            <Route path="/partners" element={<PartnersPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

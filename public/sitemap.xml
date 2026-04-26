@@ -43,6 +43,24 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://cominghomeiq.com/subto</loc>
+    <lastmod>2026-04-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cominghomeiq.com/contrarian</loc>
+    <lastmod>2026-04-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cominghomeiq.com/partners</loc>
+    <lastmod>2026-04-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://cominghomeiq.com/terms</loc>
     <lastmod>2026-04-26</lastmod>
     <changefreq>monthly</changefreq>
