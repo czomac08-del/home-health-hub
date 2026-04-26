@@ -108,6 +108,35 @@ export default function InspectionReviewViewer() {
     return scoreLabel(l1, l2);
   }, [report]);
 
+  // Estimated total for the print summary — mirrors the analysis panel logic.
+  const printEstTotal = useMemo(() => {
+    const findings = printableReport?.findings ?? [];
+    const PRO: Record<string, [number, number]> = {
+      plumbing: [200, 1500], electrical: [250, 2500], hvac: [400, 8000],
+      roof: [500, 15000], structural: [1000, 10000], exterior: [300, 3000],
+      interior: [200, 2000], safety: [150, 800], appliances: [200, 2500], other: [200, 2000],
+    };
+    const DIY: Record<string, [number, number]> = {
+      plumbing: [10, 50], electrical: [5, 30], hvac: [20, 60], exterior: [15, 80],
+      interior: [10, 50], safety: [15, 50], roof: [20, 60], appliances: [0, 50],
+      structural: [0, 100], other: [10, 60],
+    };
+    let low = 0, high = 0;
+    for (const f of findings) {
+      const cat = (f.category || "other").toLowerCase();
+      const [l, h] = (f.level <= 2 ? PRO : DIY)[cat] || (f.level <= 2 ? PRO.other : DIY.other);
+      low += l; high += h;
+    }
+    return { low, high };
+  }, [printableReport]);
+
+  // DB-backed findings for status (Fixed / In Progress / Unaddressed) on print.
+  const { findings: dbFindings } = useInspectionFindings({
+    propertyId,
+    inspectionRecordId: propertyRecordId ?? null,
+    report: printableReport,
+  });
+
   const handleShare = async () => {
     if (!propertyId) return;
     try {
