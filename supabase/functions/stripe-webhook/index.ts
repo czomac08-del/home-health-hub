@@ -170,6 +170,20 @@ Deno.serve(async (req) => {
               console.error("Failed to grant refresh credits:", e);
             }
           }
+
+          // Deal-funded fee: mark the deal as paid so the user can keep using
+          // the platform without further nags.
+          if (session.metadata?.purchase_type === "deal_funded_fee" && session.metadata?.deal_id) {
+            try {
+              await supabase.from("closed_deals").update({
+                platform_fee_charged: true,
+                charged_at: new Date().toISOString(),
+                stripe_payment_intent_id: (session.payment_intent as string | null) ?? null,
+              }).eq("id", session.metadata.deal_id);
+            } catch (e) {
+              console.error("Failed to mark deal fee paid:", e);
+            }
+          }
         }
         break;
       }
