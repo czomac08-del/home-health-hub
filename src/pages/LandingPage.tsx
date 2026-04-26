@@ -107,8 +107,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="ComingHomeIQ — The Carfax for Your Home"
-        description="The complete property record platform. Track every system, warranty, permit, and maintenance record. Records verified against government data and satellite imagery."
+        title="ComingHomeIQ | The Carfax for Your Home"
+        description="The most complete home intelligence platform. Track every system, appliance, permit, and inspection record — all in one place."
         path="/"
         jsonLd={landingJsonLd}
       />
