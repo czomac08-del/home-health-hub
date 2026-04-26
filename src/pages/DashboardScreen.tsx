@@ -247,7 +247,7 @@ const DashboardScreen = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {needsAttention.map((sys) => (
-                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} brand={sys.brand} condition={sys.condition} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
               ))}
             </div>
           </div>
@@ -259,7 +259,7 @@ const DashboardScreen = () => {
             <h3 className="text-foreground font-heading font-bold text-lg mb-4">All Systems</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {healthySystems.map((sys) => (
-                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} onClick={() => navigate(`/system/${sys.id}`)} />
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} brand={sys.brand} condition={sys.condition} onClick={() => navigate(`/system/${sys.id}`)} />
               ))}
             </div>
           </div>
