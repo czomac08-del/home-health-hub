@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck, Flag } from "lucide-react";
+import { DisputeDialog } from "@/components/DisputeDialog";
 
 export interface InspectionFinding {
   id: string;
@@ -79,11 +80,16 @@ interface Props {
   data: InspectionReportData;
   /** When true, show the pre-save attribution disclaimer banner. */
   showAttributionDisclaimer?: boolean;
+  /** When provided, enables the "Dispute This Finding" button per finding (post-save context). */
+  propertyId?: string;
+  propertyRecordId?: string;
 }
 
-export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false }: Props) {
+export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false, propertyId, propertyRecordId }: Props) {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
+  const [disputeFinding, setDisputeFinding] = useState<InspectionFinding | null>(null);
+  const canDispute = Boolean(propertyId);
 
   const grouped: Record<1 | 2 | 3 | 4, InspectionFinding[]> = { 1: [], 2: [], 3: [], 4: [] };
   for (const f of data.findings || []) {
@@ -267,6 +273,19 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                                 {attributionLine}
                               </p>
                             </div>
+                            {canDispute && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDisputeFinding(finding);
+                                }}
+                                className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                              >
+                                <Flag className="h-3 w-3" />
+                                Dispute This Finding
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -282,6 +301,19 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
       <p className="text-[10px] text-muted-foreground text-center pt-1">
         Severity assigned via ASHI, InterNACHI, NFPA, NEC, and IRC standards — never by AI judgment alone.
       </p>
+
+      {canDispute && propertyId && (
+        <DisputeDialog
+          open={!!disputeFinding}
+          onOpenChange={(o) => !o && setDisputeFinding(null)}
+          propertyId={propertyId}
+          propertyRecordId={propertyRecordId}
+          findingId={disputeFinding?.id ?? null}
+          inspectorFindingText={
+            disputeFinding ? `${disputeFinding.title}${disputeFinding.description ? " — " + disputeFinding.description : ""}` : null
+          }
+        />
+      )}
 
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
         <p className="text-[10px] text-muted-foreground leading-relaxed">
