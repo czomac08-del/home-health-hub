@@ -54,6 +54,7 @@ const DashboardScreen = () => {
   const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
   const [recordCount, setRecordCount] = useState<number | null>(null);
   const [assessedSystemNames, setAssessedSystemNames] = useState<string[]>([]);
+  const [systemDetails, setSystemDetails] = useState<Array<{ system_name: string; brand: string | null; specs: any }>>([]);
 
   useEffect(() => {
     if (!activeProperty?.id) { setRecordCount(0); return; }
@@ -72,10 +73,12 @@ const DashboardScreen = () => {
     const load = async () => {
       const { data } = await supabase
         .from("system_details")
-        .select("system_name")
+        .select("system_name, brand, specs")
         .eq("property_id", activeProperty.id);
       if (cancelled) return;
-      setAssessedSystemNames((data || []).map((r) => r.system_name).filter(Boolean));
+      const rows = (data || []) as any[];
+      setAssessedSystemNames(rows.map((r) => r.system_name).filter(Boolean));
+      setSystemDetails(rows.map((r) => ({ system_name: r.system_name, brand: r.brand, specs: r.specs || {} })));
     };
     void load();
     // Refresh whenever AddToProfileModal (or anywhere else) tells us system data changed.
@@ -89,8 +92,11 @@ const DashboardScreen = () => {
 
   // Mark each tile assessed if any system_details row matches its pattern.
   const systems = defaultSystems.map((s) => {
-    const isAssessed = assessedSystemNames.some((n) => s.match.test(n));
-    return { ...s, assessed: isAssessed };
+    const matched = systemDetails.find((r) => s.match.test(r.system_name));
+    const isAssessed = !!matched;
+    const brand = matched?.brand || matched?.specs?.brand || matched?.specs?.whBrand || matched?.specs?.panelBrand || null;
+    const condition = matched?.specs?.condition || matched?.specs?.condition_noted || null;
+    return { ...s, assessed: isAssessed, brand, condition };
   });
   // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
   const needsAttention = systems.filter((s) => s.assessed && s.health !== null && s.health < 70);
@@ -241,7 +247,7 @@ const DashboardScreen = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {needsAttention.map((sys) => (
-                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} brand={sys.brand} condition={sys.condition} showPulse onClick={() => navigate(`/system/${sys.id}`)} />
               ))}
             </div>
           </div>
@@ -253,7 +259,7 @@ const DashboardScreen = () => {
             <h3 className="text-foreground font-heading font-bold text-lg mb-4">All Systems</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {healthySystems.map((sys) => (
-                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} onClick={() => navigate(`/system/${sys.id}`)} />
+                <SystemCard key={sys.id} id={sys.id} name={sys.name} health={sys.health} status={sys.status} flagged={sys.flagged} assessed={sys.assessed} brand={sys.brand} condition={sys.condition} onClick={() => navigate(`/system/${sys.id}`)} />
               ))}
             </div>
           </div>

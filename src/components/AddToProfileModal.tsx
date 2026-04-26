@@ -30,6 +30,17 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
   const items: ExtractedItem[] = [];
   const rep = ai.inspection_report;
 
+  // Helper: build a worst-case condition rating from a list of findings.
+  // level 4 = Major Defect, 3 = Significant, 2 = Minor, 1 = Info.
+  const conditionFromFindings = (fs: any[]): string => {
+    if (!fs.length) return "";
+    const max = fs.reduce((m, f) => Math.max(m, Number(f.level) || 0), 0);
+    if (max >= 4) return "Major Defect Noted";
+    if (max >= 3) return "Significant Issues Noted";
+    if (max >= 2) return "Minor Issues Noted";
+    return "No major issues noted";
+  };
+
   // Year built — common across permits + inspections
   const yb = ai.year_built || rep?.year_built || rep?.inspector?.year_built;
   if (yb) {
@@ -42,12 +53,16 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     });
   }
 
-  // HVAC units — from explicit field or by inferring from findings
+  // HVAC units — from explicit field or by inferring from findings.
+  // CRITICAL: even if no brand/year is present, we still create a system row so
+  // the dashboard tile flips from "Add Info" to a real, inspector-verified system.
   let hvac: any[] | null = rep?.hvac_units || ai.hvac_units || null;
+  let hvacFindingsRaw: any[] = [];
   if (!hvac && Array.isArray(rep?.findings)) {
     const hvacFindings = rep.findings.filter((f: any) =>
       (f.category || "").toLowerCase() === "hvac" || /hvac|condenser|furnace|air handler/i.test(f.title || ""),
     );
+    hvacFindingsRaw = hvacFindings;
     // Detect "left/right" or "unit 1/2" mentions
     const seen = new Map<string, any>();
     for (const f of hvacFindings) {
@@ -63,13 +78,22 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
       seen.set(side, existing);
     }
     if (seen.size > 0) hvac = Array.from(seen.values());
+    // Fallback: report has HVAC findings but no per-unit detail — still create one row
+    // so the system is documented.
+    if (!hvac && hvacFindings.length > 0) {
+      hvac = [{
+        location: "Main",
+        condition: conditionFromFindings(hvacFindings),
+        inspector_findings_count: hvacFindings.length,
+      }];
+    }
   }
   if (Array.isArray(hvac)) {
     hvac.forEach((u: any, i: number) => {
       items.push({
         key: `hvac_${i}`,
         label: `HVAC ${u.location || `Unit ${i + 1}`}`,
-        value: [u.location, u.year, u.brand, u.condition].filter(Boolean).join(" · "),
+        value: [u.location, u.year, u.brand, u.condition].filter(Boolean).join(" · ") || "Documented from inspection",
         target: { kind: "system", systemName: i === 0 ? "HVAC" : `HVAC ${u.location || i + 1}`, spec: u },
         decision: null,
       });
@@ -117,24 +141,37 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     });
   }
 
-  // Electrical panel — explicit or inferred from findings
+  // Electrical panel — explicit or inferred from findings.
+  // Like HVAC, always create a row when the report has any electrical category content.
   let panel: any | null = rep?.electrical_panel || ai.electrical_panel || null;
+  let electricalFindingsRaw: any[] = [];
   if (!panel && Array.isArray(rep?.findings)) {
-    const elec = rep.findings.find((f: any) =>
-      /panel|amp|breaker/i.test(`${f.title} ${f.description || ""}`),
+    electricalFindingsRaw = rep.findings.filter((f: any) =>
+      (f.category || "").toLowerCase() === "electrical" ||
+      /panel|amp|breaker|outlet|wiring|gfci/i.test(`${f.title} ${f.description || ""}`),
     );
+    const elec = electricalFindingsRaw.find((f: any) =>
+      /panel|amp|breaker/i.test(`${f.title} ${f.description || ""}`),
+    ) || electricalFindingsRaw[0];
     if (elec) {
       const text = `${elec.title} ${elec.description || ""}`;
       const amp = text.match(/(\d{2,4})\s*-?\s*amp/i);
       const brand = /federal pacific|fpe/i.test(text) ? "Federal Pacific" : null;
-      panel = { amperage: amp ? parseInt(amp[1], 10) : null, brand, notes: elec.title };
+      panel = {
+        amperage: amp ? parseInt(amp[1], 10) : null,
+        brand,
+        notes: elec.title,
+        condition: conditionFromFindings(electricalFindingsRaw),
+        inspector_findings_count: electricalFindingsRaw.length,
+      };
     }
   }
   if (panel) {
     items.push({
       key: "electrical_panel",
       label: "Electrical panel",
-      value: [panel.amperage ? `${panel.amperage} amp` : null, panel.brand, panel.notes].filter(Boolean).join(" · "),
+      value: [panel.amperage ? `${panel.amperage} amp` : null, panel.brand, panel.notes, panel.condition]
+        .filter(Boolean).join(" · ") || "Documented from inspection",
       target: { kind: "system", systemName: "Electrical", spec: panel },
       decision: null,
     });
@@ -179,6 +216,7 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
           systemName: "Plumbing",
           spec: {
             condition_noted: conditions.join("; "),
+            condition: conditionFromFindings(plumbingFindings),
             inspector_findings_count: plumbingFindings.length,
           },
         },
@@ -187,8 +225,33 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     }
   }
 
+  // Roof — explicit or inferred from any roof-category findings.
+  if (!rep?.roof && !ai.roof && Array.isArray(rep?.findings)) {
+    const roofFindings = rep.findings.filter((f: any) =>
+      (f.category || "").toLowerCase() === "roof" ||
+      /\broof|shingle|flashing|gutter|chimney/i.test(`${f.title} ${f.description || ""}`),
+    );
+    if (roofFindings.length > 0) {
+      items.push({
+        key: "roof_inferred",
+        label: "Roof",
+        value: `${roofFindings.length} finding${roofFindings.length !== 1 ? "s" : ""} noted`,
+        target: {
+          kind: "system",
+          systemName: "Roof",
+          spec: {
+            condition: conditionFromFindings(roofFindings),
+            inspector_findings_count: roofFindings.length,
+            notes: roofFindings.slice(0, 3).map((f: any) => f.title).join("; "),
+          },
+        },
+        decision: null,
+      });
+    }
+  }
+
   // Inspector record — pulled from the report header
-  const insp = rep?.inspector;
+  const insp = rep?.inspector || ai;
   if (insp && (insp.inspector_name || insp.inspector_company)) {
     items.push({
       key: "inspector",
@@ -292,9 +355,11 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
         .select("ai_extracted_data, document_date")
         .eq("id", recordId)
         .maybeSingle();
-      const rep = (rec?.ai_extracted_data as any)?.inspection_report;
+      const ai = (rec?.ai_extracted_data as any) || {};
+      const rep = ai.inspection_report;
       inspectionDate =
         rep?.inspector?.inspection_date ||
+        ai.inspection_date ||
         rec?.document_date ||
         null;
     }
@@ -318,6 +383,7 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
           const specWithDate = {
             ...(item.target.spec as Record<string, any>),
             ...(inspectionDate ? { last_inspected_date: inspectionDate } : {}),
+            ...(isInspectionSource ? { source_record_id: recordId } : {}),
           };
           // Upsert by (property_id, system_name) to avoid unique-constraint failures
           // when the user already added this system manually.
@@ -335,7 +401,11 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
             } as any,
             { onConflict: "property_id,system_name" },
           );
-          if (!error) added++;
+          if (error) {
+            console.warn("system_details upsert failed", item.target.systemName, error);
+          } else {
+            added++;
+          }
         }
       } catch (e) {
         console.warn("Import item failed", item.key, e);
