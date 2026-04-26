@@ -131,7 +131,6 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
   const inspectorCompany = inspector?.inspector_company || "Company not extracted";
   const inspectorLicense = inspector?.inspector_license || null;
   const inspectionDate = inspector?.inspection_date || null;
-  const attributionLine = `Source: ${inspector?.inspector_name || "Inspector of record"}${inspector?.inspector_company ? `, ${inspector.inspector_company}` : ""}${inspectionDate ? `, ${inspectionDate}` : ""}`;
 
   if (totalFindings === 0) {
     return (
