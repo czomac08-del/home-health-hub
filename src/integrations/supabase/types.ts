@@ -469,6 +469,112 @@ export type Database = {
           },
         ]
       }
+      data_pull_log: {
+        Row: {
+          api_cost_cents: number
+          credits_charged: number
+          data_type: string
+          id: string
+          property_id: string | null
+          pulled_at: string
+          raw_response_cached: boolean
+          source_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          api_cost_cents?: number
+          credits_charged?: number
+          data_type: string
+          id?: string
+          property_id?: string | null
+          pulled_at?: string
+          raw_response_cached?: boolean
+          source_name: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          api_cost_cents?: number
+          credits_charged?: number
+          data_type?: string
+          id?: string
+          property_id?: string | null
+          pulled_at?: string
+          raw_response_cached?: boolean
+          source_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_pull_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_source_cache: {
+        Row: {
+          cache_key: string
+          expires_at: string
+          fetched_at: string
+          id: string
+          payload: Json
+          source_name: string
+        }
+        Insert: {
+          cache_key: string
+          expires_at: string
+          fetched_at?: string
+          id?: string
+          payload: Json
+          source_name: string
+        }
+        Update: {
+          cache_key?: string
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+          payload?: Json
+          source_name?: string
+        }
+        Relationships: []
+      }
+      data_source_refresh_state: {
+        Row: {
+          id: string
+          last_refreshed_at: string
+          last_status: string | null
+          property_id: string
+          source_name: string
+        }
+        Insert: {
+          id?: string
+          last_refreshed_at?: string
+          last_status?: string | null
+          property_id: string
+          source_name: string
+        }
+        Update: {
+          id?: string
+          last_refreshed_at?: string
+          last_status?: string | null
+          property_id?: string
+          source_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_source_refresh_state_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disclosure_awareness: {
         Row: {
           acknowledged: boolean
@@ -2777,6 +2883,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          lifetime_purchased: number
+          lifetime_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          lifetime_purchased?: number
+          lifetime_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          lifetime_purchased?: number
+          lifetime_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -3016,6 +3149,10 @@ export type Database = {
         Args: { _full_name: string; _referrer_type: string; _user_id: string }
         Returns: string
       }
+      grant_credits: {
+        Args: { _amount: number; _user_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3024,6 +3161,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      spend_credits: { Args: { _amount: number }; Returns: boolean }
     }
     Enums: {
       app_role:

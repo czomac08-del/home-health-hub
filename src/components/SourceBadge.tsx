@@ -1,76 +1,33 @@
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ShieldCheck, Building2, Sparkles, User, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DataSource, FieldSource } from "@/lib/dataTrust";
-import { SOURCE_LABEL } from "@/lib/dataTrust";
+
+export type SourceTier = "free" | "paid" | "user" | "ai";
 
 interface SourceBadgeProps {
-  source: DataSource;
-  fieldSource?: FieldSource | null;
-  hasOpenDispute?: boolean;
+  tier: SourceTier;
+  source: string;
+  date?: string;
+  confidence?: number;
   className?: string;
 }
 
-const STYLES: Record<DataSource, { icon: typeof ShieldCheck; cls: string }> = {
-  inspector_verified: {
-    icon: ShieldCheck,
-    cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-  },
-  county_record: {
-    icon: Building2,
-    cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-  },
-  ai_extracted: {
-    icon: Sparkles,
-    cls: "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30",
-  },
-  owner_submitted: {
-    icon: User,
-    cls: "bg-muted text-muted-foreground border-border",
-  },
+const STYLE: Record<SourceTier, { dot: string; bg: string; label: (s: string) => string }> = {
+  free: { dot: "bg-health-green", bg: "bg-health-green/10 text-foreground", label: (s) => `Free Source · ${s}` },
+  paid: { dot: "bg-blue-500", bg: "bg-blue-500/10 text-foreground", label: (s) => `Paid Data · ${s}` },
+  user: { dot: "bg-amber-500", bg: "bg-amber-500/10 text-foreground", label: () => "User Submitted" },
+  ai: { dot: "bg-muted-foreground", bg: "bg-muted text-foreground", label: () => "AI Extracted" },
 };
 
-export function SourceBadge({ source, fieldSource, hasOpenDispute, className }: SourceBadgeProps) {
-  const { icon: Icon, cls } = STYLES[source];
-  const disputed = hasOpenDispute ?? fieldSource?.has_open_dispute ?? false;
-
-  const tooltip =
-    source === "inspector_verified" && fieldSource?.inspector_name
-      ? `${SOURCE_LABEL[source]} — ${fieldSource.inspector_name}${
-          fieldSource.inspector_company ? `, ${fieldSource.inspector_company}` : ""
-        }${fieldSource.inspection_date ? ` • ${fieldSource.inspection_date}` : ""}`
-      : SOURCE_LABEL[source];
-
+const SourceBadge = ({ tier, source, date, confidence, className }: SourceBadgeProps) => {
+  const s = STYLE[tier];
+  const suffix =
+    tier === "ai" && confidence != null ? ` · ${Math.round(confidence)}%` :
+    date ? ` · ${date}` : "";
   return (
-    <TooltipProvider delayDuration={150}>
-      <div className={cn("inline-flex items-center gap-1", className)}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge variant="outline" className={cn("gap-1 text-[10px] py-0 px-1.5 h-5", cls)}>
-              <Icon className="h-3 w-3" />
-              {SOURCE_LABEL[source]}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent side="top">{tooltip}</TooltipContent>
-        </Tooltip>
-        {disputed && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="gap-1 text-[10px] py-0 px-1.5 h-5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
-              >
-                <Flag className="h-3 w-3" />
-                Disputed
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              Owner has noted a concern about this finding — see dispute details.
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-    </TooltipProvider>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium", s.bg, className)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
+      {s.label(source)}{suffix}
+    </span>
   );
-}
+};
+
+export default SourceBadge;

@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PropertySelector from "@/components/PropertySelector";
+import CreditBalancePill from "@/components/CreditBalancePill";
 
 const DesktopHeader = () => {
   const { user, profile, signOut } = useAuth();
@@ -48,6 +49,7 @@ const DesktopHeader = () => {
       {/* Right */}
       <div className="flex items-center gap-3 w-40 justify-end">
         <ThemeToggle />
+        <CreditBalancePill />
         <button
           onClick={() => navigate("/system-config/new")}
           className="flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-3 py-1.5 text-xs font-heading font-extrabold hover:opacity-90 transition-opacity glow-orange"

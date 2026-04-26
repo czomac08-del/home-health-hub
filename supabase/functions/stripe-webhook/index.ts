@@ -3,6 +3,12 @@ import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-04-30.basil" });
 
+// Refresh-credit price IDs → credits granted (matches PurchaseRefreshModal).
+const REFRESH_CREDIT_PRICES: Record<string, number> = {
+  price_1TMrG7ECIkzmsZKyoQa2INd3: 1,
+  price_1TMrGXECIkzmsZKycELTtFGb: 5,
+};
+
 // Phase 1 referral economics — mirrors src/components/ProPartnerWidget.tsx and
 // ShareAndSaveWidget. We only flip `converted_to_paid` here; reward dollars are
 // computed from those flags in the UI. No money is moved automatically yet.
@@ -146,6 +152,24 @@ Deno.serve(async (req) => {
         // One-time payments also count as "converted to paid" for referral attribution.
         if (session.mode === "payment" && session.payment_status === "paid") {
           await markReferralConverted(supabase, userId);
+
+          // Refresh-credit purchase: grant credits.
+          if (session.metadata?.purchase_type === "refresh_credit") {
+            try {
+              const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
+              let total = 0;
+              for (const li of lineItems.data) {
+                const pid = (li.price?.id as string) || "";
+                const credits = REFRESH_CREDIT_PRICES[pid] || 0;
+                total += credits * (li.quantity || 1);
+              }
+              if (total > 0) {
+                await supabase.rpc("grant_credits", { _user_id: userId, _amount: total });
+              }
+            } catch (e) {
+              console.error("Failed to grant refresh credits:", e);
+            }
+          }
         }
         break;
       }
