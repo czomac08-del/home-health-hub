@@ -78,8 +78,8 @@ const insuranceProviders = [
   { name: "Liberty Mutual", rating: 4.1, range: "$1,150 – $2,300/yr" },
 ];
 
-const fmt = (n: number | null | undefined) =>
-  n != null ? `$${n.toLocaleString()}` : "—";
+const fmt = (n: number | null | undefined): string | null =>
+  n != null && n > 0 ? `$${n.toLocaleString()}` : null;
 
 // ─── Component ───
 const InsuranceScreen = () => {
@@ -426,10 +426,18 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
               <span className="text-xs bg-success/15 text-success px-2.5 py-1 rounded-full font-medium">Active</span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div><span className="text-muted-foreground">Policy #:</span> <span className="text-foreground">{p.policy_number || "—"}</span></div>
-              <div><span className="text-muted-foreground">Premium:</span> <span className="text-foreground">{fmt(p.premium_amount)}/{p.premium_frequency}</span></div>
-              <div><span className="text-muted-foreground">Start:</span> <span className="text-foreground">{p.coverage_start || "—"}</span></div>
-              <div><span className="text-muted-foreground">End:</span> <span className="text-foreground">{p.coverage_end || "—"}</span></div>
+              {p.policy_number && (
+                <div><span className="text-muted-foreground">Policy #:</span> <span className="text-foreground">{p.policy_number}</span></div>
+              )}
+              {fmt(p.premium_amount) && (
+                <div><span className="text-muted-foreground">Premium:</span> <span className="text-foreground">{fmt(p.premium_amount)}/{p.premium_frequency}</span></div>
+              )}
+              {p.coverage_start && (
+                <div><span className="text-muted-foreground">Start:</span> <span className="text-foreground">{p.coverage_start}</span></div>
+              )}
+              {p.coverage_end && (
+                <div><span className="text-muted-foreground">End:</span> <span className="text-foreground">{p.coverage_end}</span></div>
+              )}
             </div>
             {/* Upload area */}
             <label className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-bg-secondary py-3 cursor-pointer hover:border-primary/40 transition-colors">
@@ -603,10 +611,16 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">{c.claim_type}</p>
-                <p className="text-xs text-muted-foreground">{c.claim_date} · #{c.claim_number || "—"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {c.claim_date}{c.claim_number ? ` · #${c.claim_number}` : ""}
+                </p>
                 <div className="flex gap-4 mt-1 text-xs">
-                  <span className="text-muted-foreground">Claimed: {fmt(c.amount_claimed)}</span>
-                  <span className="text-muted-foreground">Paid: {fmt(c.amount_paid)}</span>
+                  {fmt(c.amount_claimed) && (
+                    <span className="text-muted-foreground">Claimed: {fmt(c.amount_claimed)}</span>
+                  )}
+                  {fmt(c.amount_paid) && (
+                    <span className="text-muted-foreground">Paid: {fmt(c.amount_paid)}</span>
+                  )}
                 </div>
               </div>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c.status === "closed" ? "bg-success/15 text-success" : c.status === "denied" ? "bg-danger/15 text-danger" : "bg-warning/15 text-warning"}`}>
