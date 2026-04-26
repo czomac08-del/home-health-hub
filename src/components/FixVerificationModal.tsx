@@ -139,7 +139,11 @@ export default function FixVerificationModal({
       if (!userId) throw new Error("Not signed in");
 
       let payload: any;
-      let dataQualityFlag: "unverified" | "pro_verified" | "permit_verified" = "unverified";
+      let dataQualityFlag:
+        | "unverified"
+        | "receipt_verified"
+        | "pro_verified"
+        | "permit_verified" = "unverified";
       let hasPermit = false;
 
       if (tab === "diy") {
