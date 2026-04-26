@@ -69,6 +69,58 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
 }`,
 };
 
+// Inspection report extraction — categorizes every finding into 4 urgency levels
+// with citations to ASHI, InterNACHI, or NFPA standards.
+const INSPECTION_REPORT_PROMPT = `You are extracting findings from a home inspection report. Categorize EVERY finding into one of 4 urgency levels based on industry-standard inspector classifications. You MUST cite the applicable standard (ASHI, InterNACHI, or NFPA) for every Level 1 and Level 2 item — do NOT assign severity based on judgment alone.
+
+LEVEL 1 — MUST FIX (Safety Concern): Fire risk, electrocution, structural failure, or code violations affecting habitability. Examples: missing smoke detectors (NFPA 72), double-tapped breakers (NFPA 70 / NEC 408.41), open/exposed wiring (NEC 300.4), non-functional HVAC creating health risk, gas leaks, structural failure (InterNACHI 3.4), CO detectors missing where required (NFPA 720).
+
+LEVEL 2 — SHOULD FIX BEFORE LISTING: Items every buyer's inspector will flag and that affect sale price. Examples: non-functional major appliances (ASHI 11.1), improper deck ledger attachment (InterNACHI 3.5 / IRC R507), water heater past expected life (ASHI 7.1), GFCI not tripping in wet locations (NEC 210.8), missing TPR discharge pipe (IRC P2803), reverse-polarity outlets (NEC 200.11).
+
+LEVEL 3 — RECOMMENDED (Maintenance Items): Deferred maintenance, not deal-breakers. Examples: failed exterior caulking, insulation gaps, dirty HVAC filters, minor door binding, gutter cleaning needed, exterior paint touch-ups.
+
+LEVEL 4 — SELLER'S DISCRETION / NEGOTIABLE: Cosmetic, normal wear for home age. Examples: hairline concrete cracks, aged-but-functional systems within expected life, failed window seals (foggy glass), minor cosmetic flooring wear, dated fixtures.
+
+Return JSON ONLY in this exact shape:
+{
+  "document_type": "inspection_report",
+  "inspector_name": { "value": string or null, "confidence": 0-100 },
+  "inspection_date": { "value": "YYYY-MM-DD" or null, "confidence": 0-100 },
+  "property_address": { "value": string or null, "confidence": 0-100 },
+  "overall_confidence": 0-100,
+  "document_quality": "good|fair|poor|damaged",
+  "findings": [
+    {
+      "id": "f1",
+      "title": "Short summary (e.g. 'Smoke alarms not present in bedrooms')",
+      "description": "What the report actually says — quote or paraphrase faithfully",
+      "location": "Where in the home (e.g. 'Master bedroom', 'Electrical panel', 'Exterior — north wall') or null",
+      "category": "electrical|plumbing|hvac|roof|structural|exterior|interior|appliances|safety|other",
+      "level": 1 | 2 | 3 | 4,
+      "standard_citation": "Required for Level 1 & 2. Format: 'NFPA 72 — Smoke alarms required in all sleeping areas' or 'ASHI Standard 7.1 — Water heater'. Use null for Level 3 & 4.",
+      "standard_source": "ASHI|InterNACHI|NFPA|NEC|IRC|null",
+      "rationale": "One sentence explaining WHY this severity level (e.g. 'Fire safety hazard — required by code in all sleeping areas')",
+      "confidence": 0-100
+    }
+  ],
+  "summary": {
+    "level_1_count": 0,
+    "level_2_count": 0,
+    "level_3_count": 0,
+    "level_4_count": 0
+  }
+}
+
+CRITICAL RULES:
+- Every Level 1 finding MUST have standard_citation and standard_source — if you cannot cite a standard, downgrade to Level 3.
+- Every Level 2 finding MUST have standard_citation and standard_source — if you cannot cite a standard, downgrade to Level 3.
+- Do NOT invent findings not actually in the document.
+- Do NOT estimate repair costs — that happens elsewhere.
+- If the document is not actually an inspection report, return findings: [] and set document_type accordingly.`;
+
+EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
+EXTRACTION_PROMPTS.inspection = INSPECTION_REPORT_PROMPT;
+
 // Safety-critical fields that require human confirmation when unclear
 const SAFETY_CRITICAL_FIELDS = new Set([
   "depth_ft", "pump_gpm", "static_water_level_ft", // well safety
@@ -255,12 +307,39 @@ serve(async (req) => {
     
     // Parse JSON from response
     let result: ExtractionResult;
+    let inspectionFindings: any = null;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
       const parsed = JSON.parse(jsonMatch[1]?.trim() || content.trim());
-      
+
+      // Inspection report shape — pass findings through and synthesize a fields map
+      if (Array.isArray(parsed.findings)) {
+        inspectionFindings = {
+          document_type: parsed.document_type || "inspection_report",
+          findings: parsed.findings,
+          summary: parsed.summary || {
+            level_1_count: parsed.findings.filter((f: any) => f.level === 1).length,
+            level_2_count: parsed.findings.filter((f: any) => f.level === 2).length,
+            level_3_count: parsed.findings.filter((f: any) => f.level === 3).length,
+            level_4_count: parsed.findings.filter((f: any) => f.level === 4).length,
+          },
+        };
+        const fields: Record<string, FieldExtraction> = {};
+        for (const k of ["inspector_name", "inspection_date", "property_address"]) {
+          if (parsed[k] && typeof parsed[k] === "object" && "value" in parsed[k]) {
+            fields[k] = parsed[k];
+          }
+        }
+        result = {
+          fields,
+          overall_confidence: parsed.overall_confidence ?? 85,
+          document_quality: parsed.document_quality || "good",
+          unclear_fields: [],
+          possible_values: {},
+        };
+      }
       // Handle both old format (flat fields) and new format (with confidence)
-      if (parsed.fields) {
+      else if (parsed.fields) {
         result = parsed;
       } else {
         // Convert flat format to new format
@@ -309,6 +388,9 @@ serve(async (req) => {
       fieldConfidences: Object.fromEntries(
         Object.entries(result.fields).map(([k, f]) => [k, f.confidence])
       ),
+      // Inspection report findings (when applicable) — categorized into 4 urgency levels
+      // with ASHI/InterNACHI/NFPA citations on Level 1 & 2 items.
+      inspectionReport: inspectionFindings,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
