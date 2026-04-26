@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import type { InspectionReportData, InspectionFinding } from "@/components/InspectionFindingsReview";
 import AddToProfileModal from "@/components/AddToProfileModal";
+import PrintFindingsButton from "@/components/PrintFindingsButton";
+import type { PrintFilter } from "@/components/PrintFindingsReport";
 
 interface Props {
   propertyRecordId: string;
@@ -14,6 +16,11 @@ interface Props {
   storagePath: string | null;
   initialReport: InspectionReportData | null;
   yearBuilt?: string | null;
+  /** Print filter is owned by the parent so a single PrintFindingsReport is mounted once. */
+  printFilter?: PrintFilter;
+  onPrintFilterChange?: (f: PrintFilter) => void;
+  /** Called once extraction completes so the parent can render the print payload. */
+  onReportLoaded?: (r: InspectionReportData) => void;
 }
 
 type Phase = "ready" | "extracting" | "done" | "error";
@@ -78,6 +85,9 @@ export default function InspectionAnalysisPanel({
   storagePath,
   initialReport,
   yearBuilt,
+  printFilter = "all",
+  onPrintFilterChange,
+  onReportLoaded,
 }: Props) {
   const [report, setReport] = useState<InspectionReportData | null>(initialReport);
   const [phase, setPhase] = useState<Phase>(initialReport ? "done" : "ready");
@@ -86,6 +96,11 @@ export default function InspectionAnalysisPanel({
   const [importPrompted, setImportPrompted] = useState(false);
   const [showAllMinor, setShowAllMinor] = useState(false);
   const [showAllMajor, setShowAllMajor] = useState(false);
+
+  // Notify parent whenever the report becomes available (for printing).
+  useEffect(() => {
+    if (report && onReportLoaded) onReportLoaded(report);
+  }, [report, onReportLoaded]);
 
   // Auto-trigger extraction on first mount when no analysis exists yet.
   useEffect(() => {
@@ -131,6 +146,7 @@ export default function InspectionAnalysisPanel({
 
       setReport(rep);
       setPhase("done");
+      onReportLoaded?.(rep);
       if (!importPrompted && !force) {
         setImportPrompted(true);
         // Slight delay so the panel renders before the modal slides up.
@@ -204,6 +220,13 @@ export default function InspectionAnalysisPanel({
 
   return (
     <div className="space-y-5">
+      {/* Print / Save PDF — top of the findings panel */}
+      {onPrintFilterChange && (
+        <div className="flex items-center justify-end">
+          <PrintFindingsButton filter={printFilter} onFilterChange={onPrintFilterChange} />
+        </div>
+      )}
+
       {/* SECTION A — MINOR */}
       <section className="rounded-xl border border-health-green/30 overflow-hidden">
         <header className="bg-health-green/10 px-3 py-2 flex items-center gap-2">

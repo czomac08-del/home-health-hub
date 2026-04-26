@@ -13,6 +13,9 @@ import { scoreLabel } from "@/lib/inspectionScoring";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
+import PrintFindingsButton from "@/components/PrintFindingsButton";
+import PrintFindingsReport, { type PrintFilter } from "@/components/PrintFindingsReport";
+import { useInspectionFindings } from "@/hooks/useInspectionFindings";
 
 /**
  * /inspection-review/:id/viewer
@@ -38,6 +41,10 @@ export default function InspectionReviewViewer() {
   const [jumpToPage] = useState<number | null>(initialPage);
   const [mobileTab, setMobileTab] = useState<"analysis" | "report">("analysis");
 
+  // Print state — shared between TopBar button and the analysis panel button.
+  const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
+  const [printableReport, setPrintableReport] = useState<InspectionReportData | null>(null);
+
   useEffect(() => {
     if (!propertyRecordId) return;
     let cancelled = false;
@@ -58,6 +65,7 @@ export default function InspectionReviewViewer() {
       const extracted = (rec.ai_extracted_data as any) || null;
       const ir: InspectionReportData | null = extracted?.inspection_report ?? null;
       setReport(ir);
+      if (ir) setPrintableReport(ir);
       setPropertyId(rec.property_id);
       setReportDate(rec.document_date ?? rec.created_at ?? null);
       setStoragePath(rec.storage_path ?? null);
@@ -99,6 +107,35 @@ export default function InspectionReviewViewer() {
     const l2 = findings.filter((f) => f.level === 2).length;
     return scoreLabel(l1, l2);
   }, [report]);
+
+  // Estimated total for the print summary — mirrors the analysis panel logic.
+  const printEstTotal = useMemo(() => {
+    const findings = printableReport?.findings ?? [];
+    const PRO: Record<string, [number, number]> = {
+      plumbing: [200, 1500], electrical: [250, 2500], hvac: [400, 8000],
+      roof: [500, 15000], structural: [1000, 10000], exterior: [300, 3000],
+      interior: [200, 2000], safety: [150, 800], appliances: [200, 2500], other: [200, 2000],
+    };
+    const DIY: Record<string, [number, number]> = {
+      plumbing: [10, 50], electrical: [5, 30], hvac: [20, 60], exterior: [15, 80],
+      interior: [10, 50], safety: [15, 50], roof: [20, 60], appliances: [0, 50],
+      structural: [0, 100], other: [10, 60],
+    };
+    let low = 0, high = 0;
+    for (const f of findings) {
+      const cat = (f.category || "other").toLowerCase();
+      const [l, h] = (f.level <= 2 ? PRO : DIY)[cat] || (f.level <= 2 ? PRO.other : DIY.other);
+      low += l; high += h;
+    }
+    return { low, high };
+  }, [printableReport]);
+
+  // DB-backed findings for status (Fixed / In Progress / Unaddressed) on print.
+  const { findings: dbFindings } = useInspectionFindings({
+    propertyId,
+    inspectionRecordId: propertyRecordId ?? null,
+    report: printableReport,
+  });
 
   const handleShare = async () => {
     if (!propertyId) return;
@@ -174,6 +211,11 @@ export default function InspectionReviewViewer() {
           <span className="hidden sm:inline">Share Report</span>
         </Button>
 
+        <PrintFindingsButton
+          filter={printFilter}
+          onFilterChange={setPrintFilter}
+        />
+
         {reportUrl && (
           <Button asChild variant="outline" size="sm" className="h-8">
             <a href={reportUrl} target="_blank" rel="noopener noreferrer">
@@ -212,6 +254,9 @@ export default function InspectionReviewViewer() {
             storagePath={storagePath}
             initialReport={report}
             yearBuilt={yearBuilt}
+            printFilter={printFilter}
+            onPrintFilterChange={setPrintFilter}
+            onReportLoaded={setPrintableReport}
           />
         )}
         <p className="text-[10px] text-muted-foreground italic border-t border-border pt-3">
@@ -277,6 +322,20 @@ export default function InspectionReviewViewer() {
           <div className="border-r border-border min-h-0 overflow-hidden">{ReportPanel}</div>
           <div className="min-h-0 overflow-hidden">{AnalysisPanel}</div>
         </div>
+      )}
+
+      {/* Print-only block — hidden on screen via #print-findings-root CSS. */}
+      {printableReport && (
+        <PrintFindingsReport
+          report={printableReport}
+          dbFindings={dbFindings}
+          propertyAddress={propertyAddress}
+          yearBuilt={yearBuilt}
+          reportDateLabel={reportDate}
+          estTotal={printEstTotal}
+          scoreLabel={score.label}
+          filter={printFilter}
+        />
       )}
     </div>
   );
