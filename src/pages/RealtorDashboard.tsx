@@ -6,6 +6,7 @@ import { useDemoData } from "@/hooks/useDemoData";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 import {
   Home, TrendingUp, FileText, Send, Plus, Clock, Eye, Download, Share2, Mail,
   CheckCircle2, AlertTriangle, Shield, Calendar, Ruler, Search as SearchIcon,
@@ -319,6 +320,11 @@ const RealtorDashboard = () => {
   /* ── Dashboard ── */
   return (
     <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
+      <SEO
+        title="Realtor Tools | ComingHomeIQ"
+        description="Digital disclosures, listing intelligence, and client portals for real estate professionals."
+        path="/realtor"
+      />
       <InspectionNotificationBanner variant="realtor" />
       <h1 className="text-xl font-bold text-foreground mb-1">Welcome, {profile?.full_name || "Agent"}</h1>
       <p className="text-xs text-muted-foreground mb-6">{profile?.role === "realtor" ? "Licensed Real Estate Agent" : "Realtor Dashboard"}</p>
