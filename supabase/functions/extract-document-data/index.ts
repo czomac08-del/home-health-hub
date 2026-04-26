@@ -190,11 +190,34 @@ serve(async (req) => {
         content: `${EXTRACTION_PROMPTS[promptKey]}\n\nDocument text:\n${documentText}`,
       });
     } else {
+      // Gemini requires PDFs/non-image binaries as base64 data URLs.
+      // Fetch the document and convert to a data URL with the correct MIME type.
+      let imageUrl = documentUrl;
+      try {
+        const fileRes = await fetch(documentUrl);
+        if (!fileRes.ok) throw new Error(`Failed to fetch document: ${fileRes.status}`);
+        const contentType = fileRes.headers.get("content-type") || "application/pdf";
+        const buf = new Uint8Array(await fileRes.arrayBuffer());
+        // Base64-encode in chunks to avoid call stack overflow on large files
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < buf.length; i += chunk) {
+          binary += String.fromCharCode(...buf.subarray(i, i + chunk));
+        }
+        const base64 = btoa(binary);
+        imageUrl = `data:${contentType};base64,${base64}`;
+      } catch (fetchErr) {
+        console.error("Document fetch/encode failed:", fetchErr);
+        return new Response(JSON.stringify({ error: "Could not fetch document for AI processing" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       messages.push({
         role: "user",
         content: [
           { type: "text", text: EXTRACTION_PROMPTS[promptKey] },
-          { type: "image_url", image_url: { url: documentUrl } },
+          { type: "image_url", image_url: { url: imageUrl } },
         ],
       });
     }
