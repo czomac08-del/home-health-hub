@@ -98,6 +98,10 @@ const CertificationCard = ({ healthScore, profileCompleteness, systems }: Certif
         </div>
       </div>
 
+      <p className="text-[11px] text-muted-foreground mb-3 text-center">
+        Fields marked "I don't know" don't hurt your score. Scan an appliance label to fill them in automatically.
+      </p>
+
       <div className="flex gap-2">
         <button
           onClick={handleGenerateReport}

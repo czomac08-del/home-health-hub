@@ -135,21 +135,34 @@ function ConnectionDiagram({ panels }: { panels: PanelData[] }) {
           <Fragment key={p.id}>
             <div className="rounded-lg border-2 border-primary bg-primary/10 px-4 py-2.5 text-center min-w-[200px]">
               <p className="text-sm font-semibold text-primary">{p.nickname || "Main Panel"}</p>
-              <p className="text-[10px] text-muted-foreground">{p.totalAmp ? `${p.totalAmp}A` : "—"} • {p.propertyLocation || "—"}</p>
+              {(p.totalAmp || p.propertyLocation) && (
+                <p className="text-[10px] text-muted-foreground">
+                  {[p.totalAmp ? `${p.totalAmp}A` : null, p.propertyLocation || null].filter(Boolean).join(" • ")}
+                </p>
+              )}
             </div>
             {/* Lines to subpanels fed from this main */}
             {subPanels.filter((s) => s.connectedTo === p.nickname || s.connectedTo === p.id || (!s.connectedTo && mainPanels.length === 1)).map((sub) => (
               <Fragment key={sub.id}>
                 <div className="flex flex-col items-center">
                   <div className="w-0.5 h-4 bg-primary/40" />
-                  <span className="text-[9px] text-muted-foreground bg-card px-2 py-0.5 rounded border border-border">
-                    {sub.feederBreaker ? `Brk ${sub.feederBreaker}` : "—"} • {sub.feederAmp ? `${sub.feederAmp}A feeder` : "—"}
-                  </span>
+                  {(sub.feederBreaker || sub.feederAmp) && (
+                    <span className="text-[9px] text-muted-foreground bg-card px-2 py-0.5 rounded border border-border">
+                      {[
+                        sub.feederBreaker ? `Brk ${sub.feederBreaker}` : null,
+                        sub.feederAmp ? `${sub.feederAmp}A feeder` : null,
+                      ].filter(Boolean).join(" • ")}
+                    </span>
+                  )}
                   <div className="w-0.5 h-4 bg-primary/40" />
                 </div>
                 <div className="rounded-lg border-2 border-border bg-secondary/40 px-4 py-2.5 text-center min-w-[180px]">
                   <p className="text-sm font-medium text-foreground">{sub.nickname || sub.panelType || "Subpanel"}</p>
-                  <p className="text-[10px] text-muted-foreground">{sub.totalAmp ? `${sub.totalAmp}A` : "—"} • {sub.propertyLocation || "—"}</p>
+                  {(sub.totalAmp || sub.propertyLocation) && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {[sub.totalAmp ? `${sub.totalAmp}A` : null, sub.propertyLocation || null].filter(Boolean).join(" • ")}
+                    </p>
+                  )}
                 </div>
               </Fragment>
             ))}
@@ -204,7 +217,11 @@ function PanelCard({ panel, allPanels, index, expanded, onToggle, onChange, onDe
         <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", statusColor)} />
         <div className="flex-1 text-left min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{panel.nickname || `Panel ${index + 1}`}</p>
-          <p className="text-[10px] text-muted-foreground">{panel.panelType || "—"} • {panel.propertyLocation || "—"} • {panel.totalAmp ? `${panel.totalAmp}A` : "—"}</p>
+          {(panel.panelType || panel.propertyLocation || panel.totalAmp) && (
+            <p className="text-[10px] text-muted-foreground">
+              {[panel.panelType || null, panel.propertyLocation || null, panel.totalAmp ? `${panel.totalAmp}A` : null].filter(Boolean).join(" • ")}
+            </p>
+          )}
         </div>
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
@@ -296,7 +313,7 @@ function PanelCard({ panel, allPanels, index, expanded, onToggle, onChange, onDe
                 <tbody>{panel.breakers.filter((b) => b.label).map((b) => (
                   <tr key={b.number} className="border-b border-border/50">
                     <td className="py-2 text-foreground font-medium">{b.number}</td>
-                    <td className="py-2 text-muted-foreground">{b.amperage || "—"}A</td>
+                    <td className="py-2 text-muted-foreground">{b.amperage ? `${b.amperage}A` : ""}</td>
                     <td className="py-2 text-foreground">{b.label}</td>
                     <td className="py-2"><span className={cn("text-xs px-2 py-0.5 rounded-full capitalize", b.status === "on" && "bg-primary/20 text-primary", b.status === "off" && "bg-secondary text-muted-foreground", b.status === "tripped" && "bg-destructive/20 text-destructive")}>{b.status}</span></td>
                   </tr>

@@ -76,11 +76,19 @@ const PropertyDetailScreen = () => {
             <span className="text-[10px] font-medium text-health-green bg-health-green/15 px-2 py-0.5 rounded-full mt-1 inline-block">Active</span>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          <Stat icon={<Heart className="h-3.5 w-3.5 text-primary" />} label="Health" value={healthScore != null ? `${healthScore}%` : "—"} />
-          <Stat icon={<Shield className="h-3.5 w-3.5 text-primary" />} label="Systems" value={systemCount != null ? String(systemCount) : "—"} />
-          <Stat icon={<Calendar className="h-3.5 w-3.5 text-primary" />} label="Built" value={yearBuilt || "—"} />
-        </div>
+        {(healthScore != null || (systemCount != null && systemCount > 0) || yearBuilt) ? (
+          <div className="grid grid-cols-3 gap-3">
+            {healthScore != null && (
+              <Stat icon={<Heart className="h-3.5 w-3.5 text-primary" />} label="Health" value={`${healthScore}%`} />
+            )}
+            {systemCount != null && systemCount > 0 && (
+              <Stat icon={<Shield className="h-3.5 w-3.5 text-primary" />} label="Systems" value={String(systemCount)} />
+            )}
+            {yearBuilt && (
+              <Stat icon={<Calendar className="h-3.5 w-3.5 text-primary" />} label="Built" value={String(yearBuilt)} />
+            )}
+          </div>
+        ) : null}
       </div>
 
       {/* Discovery Status */}
