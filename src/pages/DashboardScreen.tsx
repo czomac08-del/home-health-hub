@@ -54,7 +54,8 @@ const DashboardScreen = () => {
   const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
   const [recordCount, setRecordCount] = useState<number | null>(null);
   const [assessedSystemNames, setAssessedSystemNames] = useState<string[]>([]);
-  const [systemDetails, setSystemDetails] = useState<Array<{ system_name: string; brand: string | null; specs: any }>>([]);
+  const [systemDetails, setSystemDetails] = useState<Array<{ system_name: string; brand: string | null; specs: any; data_status: string | null }>>([]);
+  const [findingsByCategory, setFindingsByCategory] = useState<Record<string, Record<number, number>>>({});
 
   useEffect(() => {
     if (!activeProperty?.id) { setRecordCount(0); return; }
@@ -73,12 +74,28 @@ const DashboardScreen = () => {
     const load = async () => {
       const { data } = await supabase
         .from("system_details")
-        .select("system_name, brand, specs")
+        .select("system_name, brand, specs, data_status")
         .eq("property_id", activeProperty.id);
       if (cancelled) return;
       const rows = (data || []) as any[];
       setAssessedSystemNames(rows.map((r) => r.system_name).filter(Boolean));
-      setSystemDetails(rows.map((r) => ({ system_name: r.system_name, brand: r.brand, specs: r.specs || {} })));
+      setSystemDetails(rows.map((r) => ({ system_name: r.system_name, brand: r.brand, specs: r.specs || {}, data_status: r.data_status ?? null })));
+
+      // Pull inspection findings to mirror SystemDetailScreen scoring.
+      const { data: f } = await supabase
+        .from("inspection_findings")
+        .select("level, category")
+        .eq("property_id", activeProperty.id);
+      if (cancelled) return;
+      const map: Record<string, Record<number, number>> = {};
+      for (const row of (f || []) as any[]) {
+        const cat = String(row.category || "").toLowerCase();
+        if (!cat) continue;
+        const lv = Number(row.level) || 0;
+        map[cat] = map[cat] || {};
+        map[cat][lv] = (map[cat][lv] || 0) + 1;
+      }
+      setFindingsByCategory(map);
     };
     void load();
     // Refresh whenever AddToProfileModal (or anywhere else) tells us system data changed.
@@ -90,13 +107,31 @@ const DashboardScreen = () => {
     };
   }, [activeProperty?.id]);
 
+  // Mirror SystemDetailScreen's scoreFromRows so dashboard tiles show the same number.
+  const computeScore = (matchedRows: typeof systemDetails, levelCounts: Record<number, number>): number => {
+    if (!matchedRows.length) return 50;
+    const isInspector = matchedRows.some((r) => r.data_status === "inspector_verified");
+    const max = Math.max(0, ...matchedRows.map((r) => Number(r.specs?.inspector_findings_count) || 0));
+    const condition = (matchedRows.find((r) => r.specs?.condition)?.specs?.condition || "").toLowerCase();
+    let base = isInspector ? 82 : 70;
+    if (/major defect/i.test(condition) || (levelCounts[4] || 0) > 0) base = 60;
+    else if (/significant/i.test(condition) || (levelCounts[3] || 0) > 0) base = 70;
+    else if (/minor/i.test(condition) || (levelCounts[2] || 0) > 0) base = 78;
+    if (max >= 5) base -= 5;
+    return Math.max(40, Math.min(95, base));
+  };
+
   // Mark each tile assessed if any system_details row matches its pattern.
   const systems = defaultSystems.map((s) => {
-    const matched = systemDetails.find((r) => s.match.test(r.system_name));
-    const isAssessed = !!matched;
+    const matchedAll = systemDetails.filter((r) => s.match.test(r.system_name));
+    const matched = matchedAll[0];
+    const isAssessed = matchedAll.length > 0;
     const brand = matched?.brand || matched?.specs?.brand || matched?.specs?.whBrand || matched?.specs?.panelBrand || null;
     const condition = matched?.specs?.condition || matched?.specs?.condition_noted || null;
-    return { ...s, assessed: isAssessed, brand, condition };
+    const levelCounts = findingsByCategory[s.id] || {};
+    const health = isAssessed ? computeScore(matchedAll, levelCounts) : null;
+    const flagged = health !== null && health < 70;
+    return { ...s, assessed: isAssessed, brand, condition, health, flagged };
   });
   // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
   const needsAttention = systems.filter((s) => s.assessed && s.health !== null && s.health < 70);
