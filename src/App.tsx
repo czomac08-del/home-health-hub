@@ -57,10 +57,12 @@ import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 import JoinReferralScreen from "./pages/JoinReferralScreen";
 import AdminRewardsPage from "./pages/AdminRewardsPage";
 import UploadDocumentFab from "./components/UploadDocumentFab";
+import CookieConsentBanner from "./components/CookieConsentBanner";
+import PrivacyRightsPage from "./pages/PrivacyRightsPage";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
+const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding"];
 
 // Pages where the Upload Document FAB should appear (homeowner property pages).
 const uploadFabRoutes = [
@@ -189,6 +191,7 @@ const AppContent = () => {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/terms" element={<TermsOfServicePage />} />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/privacy-rights" element={<PrivacyRightsPage />} />
             <Route path="/legal-onboarding" element={<ProtectedRoute><LegalOnboardingScreen /></ProtectedRoute>} />
             <Route path="/home-defense" element={<ProtectedRoute><HomeDefenseHubScreen /></ProtectedRoute>} />
             <Route path="/report" element={<ScoreReportPage />} />
@@ -215,6 +218,7 @@ const AppContent = () => {
         </div>
       )}
       {showUploadFab && <UploadDocumentFab />}
+      <CookieConsentBanner />
     </div>
   );
 };
