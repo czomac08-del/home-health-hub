@@ -220,6 +220,13 @@ export default function InspectionAnalysisPanel({
 
   return (
     <div className="space-y-5">
+      {/* Print / Save PDF — top of the findings panel */}
+      {onPrintFilterChange && (
+        <div className="flex items-center justify-end">
+          <PrintFindingsButton filter={printFilter} onFilterChange={onPrintFilterChange} />
+        </div>
+      )}
+
       {/* SECTION A — MINOR */}
       <section className="rounded-xl border border-health-green/30 overflow-hidden">
         <header className="bg-health-green/10 px-3 py-2 flex items-center gap-2">
