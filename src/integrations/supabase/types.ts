@@ -29,6 +29,136 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_earnings: {
+        Row: {
+          affiliate_id: string
+          created_at: string
+          gross_revenue_cents: number
+          id: string
+          month: string
+          paid_at: string | null
+          paid_out: boolean
+          rev_share_amount_cents: number
+          stripe_payout_id: string | null
+          subscribers_count: number
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          created_at?: string
+          gross_revenue_cents?: number
+          id?: string
+          month: string
+          paid_at?: string | null
+          paid_out?: boolean
+          rev_share_amount_cents?: number
+          stripe_payout_id?: string | null
+          subscribers_count?: number
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          created_at?: string
+          gross_revenue_cents?: number
+          id?: string
+          month?: string
+          paid_at?: string | null
+          paid_out?: boolean
+          rev_share_amount_cents?: number
+          stripe_payout_id?: string | null
+          subscribers_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_earnings_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_partners: {
+        Row: {
+          code: string
+          contact_email: string | null
+          created_at: string
+          id: string
+          name: string
+          rev_share_pct: number
+          status: string
+          stripe_payout_id: string | null
+          total_earned_cents: number
+          total_referred: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          rev_share_pct?: number
+          status?: string
+          stripe_payout_id?: string | null
+          total_earned_cents?: number
+          total_referred?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          rev_share_pct?: number
+          status?: string
+          stripe_payout_id?: string | null
+          total_earned_cents?: number
+          total_referred?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      affiliate_referrals: {
+        Row: {
+          active: boolean
+          affiliate_id: string
+          first_paid_at: string | null
+          id: string
+          referred_user_id: string
+          signed_up_at: string
+        }
+        Insert: {
+          active?: boolean
+          affiliate_id: string
+          first_paid_at?: string | null
+          id?: string
+          referred_user_id: string
+          signed_up_at?: string
+        }
+        Update: {
+          active?: boolean
+          affiliate_id?: string
+          first_paid_at?: string | null
+          id?: string
+          referred_user_id?: string
+          signed_up_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_profiles: {
         Row: {
           business_name: string | null
@@ -137,6 +267,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      closed_deals: {
+        Row: {
+          charged_at: string | null
+          close_date: string
+          created_at: string
+          deal_address: string
+          id: string
+          notes: string | null
+          platform_fee_cents: number
+          platform_fee_charged: boolean
+          purchase_price: number | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charged_at?: string | null
+          close_date: string
+          created_at?: string
+          deal_address: string
+          id?: string
+          notes?: string | null
+          platform_fee_cents?: number
+          platform_fee_charged?: boolean
+          purchase_price?: number | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charged_at?: string | null
+          close_date?: string
+          created_at?: string
+          deal_address?: string
+          id?: string
+          notes?: string | null
+          platform_fee_cents?: number
+          platform_fee_charged?: boolean
+          purchase_price?: number | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       community_requests: {
         Row: {
@@ -2018,6 +2196,7 @@ export type Database = {
       profiles: {
         Row: {
           active_property_id: string | null
+          affiliate_code: string | null
           age_confirmed_at: string | null
           anonymized: boolean
           anonymized_at: string | null
@@ -2029,6 +2208,8 @@ export type Database = {
           marketing_opted_in: boolean
           marketing_opted_in_at: string | null
           privacy_accepted_at: string | null
+          promo_code: string | null
+          referral_source: string | null
           role: Database["public"]["Enums"]["app_role"]
           terms_accepted_at: string | null
           terms_version_accepted: string | null
@@ -2037,6 +2218,7 @@ export type Database = {
         }
         Insert: {
           active_property_id?: string | null
+          affiliate_code?: string | null
           age_confirmed_at?: string | null
           anonymized?: boolean
           anonymized_at?: string | null
@@ -2048,6 +2230,8 @@ export type Database = {
           marketing_opted_in?: boolean
           marketing_opted_in_at?: string | null
           privacy_accepted_at?: string | null
+          promo_code?: string | null
+          referral_source?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           terms_accepted_at?: string | null
           terms_version_accepted?: string | null
@@ -2056,6 +2240,7 @@ export type Database = {
         }
         Update: {
           active_property_id?: string | null
+          affiliate_code?: string | null
           age_confirmed_at?: string | null
           anonymized?: boolean
           anonymized_at?: string | null
@@ -2067,6 +2252,8 @@ export type Database = {
           marketing_opted_in?: boolean
           marketing_opted_in_at?: string | null
           privacy_accepted_at?: string | null
+          promo_code?: string | null
+          referral_source?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           terms_accepted_at?: string | null
           terms_version_accepted?: string | null
@@ -2807,6 +2994,7 @@ export type Database = {
           current_period_start: string | null
           id: string
           plan_id: string
+          plan_type: string
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -2823,6 +3011,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_id?: string
+          plan_type?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -2839,6 +3028,7 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           plan_id?: string
+          plan_type?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
