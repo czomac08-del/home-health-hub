@@ -20,7 +20,7 @@ serve(async (req) => {
 
     switch (mode) {
       case "label_scan":
-        systemPrompt = "You are an expert product label reader. Extract all visible text from product labels and return structured data. Always respond with valid JSON.";
+        systemPrompt = "You are an expert product label reader. Extract all visible text from product labels and return structured data. Always respond with valid JSON. TRUTHFULNESS RULE: Only return values that are explicitly visible on the label. If a field is not legible or not present, return null. Do not infer, estimate, or generate plausible values. Accuracy is more important than completeness.";
         userPrompt = `Analyze this product label image. Extract and return a JSON object with these fields (use null for any field not found):
 {
   "brand": "manufacturer/brand name",
@@ -38,7 +38,7 @@ serve(async (req) => {
         break;
 
       case "full_unit":
-        systemPrompt = "You are a home inspection AI expert. Identify home systems, appliances, and equipment from photos. Provide detailed assessments.";
+        systemPrompt = "You are a home inspection AI expert. Identify home systems, appliances, and equipment from photos. Provide detailed assessments. TRUTHFULNESS RULE: Only describe what is visibly present in the image. If model, age, or condition cannot be determined visually, return null for those fields. Do not invent specs or guess install dates.";
         userPrompt = `Analyze this image of a home system/appliance. Return a JSON object:
 {
   "unitType": "what type of unit/system this is",
@@ -53,7 +53,7 @@ serve(async (req) => {
         break;
 
       case "barcode":
-        systemPrompt = "You are a product identification expert. Identify products from barcodes, QR codes, or any visible product identifiers.";
+        systemPrompt = "You are a product identification expert. Identify products from barcodes, QR codes, or any visible product identifiers. TRUTHFULNESS RULE: Only return values you can confirm from the visible identifier. If the barcode is not readable or the product cannot be identified with certainty, return null. Do not guess product names or models.";
         userPrompt = `Analyze this image for any barcode, QR code, or product identifier. Return a JSON object:
 {
   "barcodeValue": "decoded barcode/QR value if visible",
@@ -67,7 +67,7 @@ serve(async (req) => {
         break;
 
       case "receipt":
-        systemPrompt = "You are an expert at reading service receipts and invoices. Extract all relevant service information accurately.";
+        systemPrompt = "You are an expert at reading service receipts and invoices. Extract all relevant service information accurately. TRUTHFULNESS RULE: Only return values that are clearly printed on the receipt. If a field is missing, illegible, or ambiguous, return null. Do not infer dates, prices, or company names.";
         userPrompt = `Analyze this service receipt/invoice image. Extract and return a JSON object:
 {
   "serviceCompany": "company name",
