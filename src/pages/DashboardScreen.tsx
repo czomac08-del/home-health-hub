@@ -21,6 +21,7 @@ import PendingRewardsCard from "@/components/PendingRewardsCard";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import DocumentHub from "@/components/DocumentHub";
 import RecentUploadBanner from "@/components/RecentUploadBanner";
+import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -315,6 +316,9 @@ const DashboardScreen = () => {
             </div>
           </div>
         )}
+
+        {/* Insurance quick access */}
+        <DashboardInsuranceCard />
 
         {/* Home Story Timeline */}
         <HomeStoryTimeline />

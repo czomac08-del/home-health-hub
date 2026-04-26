@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Shield, Upload, Phone, AlertTriangle, ChevronRight, Plus, FileText,
   MessageSquare, Send, Bot, Clock, ExternalLink, Star, Trash2, X,
-  CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart
+  CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart, Pencil
 } from "lucide-react";
 import DiscountPotentialSection from "@/components/DiscountPotentialSection";
 import RefreshButton from "@/components/RefreshButton";
@@ -84,6 +84,7 @@ const fmt = (n: number | null | undefined): string | null =>
 // ─── Component ───
 const InsuranceScreen = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, properties } = useAuth();
   const activeProperty = properties.find((p) => p.is_active) || properties[0];
 
@@ -101,7 +102,7 @@ const InsuranceScreen = () => {
     insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "",
     premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "",
     claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "",
-    liability_coverage: "", deductible_amount: "",
+    liability_coverage: "", deductible_amount: "", agent_email: "", notes: "",
   });
 
   // Claims form
@@ -121,6 +122,13 @@ const InsuranceScreen = () => {
 
   useEffect(() => { loadData(); }, [user, activeProperty]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+
+  // Open the manual entry form directly when arriving via ?add=manual
+  useEffect(() => {
+    if (searchParams.get("add") === "manual") {
+      setShowAddPolicy(true);
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     if (!user || !activeProperty) return;
@@ -171,10 +179,15 @@ const InsuranceScreen = () => {
 
   const handleAddPolicy = async () => {
     if (!user || !activeProperty) return;
-    const { error } = await supabase.from("insurance_policies").insert({
+    if (!pForm.insurance_company.trim() && !pForm.policy_number.trim()) {
+      toast.error("Add at least the insurance company or policy number");
+      return;
+    }
+    const payload = {
       user_id: user.id,
       property_id: activeProperty.id,
       policy_type: newPolicyType,
+      data_status: "owner_submitted",
       insurance_company: pForm.insurance_company || null,
       policy_number: pForm.policy_number || null,
       coverage_start: pForm.coverage_start || null,
@@ -189,11 +202,16 @@ const InsuranceScreen = () => {
       personal_property_coverage: pForm.personal_property_coverage ? Number(pForm.personal_property_coverage) : null,
       liability_coverage: pForm.liability_coverage ? Number(pForm.liability_coverage) : null,
       deductible_amount: pForm.deductible_amount ? Number(pForm.deductible_amount) : null,
-    });
+      // Stash agent email + notes inside ai_analysis until dedicated columns exist.
+      ai_analysis: (pForm.agent_email || pForm.notes)
+        ? { owner_entered: { agent_email: pForm.agent_email || null, notes: pForm.notes || null } }
+        : null,
+    };
+    const { error } = await supabase.from("insurance_policies").insert(payload as any);
     if (error) { toast.error("Failed to save policy"); return; }
     toast.success("Policy added!");
     setShowAddPolicy(false);
-    setPForm({ insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "", premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "", claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "", liability_coverage: "", deductible_amount: "" });
+    setPForm({ insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "", premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "", claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "", liability_coverage: "", deductible_amount: "", agent_email: "", notes: "" });
     loadData();
   };
 
@@ -458,7 +476,18 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
       {/* Add Policy Form */}
       {showAddPolicy && (
         <div className="rounded-2xl border border-border bg-card p-5 mb-6 space-y-4">
-          <h3 className="font-heading font-bold text-foreground">Add Insurance Policy</h3>
+          <div>
+            <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-primary" /> Add Policy Manually
+            </h3>
+            <div className="mt-2 rounded-xl bg-brain-blue/10 border border-brain-blue/30 p-3">
+              <p className="text-xs text-foreground">
+                <span className="font-semibold">Don't have your document?</span>{" "}
+                Enter what you know now — you can upload the full policy PDF anytime later.
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">Only the insurance company name or policy number is required.</p>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Policy Type</label>
             <select value={newPolicyType} onChange={(e) => setNewPolicyType(e.target.value as PolicyType)} className="w-full rounded-xl border border-border bg-bg-secondary py-2.5 px-3 text-sm text-foreground">
@@ -479,12 +508,24 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
             </div>
             <FormInput label="Agent Name" value={pForm.agent_name} onChange={(v) => setPForm({ ...pForm, agent_name: v })} />
             <FormInput label="Agent Phone" value={pForm.agent_phone} onChange={(v) => setPForm({ ...pForm, agent_phone: v })} />
+            <FormInput label="Agent Email" value={pForm.agent_email} onChange={(v) => setPForm({ ...pForm, agent_email: v })} />
             <FormInput label="Claims Phone (24hr)" value={pForm.claims_phone} onChange={(v) => setPForm({ ...pForm, claims_phone: v })} />
             <FormInput label="Online Portal URL" value={pForm.online_portal_url} onChange={(v) => setPForm({ ...pForm, online_portal_url: v })} />
             <FormInput label="Dwelling Coverage" type="number" value={pForm.dwelling_coverage} onChange={(v) => setPForm({ ...pForm, dwelling_coverage: v })} />
             <FormInput label="Personal Property" type="number" value={pForm.personal_property_coverage} onChange={(v) => setPForm({ ...pForm, personal_property_coverage: v })} />
             <FormInput label="Liability Coverage" type="number" value={pForm.liability_coverage} onChange={(v) => setPForm({ ...pForm, liability_coverage: v })} />
             <FormInput label="Deductible" type="number" value={pForm.deductible_amount} onChange={(v) => setPForm({ ...pForm, deductible_amount: v })} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Notes</label>
+            <textarea
+              value={pForm.notes}
+              onChange={(e) => setPForm({ ...pForm, notes: e.target.value })}
+              rows={3}
+              maxLength={1000}
+              placeholder="Anything else worth remembering about this policy…"
+              className="w-full rounded-xl border border-border bg-bg-secondary py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
           </div>
           <div className="flex gap-2">
             <button onClick={handleAddPolicy} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-heading font-bold text-primary-foreground hover:opacity-90">Save Policy</button>
