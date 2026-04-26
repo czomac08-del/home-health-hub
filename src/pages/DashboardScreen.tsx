@@ -7,6 +7,9 @@ import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wi
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import UploadPromptCard from "@/components/UploadPromptCard";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
 import HomeStoryTimeline from "@/components/HomeStoryTimeline";
@@ -30,6 +33,16 @@ const DashboardScreen = () => {
   const navigate = useNavigate();
   const [showSwitcher, setShowSwitcher] = useState(false);
   const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
+  const [recordCount, setRecordCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!activeProperty?.id) { setRecordCount(0); return; }
+    supabase
+      .from("property_records")
+      .select("id", { count: "exact", head: true })
+      .eq("property_id", activeProperty.id)
+      .then(({ count }) => setRecordCount(count ?? 0));
+  }, [activeProperty?.id]);
 
   const systems = defaultSystems;
   // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
@@ -150,6 +163,16 @@ const DashboardScreen = () => {
         {/* Check for New Records */}
         <RefreshButton scope="full" variant="card" className="mb-4" />
         <RefreshAllButton className="mb-6" />
+
+        {/* Contextual upload prompt — shown when no documents uploaded */}
+        {recordCount === 0 && (
+          <UploadPromptCard
+            title="Selling soon? Upload your inspection report to build your Home IQ Report."
+            description="Even one document strengthens your home's verified record — and saves you scrambling later."
+            defaultDocType="inspection_report"
+            className="mb-6"
+          />
+        )}
 
         {/* Certification Card */}
         <CertificationCard
