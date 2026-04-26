@@ -318,6 +318,7 @@ const RealtorDashboard = () => {
   /* ── Dashboard ── */
   return (
     <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
+      <InspectionNotificationBanner variant="realtor" />
       <h1 className="text-xl font-bold text-foreground mb-1">Welcome, {profile?.full_name || "Agent"}</h1>
       <p className="text-xs text-muted-foreground mb-6">{profile?.role === "realtor" ? "Licensed Real Estate Agent" : "Realtor Dashboard"}</p>
 

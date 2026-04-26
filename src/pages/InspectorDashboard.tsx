@@ -367,6 +367,7 @@ const InspectorDashboard = () => {
   /* ── Dashboard ── */
   return (
     <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
+      <InspectionNotificationBanner variant="inspector" />
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Inspector"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Certified Home Inspector</p>
 
