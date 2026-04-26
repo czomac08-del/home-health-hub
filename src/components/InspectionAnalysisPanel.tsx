@@ -21,6 +21,8 @@ interface Props {
   onPrintFilterChange?: (f: PrintFilter) => void;
   /** Called once extraction completes so the parent can render the print payload. */
   onReportLoaded?: (r: InspectionReportData) => void;
+  /** Jump the linked PDF viewer to a specific page (used by "→ Page N" finding links). */
+  onJumpToPage?: (page: number) => void;
 }
 
 type Phase = "ready" | "extracting" | "done" | "error";
@@ -88,6 +90,7 @@ export default function InspectionAnalysisPanel({
   printFilter = "all",
   onPrintFilterChange,
   onReportLoaded,
+  onJumpToPage,
 }: Props) {
   const [report, setReport] = useState<InspectionReportData | null>(initialReport);
   const [phase, setPhase] = useState<Phase>(initialReport ? "done" : "ready");
@@ -251,6 +254,15 @@ export default function InspectionAnalysisPanel({
               {f.description && (
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{f.description}</p>
               )}
+              {f.page_reference && onJumpToPage && (
+                <button
+                  type="button"
+                  onClick={() => onJumpToPage(f.page_reference as number)}
+                  className="text-[11px] font-medium text-primary hover:underline mt-1"
+                >
+                  → Page {f.page_reference}
+                </button>
+              )}
               <p className="text-[10px] text-muted-foreground mt-1">Est. DIY: {diyCost(f)}</p>
             </li>
           ))}
@@ -288,6 +300,15 @@ export default function InspectionAnalysisPanel({
               <p className="text-sm font-medium text-foreground">{f.title}</p>
               {f.description && (
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{f.description}</p>
+              )}
+              {f.page_reference && onJumpToPage && (
+                <button
+                  type="button"
+                  onClick={() => onJumpToPage(f.page_reference as number)}
+                  className="text-[11px] font-medium text-primary hover:underline mt-1"
+                >
+                  → Page {f.page_reference}
+                </button>
               )}
               <p className="text-[11px] text-destructive/80 mt-1 italic">{whyItMatters(f)}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Est. Pro Repair: {proCost(f)}</p>
