@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
+import ClosedDealLogger from "@/components/ClosedDealLogger";
 import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
