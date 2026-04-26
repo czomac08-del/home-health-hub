@@ -131,11 +131,13 @@ const WarrantyDashboard = () => {
                     {s.label === "Expiring Soon" && <ShieldAlert className="h-4 w-4 text-[hsl(var(--health-amber))]" />}
                     {s.label === "Expired" && <ShieldX className="h-4 w-4 text-destructive" />}
                     {s.label === "Unknown" && <Shield className="h-4 w-4 text-muted-foreground" />}
-                    <span className="text-sm font-semibold text-foreground">{sys?.system_name || "Unknown System"}</span>
+                    <span className="text-sm font-semibold text-foreground">{sys?.system_name || "Untitled warranty"}</span>
                   </div>
                   <span className={`text-[10px] font-bold ${s.color}`}>{s.label}</span>
                 </div>
-                <p className="text-xs text-muted-foreground capitalize">{w.warranty_type.replace("_", " ")} · {w.provider_name || "Unknown provider"}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {w.warranty_type.replace("_", " ")}{w.provider_name ? ` · ${w.provider_name}` : ""}
+                </p>
                 {s.days > 0 && (
                   <div className="mt-2">
                     <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
