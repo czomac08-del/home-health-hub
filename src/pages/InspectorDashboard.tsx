@@ -6,6 +6,7 @@ import { useDemoData } from "@/hooks/useDemoData";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 import {
   Search, ClipboardList, CheckCircle2, AlertTriangle, Shield, Home, FileText,
   Clock, Zap, TrendingUp, Check, Camera, Plus, Loader2, X, Calendar, ChevronRight,
@@ -368,6 +369,11 @@ const InspectorDashboard = () => {
   /* ── Dashboard ── */
   return (
     <div className="min-h-screen pb-32 max-w-lg lg:max-w-6xl mx-auto px-4 py-6">
+      <SEO
+        title="Inspector Tools | ComingHomeIQ"
+        description="State checklists, PDF report builder, and pre-inspection intel."
+        path="/inspector"
+      />
       <InspectionNotificationBanner variant="inspector" />
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Inspector"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Certified Home Inspector</p>
