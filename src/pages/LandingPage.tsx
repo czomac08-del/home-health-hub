@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import { useState } from "react";
 import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
 import FeatureDetailModal, { type FeatureKey } from "@/components/FeatureDetailModal";
+import SavingsCalculator from "@/components/SavingsCalculator";
 
 // Combined SoftwareApplication + Organization schema for the homepage.
 const landingJsonLd = {
@@ -177,6 +178,11 @@ const LandingPage = () => {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Savings calculator — primary ROI conversion tool */}
+      <section className="max-w-3xl mx-auto px-6 pb-16">
+        <SavingsCalculator />
       </section>
 
       {/* Platform Stats — real, verifiable numbers */}
