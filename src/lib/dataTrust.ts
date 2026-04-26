@@ -78,7 +78,7 @@ export async function writeTrustedField(
 
   // Look up current source for this field
   const { data: existing } = await supabase
-    .from("field_sources" as never)
+    .from("field_sources" as any)
     .select("*")
     .eq("property_id", propertyId)
     .eq("field_path", fieldPath)
@@ -94,7 +94,7 @@ export async function writeTrustedField(
       // Flag attempt to overwrite higher-trust data without dispute
       flagged = true;
       flagReason = `Owner attempted to overwrite ${existing.current_source} value without filing a dispute.`;
-      await supabase.from("data_audit_log" as never).insert({
+      await supabase.from("data_audit_log" as any).insert({
         property_id: propertyId,
         user_id: userId,
         actor_user_id: userId,
@@ -119,7 +119,7 @@ export async function writeTrustedField(
   // Mark prior history rows as not-current
   if (existing) {
     await supabase
-      .from("data_history" as never)
+      .from("data_history" as any)
       .update({ is_current: false })
       .eq("property_id", propertyId)
       .eq("field_path", fieldPath)
@@ -127,7 +127,7 @@ export async function writeTrustedField(
   }
 
   // Append new history row
-  await supabase.from("data_history" as never).insert({
+  await supabase.from("data_history" as any).insert({
     property_id: propertyId,
     user_id: userId,
     field_path: fieldPath,
@@ -142,7 +142,7 @@ export async function writeTrustedField(
   });
 
   // Upsert current source pointer
-  await supabase.from("field_sources" as never).upsert(
+  await supabase.from("field_sources" as any).upsert(
     {
       property_id: propertyId,
       user_id: userId,
@@ -160,7 +160,7 @@ export async function writeTrustedField(
   );
 
   // Audit log
-  await supabase.from("data_audit_log" as never).insert({
+  await supabase.from("data_audit_log" as any).insert({
     property_id: propertyId,
     user_id: userId,
     actor_user_id: userId,
@@ -177,13 +177,13 @@ export async function writeTrustedField(
   // Frequency check: > 3 changes in 30 days
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const { count } = await supabase
-    .from("data_audit_log" as never)
+    .from("data_audit_log" as any)
     .select("id", { count: "exact", head: true })
     .eq("property_id", propertyId)
     .eq("field_path", fieldPath)
     .gte("created_at", since);
   if ((count ?? 0) > 3) {
-    await supabase.from("data_audit_log" as never).insert({
+    await supabase.from("data_audit_log" as any).insert({
       property_id: propertyId,
       user_id: userId,
       actor_user_id: userId,
@@ -203,7 +203,7 @@ export async function getFieldSources(
   propertyId: string
 ): Promise<Record<string, FieldSource>> {
   const { data } = await supabase
-    .from("field_sources" as never)
+    .from("field_sources" as any)
     .select("*")
     .eq("property_id", propertyId);
   const map: Record<string, FieldSource> = {};
@@ -224,7 +224,7 @@ export async function fileDispute(args: {
   supportingDocuments?: Array<{ name: string; url: string }>;
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const { data, error } = await supabase
-    .from("disputes" as never)
+    .from("disputes" as any)
     .insert({
       property_id: args.propertyId,
       user_id: args.userId,
@@ -243,13 +243,13 @@ export async function fileDispute(args: {
   // Flag the related field as having an open dispute
   if (args.fieldPath) {
     await supabase
-      .from("field_sources" as never)
+      .from("field_sources" as any)
       .update({ has_open_dispute: true })
       .eq("property_id", args.propertyId)
       .eq("field_path", args.fieldPath);
   }
 
-  await supabase.from("data_audit_log" as never).insert({
+  await supabase.from("data_audit_log" as any).insert({
     property_id: args.propertyId,
     user_id: args.userId,
     actor_user_id: args.userId,
