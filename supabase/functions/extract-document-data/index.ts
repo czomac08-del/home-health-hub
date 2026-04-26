@@ -317,8 +317,16 @@ serve(async (req) => {
 
       // Inspection report shape — pass findings through and synthesize a fields map
       if (Array.isArray(parsed.findings)) {
+        const inspectorMeta = {
+          inspector_name: parsed.inspector_name?.value || null,
+          inspector_company: parsed.inspector_company?.value || null,
+          inspector_license: parsed.inspector_license?.value || null,
+          inspection_date: parsed.inspection_date?.value || null,
+          property_address: parsed.property_address?.value || null,
+        };
         inspectionFindings = {
           document_type: parsed.document_type || "inspection_report",
+          inspector: inspectorMeta,
           findings: parsed.findings,
           summary: parsed.summary || {
             level_1_count: parsed.findings.filter((f: any) => f.level === 1).length,
@@ -328,7 +336,7 @@ serve(async (req) => {
           },
         };
         const fields: Record<string, FieldExtraction> = {};
-        for (const k of ["inspector_name", "inspection_date", "property_address"]) {
+        for (const k of ["inspector_name", "inspector_company", "inspector_license", "inspection_date", "property_address"]) {
           if (parsed[k] && typeof parsed[k] === "object" && "value" in parsed[k]) {
             fields[k] = parsed[k];
           }
