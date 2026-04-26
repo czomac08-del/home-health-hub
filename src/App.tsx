@@ -59,6 +59,7 @@ import AdminRewardsPage from "./pages/AdminRewardsPage";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
+import PropertyContextBanner from "./components/PropertyContextBanner";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,9 @@ const AppContent = () => {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Desktop header */}
         {showNav && <DesktopHeader />}
+
+        {/* Global active-property indicator on every authenticated screen */}
+        {showNav && <PropertyContextBanner />}
 
         <main className="flex-1">
           <Routes>

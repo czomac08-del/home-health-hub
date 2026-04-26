@@ -1638,6 +1638,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_property_id: string | null
           age_confirmed_at: string | null
           anonymized: boolean
           anonymized_at: string | null
@@ -1656,6 +1657,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_property_id?: string | null
           age_confirmed_at?: string | null
           anonymized?: boolean
           anonymized_at?: string | null
@@ -1674,6 +1676,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_property_id?: string | null
           age_confirmed_at?: string | null
           anonymized?: boolean
           anonymized_at?: string | null
@@ -1691,7 +1694,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_property_id_fkey"
+            columns: ["active_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {

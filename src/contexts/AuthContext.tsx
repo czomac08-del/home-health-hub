@@ -51,16 +51,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
-  const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
+  const [activePropertyId, setActivePropertyIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("active_property_id");
+  });
   const [loading, setLoading] = useState(true);
+
+  // Persist to localStorage + (debounced) DB whenever the active property changes.
+  const setActivePropertyId = (id: string) => {
+    setActivePropertyIdState(id);
+    try { localStorage.setItem("active_property_id", id); } catch {}
+    // Fire-and-forget DB persistence so it follows the user across devices.
+    void supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id;
+      if (!uid) return;
+      void supabase.from("profiles").update({ active_property_id: id }).eq("user_id", uid);
+    });
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("full_name, email, role, avatar_url")
+      .select("full_name, email, role, avatar_url, active_property_id")
       .eq("user_id", userId)
       .maybeSingle();
-    if (data) setProfile(data as Profile);
+    if (data) {
+      setProfile(data as Profile);
+      // Restore server-side active property if no local selection yet.
+      const serverActiveId = (data as { active_property_id?: string | null }).active_property_id;
+      if (serverActiveId && !localStorage.getItem("active_property_id")) {
+        setActivePropertyIdState(serverActiveId);
+        try { localStorage.setItem("active_property_id", serverActiveId); } catch {}
+      }
+    }
   };
 
   const fetchProperties = async (userId: string) => {
@@ -71,9 +94,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .order("created_at", { ascending: true });
     if (data) {
       setProperties(data);
-      if (!activePropertyId && data.length > 0) {
-        const active = data.find((p) => p.is_active) || data[0];
-        setActivePropertyId(active.id);
+      // Validate stored active id still exists in user's property list.
+      const storedId = activePropertyId;
+      const stillExists = storedId && data.some((p) => p.id === storedId);
+      if (!stillExists && data.length > 0) {
+        const fallback = data.find((p) => p.is_active) || data[0];
+        setActivePropertyIdState(fallback.id);
+        try { localStorage.setItem("active_property_id", fallback.id); } catch {}
       }
     }
   };
