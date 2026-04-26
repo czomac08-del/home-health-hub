@@ -30,11 +30,9 @@ export default function InspectionReviewViewer() {
   const [propertyAddress, setPropertyAddress] = useState<string>("");
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [reportDate, setReportDate] = useState<string | null>(null);
-  const [storagePath, setStoragePath] = useState<string | null>(null);
 
-  const [jumpToPage, setJumpToPage] = useState<number | null>(
-    searchParams.get("page") ? Number(searchParams.get("page")) : null,
-  );
+  const initialPage = searchParams.get("page") ? Number(searchParams.get("page")) : null;
+  const [jumpToPage] = useState<number | null>(initialPage);
   const [mobileTab, setMobileTab] = useState<"analysis" | "report">("analysis");
 
   useEffect(() => {
@@ -59,7 +57,6 @@ export default function InspectionReviewViewer() {
       setReport(ir);
       setPropertyId(rec.property_id);
       setReportDate(rec.document_date ?? rec.created_at ?? null);
-      setStoragePath(rec.storage_path ?? null);
 
       // Resolve a usable URL for the PDF. Prefer a fresh signed URL, fall back to stored url.
       let url: string | null = rec.url ?? null;
@@ -75,14 +72,10 @@ export default function InspectionReviewViewer() {
       if (rec.property_id) {
         const { data: prop } = await supabase
           .from("properties")
-          .select("address, city, state")
+          .select("address")
           .eq("id", rec.property_id)
           .maybeSingle();
-        if (prop) {
-          setPropertyAddress(
-            [prop.address, prop.city, prop.state].filter(Boolean).join(", "),
-          );
-        }
+        if (prop) setPropertyAddress(prop.address ?? "");
       }
 
       setLoading(false);
@@ -103,9 +96,15 @@ export default function InspectionReviewViewer() {
   const handleShare = async () => {
     if (!propertyId) return;
     try {
+      const userRes = await supabase.auth.getUser();
+      const uid = userRes.data.user?.id;
+      if (!uid) {
+        toast.error("Please sign in again to share.");
+        return;
+      }
       const { data, error } = await supabase
         .from("certification_shares")
-        .insert({ property_id: propertyId, user_id: (await supabase.auth.getUser()).data.user?.id! })
+        .insert({ property_id: propertyId, user_id: uid })
         .select("share_token")
         .single();
       if (error) throw error;
@@ -246,6 +245,7 @@ export default function InspectionReviewViewer() {
       <SEO
         title="Inspection Report — Side by Side"
         description="Compare the ComingHomeIQ analysis with the original inspection report side by side."
+        path={`/inspection-review/${propertyRecordId}/viewer`}
       />
       {TopBar}
 
