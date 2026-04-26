@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Wrench, ClipboardList, Tag, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Home, Wrench, ClipboardList, Tag, ChevronRight, CheckCircle2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { InspectionFinding, InspectionReportData } from "@/components/InspectionFindingsReview";
@@ -149,6 +149,16 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
           {score.label}
         </span>
       </div>
+
+      {recordId && (
+        <button
+          onClick={() => navigate(`/inspection-review/${recordId}/viewer`)}
+          className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+          View Full Report — side by side
+        </button>
+      )}
 
       {/* Three quick-action cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

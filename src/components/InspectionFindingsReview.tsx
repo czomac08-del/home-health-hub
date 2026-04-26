@@ -4,6 +4,10 @@ import { DisputeDialog } from "@/components/DisputeDialog";
 import FixVerificationModal from "@/components/FixVerificationModal";
 import { useInspectionFindings } from "@/hooks/useInspectionFindings";
 import { findingKey } from "@/lib/inspectionScoring";
+import FindingSourceLink from "@/components/FindingSourceLink";
+import { Link } from "react-router-dom";
+import { ExternalLink, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface InspectionFinding {
   id: string;
@@ -86,9 +90,11 @@ interface Props {
   /** When provided, enables the "Dispute This Finding" button per finding (post-save context). */
   propertyId?: string;
   propertyRecordId?: string;
+  /** Direct URL to the original PDF in storage — drives source links and viewer. */
+  reportUrl?: string | null;
 }
 
-export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false, propertyId, propertyRecordId }: Props) {
+export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false, propertyId, propertyRecordId, reportUrl }: Props) {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
   const [disputeFinding, setDisputeFinding] = useState<InspectionFinding | null>(null);
@@ -125,7 +131,6 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
   const inspectorCompany = inspector?.inspector_company || "Company not extracted";
   const inspectorLicense = inspector?.inspector_license || null;
   const inspectionDate = inspector?.inspection_date || null;
-  const attributionLine = `Source: ${inspector?.inspector_name || "Inspector of record"}${inspector?.inspector_company ? `, ${inspector.inspector_company}` : ""}${inspectionDate ? `, ${inspectionDate}` : ""}`;
 
   if (totalFindings === 0) {
     return (
@@ -139,6 +144,26 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
 
   return (
     <div className="space-y-3">
+      {/* Side-by-side viewer entry point — only when we have a saved record */}
+      {propertyRecordId && (
+        <div className="flex items-center justify-end gap-2">
+          <Button asChild variant="outline" size="sm" className="h-8">
+            <Link to={`/inspection-review/${propertyRecordId}/viewer`}>
+              <Maximize2 className="h-3.5 w-3.5" />
+              View Side by Side
+            </Link>
+          </Button>
+          {reportUrl && (
+            <Button asChild variant="ghost" size="sm" className="h-8">
+              <a href={reportUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Original PDF
+              </a>
+            </Button>
+          )}
+        </div>
+      )}
+
       {showAttributionDisclaimer && (
         <div className="rounded-xl border border-[hsl(var(--health-amber))]/40 bg-[hsl(var(--health-amber))]/10 p-3">
           <div className="flex items-start gap-2">
@@ -309,11 +334,13 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                                 )}
                               </div>
                             )}
-                            <div className="pt-1.5 border-t border-border/60">
-                              <p className="text-[10px] text-muted-foreground italic">
-                                {attributionLine}
-                              </p>
-                            </div>
+                            <FindingSourceLink
+                              inspectorName={inspector?.inspector_name}
+                              inspectionDate={inspectionDate}
+                              reportUrl={reportUrl ?? null}
+                              propertyRecordId={propertyRecordId ?? null}
+                              findingId={finding.id}
+                            />
                             {canDispute && (
                               <button
                                 type="button"
