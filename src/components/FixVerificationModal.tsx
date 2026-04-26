@@ -331,7 +331,10 @@ export default function FixVerificationModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Receipt for materials (optional)</Label>
+              <Label>Receipt or invoice (optional — upgrades to Receipt Verified)</Label>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                Have a receipt? Just take a photo — any image works. JPG, PNG, HEIC, WebP, or PDF.
+              </p>
               {diyReceipt ? (
                 <div className="flex items-center justify-between text-xs border border-border rounded-lg p-2">
                   <span className="truncate">{diyReceipt.name}</span>
@@ -342,10 +345,10 @@ export default function FixVerificationModal({
               ) : (
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground border border-dashed border-border rounded-lg p-3 hover:bg-muted/30">
                   <Upload className="h-4 w-4" />
-                  Upload receipt (PDF or image)
+                  Snap a photo of the receipt — free, no credits
                   <input
                     type="file"
-                    accept="image/*,application/pdf"
+                    accept="image/*,application/pdf,.heic,.heif"
                     className="hidden"
                     onChange={(e) => setDiyReceipt(e.target.files?.[0] ?? null)}
                   />
