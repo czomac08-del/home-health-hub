@@ -716,6 +716,78 @@ export type Database = {
           },
         ]
       }
+      fix_verifications: {
+        Row: {
+          contractor_license: string | null
+          contractor_name: string | null
+          created_at: string
+          data_quality_flag: string
+          date_completed: string
+          description: string | null
+          documents: Json
+          finding_id: string
+          fix_type: string
+          has_permit: boolean
+          id: string
+          photos: Json
+          property_id: string
+          trade_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contractor_license?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          data_quality_flag?: string
+          date_completed: string
+          description?: string | null
+          documents?: Json
+          finding_id: string
+          fix_type: string
+          has_permit?: boolean
+          id?: string
+          photos?: Json
+          property_id: string
+          trade_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contractor_license?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          data_quality_flag?: string
+          date_completed?: string
+          description?: string | null
+          documents?: Json
+          finding_id?: string
+          fix_type?: string
+          has_permit?: boolean
+          id?: string
+          photos?: Json
+          property_id?: string
+          trade_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fix_verifications_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fix_verifications_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flip_contractors: {
         Row: {
           amount_paid: number | null
@@ -993,6 +1065,85 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "household_profiles_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_findings: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          finding_key: string
+          fix_verification_id: string | null
+          id: string
+          inspection_record_id: string
+          is_diy: boolean
+          level: number
+          property_id: string
+          recommendation: string | null
+          resolved_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          finding_key: string
+          fix_verification_id?: string | null
+          id?: string
+          inspection_record_id: string
+          is_diy?: boolean
+          level: number
+          property_id: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          finding_key?: string
+          fix_verification_id?: string | null
+          id?: string
+          inspection_record_id?: string
+          is_diy?: boolean
+          level?: number
+          property_id?: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "findings_fix_verification_fk"
+            columns: ["fix_verification_id"]
+            isOneToOne: false
+            referencedRelation: "fix_verifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_findings_inspection_record_id_fkey"
+            columns: ["inspection_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_findings_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"

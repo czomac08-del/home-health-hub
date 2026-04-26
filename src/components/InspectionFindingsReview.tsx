@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck, Flag } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck, Flag, CheckCircle2 } from "lucide-react";
 import { DisputeDialog } from "@/components/DisputeDialog";
+import FixVerificationModal from "@/components/FixVerificationModal";
+import { useInspectionFindings } from "@/hooks/useInspectionFindings";
+import { findingKey } from "@/lib/inspectionScoring";
 
 export interface InspectionFinding {
   id: string;
@@ -89,12 +92,32 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
   const [disputeFinding, setDisputeFinding] = useState<InspectionFinding | null>(null);
+  const [fixFinding, setFixFinding] = useState<{ id: string; title: string } | null>(null);
+  const [showFixed, setShowFixed] = useState(false);
   const canDispute = Boolean(propertyId);
+  const canMarkFixed = Boolean(propertyId && propertyRecordId);
+
+  // Load DB-backed status when we have a saved record
+  const { findings: dbFindings, reload } = useInspectionFindings({
+    propertyId: propertyId ?? null,
+    inspectionRecordId: propertyRecordId ?? null,
+    report: canMarkFixed ? data : null,
+  });
+
+  // Map: finding_key → { id, status }
+  const dbByKey = new Map(dbFindings.map((d) => [d.finding_key, d]));
 
   const grouped: Record<1 | 2 | 3 | 4, InspectionFinding[]> = { 1: [], 2: [], 3: [], 4: [] };
   for (const f of data.findings || []) {
     if ([1, 2, 3, 4].includes(f.level)) grouped[f.level].push(f);
   }
+
+  // Build a lookup so each finding card knows its DB row + status
+  const findingMeta = (f: InspectionFinding, idx: number) => {
+    const key = findingKey(f, idx);
+    const row = dbByKey.get(key);
+    return { dbId: row?.id ?? null, status: (row?.status ?? "open") as "open" | "fixed" | "skipped" };
+  };
 
   const totalFindings = data.findings?.length || 0;
   const inspector = data.inspector || null;
@@ -201,10 +224,23 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                 <p className="px-3 pt-3 pb-2 text-[10px] text-muted-foreground italic">
                   {meta.description}
                 </p>
+                {canMarkFixed && items.some((f, i) => findingMeta(f, i).status === "fixed") && (
+                  <div className="px-3 pb-2 -mt-1">
+                    <button
+                      onClick={() => setShowFixed((v) => !v)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                    >
+                      {showFixed ? "Hide fixed items" : "View fixed items"}
+                    </button>
+                  </div>
+                )}
                 <div className="space-y-2 p-3 pt-1">
                   {items.map((finding) => {
                     const isExpanded = expandedFinding === finding.id;
                     const showCitation = (lvl === 1 || lvl === 2) && finding.standard_citation;
+                    const idxInLevel = items.indexOf(finding);
+                    const { dbId, status } = findingMeta(finding, idxInLevel);
+                    if (status === "fixed" && !showFixed) return null;
                     return (
                       <div
                         key={finding.id}
@@ -217,7 +253,12 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                           <div className="flex items-start gap-2">
                             <div className={`w-1 self-stretch rounded-full ${meta.accent} shrink-0`} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-foreground">{finding.title}</p>
+                              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                {status === "fixed" && <CheckCircle2 className="h-3 w-3 text-health-green" />}
+                                <span className={status === "fixed" ? "line-through text-muted-foreground" : ""}>
+                                  {finding.title}
+                                </span>
+                              </p>
                               {finding.location && (
                                 <p className="text-[10px] text-muted-foreground mt-0.5">📍 {finding.location}</p>
                               )}
@@ -286,6 +327,24 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                                 Dispute This Finding
                               </button>
                             )}
+                            {canMarkFixed && status !== "fixed" && dbId && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFixFinding({ id: dbId, title: finding.title });
+                                }}
+                                className="mt-2 ml-3 inline-flex items-center gap-1 text-[10px] font-semibold text-health-green hover:underline"
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                                Mark as Fixed
+                              </button>
+                            )}
+                            {status === "fixed" && (
+                              <p className="mt-2 text-[10px] text-health-green font-medium">
+                                ✅ Fixed — record saved permanently
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -312,6 +371,20 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
           inspectorFindingText={
             disputeFinding ? `${disputeFinding.title}${disputeFinding.description ? " — " + disputeFinding.description : ""}` : null
           }
+        />
+      )}
+
+      {canMarkFixed && propertyId && fixFinding && (
+        <FixVerificationModal
+          open={!!fixFinding}
+          onOpenChange={(o) => !o && setFixFinding(null)}
+          propertyId={propertyId}
+          findingId={fixFinding.id}
+          findingTitle={fixFinding.title}
+          onSubmitted={() => {
+            reload();
+            window.dispatchEvent(new CustomEvent("inspection-findings-changed"));
+          }}
         />
       )}
 
