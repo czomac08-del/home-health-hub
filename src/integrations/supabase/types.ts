@@ -1429,6 +1429,7 @@ export type Database = {
           inspection_record_id: string
           is_diy: boolean
           level: number
+          page_reference: number | null
           property_id: string
           recommendation: string | null
           resolved_at: string | null
@@ -1447,6 +1448,7 @@ export type Database = {
           inspection_record_id: string
           is_diy?: boolean
           level: number
+          page_reference?: number | null
           property_id: string
           recommendation?: string | null
           resolved_at?: string | null
@@ -1465,6 +1467,7 @@ export type Database = {
           inspection_record_id?: string
           is_diy?: boolean
           level?: number
+          page_reference?: number | null
           property_id?: string
           recommendation?: string | null
           resolved_at?: string | null
