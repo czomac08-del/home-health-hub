@@ -303,6 +303,133 @@ export type Database = {
         }
         Relationships: []
       }
+      data_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          field_path: string | null
+          flag_reason: string | null
+          flagged_for_review: boolean
+          id: string
+          metadata: Json
+          new_source: Database["public"]["Enums"]["data_source_type"] | null
+          new_value: string | null
+          old_source: Database["public"]["Enums"]["data_source_type"] | null
+          old_value: string | null
+          property_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          field_path?: string | null
+          flag_reason?: string | null
+          flagged_for_review?: boolean
+          id?: string
+          metadata?: Json
+          new_source?: Database["public"]["Enums"]["data_source_type"] | null
+          new_value?: string | null
+          old_source?: Database["public"]["Enums"]["data_source_type"] | null
+          old_value?: string | null
+          property_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          field_path?: string | null
+          flag_reason?: string | null
+          flagged_for_review?: boolean
+          id?: string
+          metadata?: Json
+          new_source?: Database["public"]["Enums"]["data_source_type"] | null
+          new_value?: string | null
+          old_source?: Database["public"]["Enums"]["data_source_type"] | null
+          old_value?: string | null
+          property_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_audit_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_history: {
+        Row: {
+          created_at: string
+          entered_by_user_id: string | null
+          field_path: string
+          field_value: string | null
+          id: string
+          is_current: boolean
+          property_id: string
+          replaced_source:
+            | Database["public"]["Enums"]["data_source_type"]
+            | null
+          replaced_value: string | null
+          source: Database["public"]["Enums"]["data_source_type"]
+          source_label: string | null
+          source_record_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entered_by_user_id?: string | null
+          field_path: string
+          field_value?: string | null
+          id?: string
+          is_current?: boolean
+          property_id: string
+          replaced_source?:
+            | Database["public"]["Enums"]["data_source_type"]
+            | null
+          replaced_value?: string | null
+          source?: Database["public"]["Enums"]["data_source_type"]
+          source_label?: string | null
+          source_record_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entered_by_user_id?: string | null
+          field_path?: string
+          field_value?: string | null
+          id?: string
+          is_current?: boolean
+          property_id?: string
+          replaced_source?:
+            | Database["public"]["Enums"]["data_source_type"]
+            | null
+          replaced_value?: string | null
+          source?: Database["public"]["Enums"]["data_source_type"]
+          source_label?: string | null
+          source_record_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_history_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disclosure_awareness: {
         Row: {
           acknowledged: boolean
@@ -346,6 +473,78 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disputes: {
+        Row: {
+          created_at: string
+          date_filed: string
+          field_path: string | null
+          finding_id: string | null
+          homeowner_statement: string
+          id: string
+          inspector_finding_text: string | null
+          property_id: string
+          property_record_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["dispute_status"]
+          supporting_documents: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_filed?: string
+          field_path?: string | null
+          finding_id?: string | null
+          homeowner_statement: string
+          id?: string
+          inspector_finding_text?: string | null
+          property_id: string
+          property_record_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          supporting_documents?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_filed?: string
+          field_path?: string | null
+          finding_id?: string | null
+          homeowner_statement?: string
+          id?: string
+          inspector_finding_text?: string | null
+          property_id?: string
+          property_record_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"]
+          supporting_documents?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_property_record_id_fkey"
+            columns: ["property_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
             referencedColumns: ["id"]
           },
         ]
@@ -418,6 +617,65 @@ export type Database = {
           what_happened?: string
         }
         Relationships: []
+      }
+      field_sources: {
+        Row: {
+          created_at: string
+          current_source: Database["public"]["Enums"]["data_source_type"]
+          current_value: string | null
+          field_path: string
+          has_open_dispute: boolean
+          id: string
+          inspection_date: string | null
+          inspector_company: string | null
+          inspector_license: string | null
+          inspector_name: string | null
+          property_id: string
+          source_record_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_source: Database["public"]["Enums"]["data_source_type"]
+          current_value?: string | null
+          field_path: string
+          has_open_dispute?: boolean
+          id?: string
+          inspection_date?: string | null
+          inspector_company?: string | null
+          inspector_license?: string | null
+          inspector_name?: string | null
+          property_id: string
+          source_record_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_source?: Database["public"]["Enums"]["data_source_type"]
+          current_value?: string | null
+          field_path?: string
+          has_open_dispute?: boolean
+          id?: string
+          inspection_date?: string | null
+          inspector_company?: string | null
+          inspector_license?: string | null
+          inspector_name?: string | null
+          property_id?: string
+          source_record_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_sources_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flip_contractors: {
         Row: {
@@ -753,6 +1011,75 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      inspector_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_name: string
+          finding_id: string | null
+          id: string
+          inspection_date: string | null
+          inspector_company: string | null
+          inspector_name: string | null
+          is_primary: boolean
+          property_id: string
+          property_record_id: string | null
+          storage_path: string
+          system_type: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_name: string
+          finding_id?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspector_company?: string | null
+          inspector_name?: string | null
+          is_primary?: boolean
+          property_id: string
+          property_record_id?: string | null
+          storage_path: string
+          system_type?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_name?: string
+          finding_id?: string | null
+          id?: string
+          inspection_date?: string | null
+          inspector_company?: string | null
+          inspector_name?: string | null
+          is_primary?: boolean
+          property_id?: string
+          property_record_id?: string | null
+          storage_path?: string
+          system_type?: string | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspector_media_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspector_media_property_record_id_fkey"
+            columns: ["property_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       insurance_claims: {
         Row: {
@@ -2435,6 +2762,16 @@ export type Database = {
         | "inspector"
         | "contractor"
         | "investor"
+      data_source_type:
+        | "inspector_verified"
+        | "county_record"
+        | "ai_extracted"
+        | "owner_submitted"
+      dispute_status:
+        | "open"
+        | "under_review"
+        | "resolved_upheld"
+        | "resolved_updated"
       profile_type: "personal" | "business"
     }
     CompositeTypes: {
@@ -2564,6 +2901,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["homeowner", "realtor", "inspector", "contractor", "investor"],
+      data_source_type: [
+        "inspector_verified",
+        "county_record",
+        "ai_extracted",
+        "owner_submitted",
+      ],
+      dispute_status: [
+        "open",
+        "under_review",
+        "resolved_upheld",
+        "resolved_updated",
+      ],
       profile_type: ["personal", "business"],
     },
   },
