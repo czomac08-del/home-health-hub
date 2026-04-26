@@ -85,6 +85,8 @@ Return JSON ONLY in this exact shape:
 {
   "document_type": "inspection_report",
   "inspector_name": { "value": string or null, "confidence": 0-100 },
+  "inspector_company": { "value": string or null, "confidence": 0-100 },
+  "inspector_license": { "value": string or null, "confidence": 0-100 },
   "inspection_date": { "value": "YYYY-MM-DD" or null, "confidence": 0-100 },
   "property_address": { "value": string or null, "confidence": 0-100 },
   "overall_confidence": 0-100,
@@ -116,6 +118,7 @@ CRITICAL RULES:
 - Every Level 2 finding MUST have standard_citation and standard_source — if you cannot cite a standard, downgrade to Level 3.
 - Do NOT invent findings not actually in the document.
 - Do NOT estimate repair costs — that happens elsewhere.
+- Extract the inspector's full name, company name, and license number from the report cover/footer when present. These are required for legal attribution.
 - If the document is not actually an inspection report, return findings: [] and set document_type accordingly.`;
 
 EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
