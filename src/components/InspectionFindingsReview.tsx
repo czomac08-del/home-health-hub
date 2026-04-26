@@ -335,11 +335,13 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
                                 )}
                               </div>
                             )}
-                            <div className="pt-1.5 border-t border-border/60">
-                              <p className="text-[10px] text-muted-foreground italic">
-                                {attributionLine}
-                              </p>
-                            </div>
+                            <FindingSourceLink
+                              inspectorName={inspector?.inspector_name}
+                              inspectionDate={inspectionDate}
+                              reportUrl={reportUrl ?? null}
+                              propertyRecordId={propertyRecordId ?? null}
+                              findingId={finding.id}
+                            />
                             {canDispute && (
                               <button
                                 type="button"
