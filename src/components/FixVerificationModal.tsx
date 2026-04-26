@@ -139,7 +139,11 @@ export default function FixVerificationModal({
       if (!userId) throw new Error("Not signed in");
 
       let payload: any;
-      let dataQualityFlag: "unverified" | "pro_verified" | "permit_verified" = "unverified";
+      let dataQualityFlag:
+        | "unverified"
+        | "receipt_verified"
+        | "pro_verified"
+        | "permit_verified" = "unverified";
       let hasPermit = false;
 
       if (tab === "diy") {
@@ -157,6 +161,9 @@ export default function FixVerificationModal({
         const documents = diyReceipt
           ? await uploadFiles(userId, "fix_verification", [{ file: diyReceipt, kind: "receipt" }])
           : [];
+        // Rule 2 — a receipt/invoice photo upgrades DIY to "Receipt Verified".
+        const diyFlag: "unverified" | "receipt_verified" =
+          diyReceipt ? "receipt_verified" : "unverified";
         payload = {
           user_id: userId,
           property_id: propertyId,
@@ -166,9 +173,10 @@ export default function FixVerificationModal({
           description: diyDesc,
           photos,
           documents,
-          data_quality_flag: "unverified",
+          data_quality_flag: diyFlag,
           has_permit: false,
         };
+        dataQualityFlag = diyFlag as any;
       } else {
         const parsed = proSchema.safeParse({
           contractor_name: proName,
@@ -222,7 +230,15 @@ export default function FixVerificationModal({
         .eq("id", findingId);
       if (updErr) throw updErr;
 
-      toast.success("Fix verified and saved permanently");
+      if (dataQualityFlag === "receipt_verified") {
+        toast.success("Your fix record has been upgraded to Receipt Verified");
+      } else if (dataQualityFlag === "permit_verified") {
+        toast.success("Your fix record has been upgraded to Permit Verified");
+      } else if (dataQualityFlag === "pro_verified") {
+        toast.success("Your fix record has been upgraded to Pro Verified");
+      } else {
+        toast.success("Fix saved as Owner Self-Reported");
+      }
       onSubmitted?.();
       reset();
       onOpenChange(false);
@@ -315,7 +331,10 @@ export default function FixVerificationModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Receipt for materials (optional)</Label>
+              <Label>Receipt or invoice (optional — upgrades to Receipt Verified)</Label>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                Have a receipt? Just take a photo — any image works. JPG, PNG, HEIC, WebP, or PDF.
+              </p>
               {diyReceipt ? (
                 <div className="flex items-center justify-between text-xs border border-border rounded-lg p-2">
                   <span className="truncate">{diyReceipt.name}</span>
@@ -326,10 +345,10 @@ export default function FixVerificationModal({
               ) : (
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground border border-dashed border-border rounded-lg p-3 hover:bg-muted/30">
                   <Upload className="h-4 w-4" />
-                  Upload receipt (PDF or image)
+                  Snap a photo of the receipt — free, no credits
                   <input
                     type="file"
-                    accept="image/*,application/pdf"
+                    accept="image/*,application/pdf,.heic,.heif"
                     className="hidden"
                     onChange={(e) => setDiyReceipt(e.target.files?.[0] ?? null)}
                   />

@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { X, Zap, Package, Clock } from "lucide-react";
+import { X, Zap, Package, Clock, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface PurchaseRefreshModalProps {
   open: boolean;
@@ -108,6 +113,26 @@ const PurchaseRefreshModal = ({ open, onClose, nextFreeRefreshLabel }: PurchaseR
           <p className="text-[11px] text-muted-foreground">
             Your next free refresh is available {nextFreeRefreshLabel}
           </p>
+        </div>
+
+        <div className="mt-2 flex justify-center">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="h-3 w-3" />
+                How does billing work?
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 text-[11px] leading-relaxed" align="center">
+              <p className="font-semibold text-foreground mb-1">Reviewing your own data is always free.</p>
+              <p className="text-muted-foreground">
+                Inspection reports, documents, photos, and receipts you upload are free
+                to view, review, and verify. Credits are only used when you ask specific
+                AI-powered questions about your property beyond your plan&apos;s included
+                questions, or when you pull fresh data from outside sources.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>

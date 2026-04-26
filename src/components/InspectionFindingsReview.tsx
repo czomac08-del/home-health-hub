@@ -5,6 +5,7 @@ import FixVerificationModal from "@/components/FixVerificationModal";
 import { useInspectionFindings } from "@/hooks/useInspectionFindings";
 import { findingKey } from "@/lib/inspectionScoring";
 import FindingSourceLink from "@/components/FindingSourceLink";
+import FreeToReviewBanner from "@/components/FreeToReviewBanner";
 import { Link } from "react-router-dom";
 import { ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,8 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
 
   return (
     <div className="space-y-3">
+      <FreeToReviewBanner variant="compact" />
+
       {/* Side-by-side viewer entry point — only when we have a saved record */}
       {propertyRecordId && (
         <div className="flex items-center justify-end gap-2">
