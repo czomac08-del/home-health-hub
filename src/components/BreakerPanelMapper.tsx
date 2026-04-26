@@ -313,7 +313,7 @@ function PanelCard({ panel, allPanels, index, expanded, onToggle, onChange, onDe
                 <tbody>{panel.breakers.filter((b) => b.label).map((b) => (
                   <tr key={b.number} className="border-b border-border/50">
                     <td className="py-2 text-foreground font-medium">{b.number}</td>
-                    <td className="py-2 text-muted-foreground">{b.amperage || "—"}A</td>
+                    <td className="py-2 text-muted-foreground">{b.amperage ? `${b.amperage}A` : ""}</td>
                     <td className="py-2 text-foreground">{b.label}</td>
                     <td className="py-2"><span className={cn("text-xs px-2 py-0.5 rounded-full capitalize", b.status === "on" && "bg-primary/20 text-primary", b.status === "off" && "bg-secondary text-muted-foreground", b.status === "tripped" && "bg-destructive/20 text-destructive")}>{b.status}</span></td>
                   </tr>
