@@ -161,6 +161,32 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     });
   }
 
+  // Plumbing — inferred from any plumbing-category findings (so a generic plumbing
+  // section in the report still produces a documented system tile).
+  if (Array.isArray(rep?.findings)) {
+    const plumbingFindings = rep.findings.filter((f: any) =>
+      (f.category || "").toLowerCase() === "plumbing" ||
+      /plumbing|pipe|leak|drain|supply line/i.test(`${f.title} ${f.description || ""}`),
+    );
+    if (plumbingFindings.length > 0) {
+      const conditions = plumbingFindings.map((f: any) => f.title).slice(0, 3);
+      items.push({
+        key: "plumbing",
+        label: "Plumbing",
+        value: `${plumbingFindings.length} finding${plumbingFindings.length !== 1 ? "s" : ""} noted`,
+        target: {
+          kind: "system",
+          systemName: "Plumbing",
+          spec: {
+            condition_noted: conditions.join("; "),
+            inspector_findings_count: plumbingFindings.length,
+          },
+        },
+        decision: null,
+      });
+    }
+  }
+
   // Inspector record — pulled from the report header
   const insp = rep?.inspector;
   if (insp && (insp.inspector_name || insp.inspector_company)) {
