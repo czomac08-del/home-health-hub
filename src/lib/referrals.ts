@@ -98,13 +98,13 @@ export async function attributeSignupReferral(referredUserId: string): Promise<v
   // Always persist source/promo to the user's profile when present,
   // even if no peer referral code exists.
   if (source || promo) {
-    const updates: Record<string, string> = {};
+    const updates: { referral_source?: string; promo_code?: string; affiliate_code?: string } = {};
     if (source) updates.referral_source = source;
     if (promo) {
       updates.promo_code = promo;
       updates.affiliate_code = promo;
     }
-    await supabase.from("profiles").update(updates).eq("user_id", referredUserId);
+    await supabase.from("profiles").update(updates as never).eq("user_id", referredUserId);
 
     // If the promo matches an active affiliate partner, record the referral.
     if (promo) {
