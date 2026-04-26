@@ -1,128 +1,309 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, FileText, AlertTriangle, BookOpen, ChevronRight, Sparkles, ArrowLeft } from "lucide-react";
-import type { DocumentItem } from "@/components/ManualFinder";
-import { DocumentCard } from "@/components/ManualFinder";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Search,
+  FileText,
+  Image as ImageIcon,
+  FileType2,
+  ArrowLeft,
+  Upload,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  usePropertyDocuments,
+  CATEGORY_LABEL,
+  type UnifiedDocument,
+  type DocCategory,
+} from "@/hooks/usePropertyDocuments";
+import UploadDocumentModal from "@/components/UploadDocumentModal";
+import AddToProfileModal from "@/components/AddToProfileModal";
 
-const DOC_TABS = ["All", "Manuals", "Warranties", "Service", "Permits", "Receipts"] as const;
-type DocTab = typeof DOC_TABS[number];
-const tabToType: Record<DocTab, string | null> = {
-  All: null, Manuals: "manual", Warranties: "warranty", Service: "service", Permits: "permit", Receipts: "receipt",
+const FILTERS: { value: "all" | DocCategory; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "inspection", label: "Inspections" },
+  { value: "warranty", label: "Warranties" },
+  { value: "receipt", label: "Receipts" },
+  { value: "permit", label: "Permits" },
+  { value: "insurance", label: "Insurance" },
+  { value: "manual", label: "Manuals" },
+  { value: "other", label: "Other" },
+];
+
+const fileIcon = (t: UnifiedDocument["fileType"]) => {
+  if (t === "image") return ImageIcon;
+  if (t === "pdf") return FileText;
+  return FileType2;
 };
 
-// Sample data — in production this comes from DB
-const sampleDocs: DocumentItem[] = [
-  { id: "1", name: "HVAC Owner's Manual — Carrier 24ACC636", type: "manual", dateAdded: "2024-03-15", fileSize: "4.2 MB", source: "AI Found", systemName: "HVAC" },
-  { id: "2", name: "Water Heater Warranty", type: "warranty", dateAdded: "2024-01-20", fileSize: "1.1 MB", source: "User Uploaded", systemName: "Water Heater" },
-  { id: "3", name: "Electrical Inspection Report", type: "service", dateAdded: "2023-11-22", fileSize: "2.8 MB", source: "Contractor Added", systemName: "Electrical" },
-  { id: "4", name: "Roof Replacement Receipt", type: "receipt", dateAdded: "2022-06-03", fileSize: "0.5 MB", source: "User Uploaded", systemName: "Roof" },
-];
-
-const missingSystems = [
-  { name: "Plumbing", hasManual: false },
-  { name: "Roof", hasManual: false },
-  { name: "Septic / Sewer", hasManual: false },
-];
+function reviewRoute(doc: UnifiedDocument): string {
+  if (doc.category === "inspection" && doc.source_table === "property_records") {
+    return `/inspection-review/${doc.id}/viewer`;
+  }
+  if (doc.category === "insurance") return "/insurance";
+  if (doc.category === "warranty" || doc.category === "manual") return "/warranties";
+  if (doc.category === "permit") return "/property";
+  return "/documents";
+}
 
 const DocumentVaultScreen = () => {
-  const [activeTab, setActiveTab] = useState<DocTab>("All");
-  const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { activeProperty } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { docs, loading, reload } = usePropertyDocuments(activeProperty?.id);
+
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | DocCategory>("all");
+  const [sort, setSort] = useState<"newest" | "oldest" | "type">("newest");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [importDocId, setImportDocId] = useState<string | null>(null);
+
+  // Auto-open import modal from notification deep link
+  useEffect(() => {
+    const id = searchParams.get("import");
+    if (id) setImportDocId(id);
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
-    let docs = sampleDocs;
-    const typeFilter = tabToType[activeTab];
-    if (typeFilter) docs = docs.filter(d => d.type === typeFilter);
-    if (search) docs = docs.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.systemName?.toLowerCase().includes(search.toLowerCase()));
-    return docs;
-  }, [activeTab, search]);
+    let list = docs;
+    if (filter !== "all") list = list.filter((d) => d.category === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (d) =>
+          d.title.toLowerCase().includes(q) ||
+          (d.inspectorName || "").toLowerCase().includes(q) ||
+          CATEGORY_LABEL[d.category].toLowerCase().includes(q) ||
+          new Date(d.uploadedAt).toLocaleDateString().toLowerCase().includes(q),
+      );
+    }
+    if (sort === "oldest") {
+      list = [...list].sort((a, b) => +new Date(a.uploadedAt) - +new Date(b.uploadedAt));
+    } else if (sort === "type") {
+      list = [...list].sort((a, b) => a.category.localeCompare(b.category));
+    }
+    return list;
+  }, [docs, filter, search, sort]);
+
+  // Group by category for the unfiltered "all" view
+  const grouped = useMemo(() => {
+    const map: Record<DocCategory, UnifiedDocument[]> = {
+      inspection: [],
+      warranty: [],
+      receipt: [],
+      permit: [],
+      insurance: [],
+      manual: [],
+      other: [],
+    };
+    filtered.forEach((d) => map[d.category].push(d));
+    return map;
+  }, [filtered]);
 
   return (
-    <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
+    <div className="min-h-screen pb-32 max-w-lg lg:max-w-5xl mx-auto px-6 py-8">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+      >
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-          <FileText className="h-5 w-5 text-primary" />
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Documents</h1>
+            <p className="text-xs text-muted-foreground">
+              {docs.length} document{docs.length !== 1 ? "s" : ""}
+              {activeProperty ? ` · ${activeProperty.address}` : ""}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Document Vault</h1>
-          <p className="text-xs text-muted-foreground">{sampleDocs.length} documents across all systems</p>
-        </div>
+        <button
+          onClick={() => setUploadOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 shadow-[0_4px_14px_hsl(var(--orange)/0.35)]"
+        >
+          <Upload className="h-4 w-4" /> Upload a Document
+        </button>
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
+      <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search documents..."
+          placeholder="Search by name, inspector, date, or type..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
-        {DOC_TABS.map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === tab
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                : "bg-secondary text-muted-foreground border border-border hover:border-primary/40"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      {/* Filter chips + sort */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide flex-1 min-w-0">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                filter === f.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground border border-border hover:border-primary/40"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as typeof sort)}
+          className="text-xs rounded-full border border-border bg-card px-3 py-1.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          aria-label="Sort"
+        >
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="type">By type</option>
+        </select>
       </div>
 
-      {/* Documents */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No documents found</p>
+      {loading && docs.length === 0 ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-10 text-center">
+          <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm font-medium text-foreground mb-1">
+            {docs.length === 0 ? "No documents yet" : "No documents match your filters"}
+          </p>
+          {docs.length === 0 && (
+            <>
+              <p className="text-xs text-muted-foreground mb-4">
+                Upload your inspection report, warranties, or receipts to get started.
+              </p>
+              <button
+                onClick={() => setUploadOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                <Upload className="h-3.5 w-3.5" /> Upload a Document
+              </button>
+            </>
+          )}
+        </div>
+      ) : filter === "all" && !search.trim() ? (
+        <div className="space-y-6">
+          {(Object.keys(grouped) as DocCategory[]).map((cat) =>
+            grouped[cat].length > 0 ? (
+              <section key={cat}>
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {CATEGORY_LABEL[cat]}s
+                </h2>
+                <div className="space-y-2">
+                  {grouped[cat].map((doc) => (
+                    <DocCard key={`${doc.source_table}-${doc.id}`} doc={doc} onAddToProfile={(id) => setImportDocId(id)} />
+                  ))}
+                </div>
+              </section>
+            ) : null,
+          )}
         </div>
       ) : (
-        <div className="space-y-2 mb-8">
-          {filtered.map(doc => (
-            <div key={doc.id} className="relative">
-              <DocumentCard doc={doc} onView={() => { if (doc.url) window.open(doc.url, "_blank"); }} />
-              {doc.systemName && (
-                <span className="absolute top-2 right-2 text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{doc.systemName}</span>
-              )}
-            </div>
+        <div className="space-y-2">
+          {filtered.map((doc) => (
+            <DocCard key={`${doc.source_table}-${doc.id}`} doc={doc} onAddToProfile={(id) => setImportDocId(id)} />
           ))}
         </div>
       )}
 
-      {/* Missing documents */}
-      {activeTab === "All" && missingSystems.length > 0 && (
-        <div className="rounded-xl border border-[hsl(var(--health-amber))]/30 bg-[hsl(var(--health-amber))]/5 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-[hsl(var(--health-amber))]" />
-            <h3 className="text-sm font-semibold text-[hsl(var(--health-amber))]">Missing Documents</h3>
-          </div>
-          <p className="text-xs text-muted-foreground mb-3">These systems have no manual on file yet.</p>
-          <div className="space-y-2">
-            {missingSystems.map(sys => (
-              <div key={sys.name} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
-                <span className="text-sm text-foreground">{sys.name}</span>
-                <button className="flex items-center gap-1 text-xs text-primary font-medium">
-                  <Sparkles className="h-3 w-3" /> Find Manual
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+      <UploadDocumentModal
+        open={uploadOpen}
+        onOpenChange={(v) => {
+          setUploadOpen(v);
+          if (!v) reload();
+        }}
+      />
+      {importDocId && (
+        <AddToProfileModal
+          open={!!importDocId}
+          onOpenChange={(v) => !v && setImportDocId(null)}
+          recordId={importDocId}
+        />
       )}
     </div>
   );
 };
+
+function DocCard({
+  doc,
+  onAddToProfile,
+}: {
+  doc: UnifiedDocument;
+  onAddToProfile: (id: string) => void;
+}) {
+  const navigate = useNavigate();
+  const Icon = fileIcon(doc.fileType);
+  const canImport = doc.source_table === "property_records" && doc.hasExtractedData;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{doc.title}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">
+              {new Date(doc.uploadedAt).toLocaleDateString()}
+            </span>
+            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+              {CATEGORY_LABEL[doc.category]}
+            </span>
+            {doc.inspectorName && (
+              <span className="text-[10px] text-muted-foreground truncate">· {doc.inspectorName}</span>
+            )}
+            {doc.findingsCount != null && doc.findingsCount > 0 && (
+              <span className="text-[10px] font-medium text-foreground bg-secondary px-1.5 py-0.5 rounded-full">
+                {doc.findingsCount} finding{doc.findingsCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-2 ml-13 pl-0">
+        {doc.url && (
+          <button
+            onClick={() => window.open(doc.url!, "_blank")}
+            className="text-[11px] font-medium text-foreground bg-secondary hover:bg-secondary/80 px-2.5 py-1 rounded-md"
+          >
+            View
+          </button>
+        )}
+        <button
+          onClick={() => navigate(reviewRoute(doc))}
+          className="text-[11px] font-medium text-primary-foreground bg-primary hover:opacity-90 px-2.5 py-1 rounded-md"
+        >
+          Review {doc.category === "inspection" ? "Findings" : ""}
+        </button>
+        {canImport && (
+          <button
+            onClick={() => onAddToProfile(doc.id)}
+            className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
+          >
+            <Sparkles className="h-3 w-3" /> Add to Profile
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default DocumentVaultScreen;
