@@ -3,47 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Home, Wrench, ClipboardList, Tag, ChevronRight, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { InspectionFinding, InspectionReportData } from "@/components/InspectionFindingsReview";
+import { scoreLabel, estCost, fmtMoney, isDiy as isDiyFn } from "@/lib/inspectionScoring";
 
 interface Props {
   propertyId: string;
 }
 
 type FindingStatus = "open" | "fixed" | "skipped";
-
-/**
- * Heuristic DIY classification: short, low-cost items typically L3/L4 + keyword match
- * (filter, battery, caulk, tighten, clean, lubricate, replace bulb, weatherstrip, etc.)
- */
-const DIY_KEYWORDS = [
-  "filter", "battery", "batteries", "caulk", "weatherstrip", "weather-strip",
-  "tighten", "lubricate", "clean", "bulb", "smoke alarm battery", "co alarm",
-  "gutter", "downspout", "screen", "vent cover", "register", "trim", "paint",
-  "door stop", "hinge", "doorbell", "outlet cover", "switch plate",
-];
-function isDiy(f: InspectionFinding): boolean {
-  if (f.level === 1) return false; // safety items go to a pro
-  const t = `${f.title} ${f.description ?? ""}`.toLowerCase();
-  return DIY_KEYWORDS.some((k) => t.includes(k));
-}
-
-function scoreLabel(l1: number, l2: number, total: number): { label: string; cls: string } {
-  if (l1 >= 3) return { label: "CRITICAL", cls: "bg-destructive text-destructive-foreground" };
-  if (l1 >= 1) return { label: "POOR", cls: "bg-destructive/80 text-destructive-foreground" };
-  if (l2 >= 5) return { label: "FAIR", cls: "bg-[hsl(var(--health-amber))] text-background" };
-  if (total > 0) return { label: "GOOD", cls: "bg-health-green text-background" };
-  return { label: "GOOD", cls: "bg-health-green text-background" };
-}
-
-function estCost(f: InspectionFinding): [number, number] {
-  // Rough industry-style ranges by level. These are display-only ballparks.
-  if (f.level === 1) return [400, 2500];
-  if (f.level === 2) return [200, 1200];
-  return [75, 400];
-}
-
-function fmtMoney(n: number) {
-  return `$${n.toLocaleString()}`;
-}
 
 export default function InspectionAlertBanner({ propertyId }: Props) {
   const navigate = useNavigate();
@@ -52,6 +18,14 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
   const [reportDate, setReportDate] = useState<string | null>(null);
   const [statusMap, setStatusMap] = useState<Record<string, FindingStatus>>({});
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
+
+  // Refresh when a fix verification is submitted from the findings review
+  useEffect(() => {
+    const onChange = () => setTick((n) => n + 1);
+    window.addEventListener("inspection-findings-changed", onChange);
+    return () => window.removeEventListener("inspection-findings-changed", onChange);
+  }, []);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -73,45 +47,54 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
       setReport(ir);
       setRecordId(data?.id ?? null);
       setReportDate(data?.document_date ?? data?.created_at ?? null);
-      // Load per-finding status from localStorage (lightweight tracking).
-      try {
-        const raw = localStorage.getItem(`inspection_status_${data?.id ?? ""}`);
-        setStatusMap(raw ? JSON.parse(raw) : {});
-      } catch {
+
+      // Load per-finding status from inspection_findings table (keyed by title for matching the report payload).
+      if (data?.id) {
+        const { data: rows } = await supabase
+          .from("inspection_findings")
+          .select("title, status")
+          .eq("inspection_record_id", data.id);
+        const map: Record<string, FindingStatus> = {};
+        (rows ?? []).forEach((r) => { map[r.title] = r.status as FindingStatus; });
+        setStatusMap(map);
+      } else {
         setStatusMap({});
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [propertyId]);
+  }, [propertyId, tick]);
 
   const inspectorName = report?.inspector?.inspector_name ?? null;
 
   const findings = report?.findings ?? [];
+  // statusMap is title-keyed (DB) — fall back to "open"
+  const isOpen = (f: InspectionFinding) => (statusMap[f.title] ?? "open") === "open";
   const openFindings = useMemo(
-    () => findings.filter((f) => (statusMap[f.id] ?? "open") === "open"),
+    () => findings.filter(isOpen),
     [findings, statusMap],
   );
 
   const l1Open = openFindings.filter((f) => f.level === 1);
   const l2Open = openFindings.filter((f) => f.level === 2);
-  const diyOpen = openFindings.filter(isDiy);
+  const diyOpen = openFindings.filter((f) => isDiyFn({ level: f.level, title: f.title, description: f.description }));
   const proOpen = [...l1Open, ...l2Open];
 
   const proCostRange = proOpen.reduce<[number, number]>(
     ([lo, hi], f) => {
-      const [a, b] = estCost(f);
+      const [a, b] = estCost(f.level);
       return [lo + a, hi + b];
     },
     [0, 0],
   );
 
-  const summary = report?.summary;
-  const score = scoreLabel(
-    summary?.level_1_count ?? findings.filter((f) => f.level === 1).length,
-    summary?.level_2_count ?? findings.filter((f) => f.level === 2).length,
-    findings.length,
-  );
+  // Live score reflects what's still open
+  const score = scoreLabel(l1Open.length, l2Open.length);
+
+  // Progress on Level 1 + Level 2 items
+  const totalHigh = findings.filter((f) => f.level === 1 || f.level === 2).length;
+  const fixedHigh = totalHigh - proOpen.length;
+  const progressPct = totalHigh > 0 ? Math.round((fixedHigh / totalHigh) * 100) : 0;
 
   if (loading || !report || findings.length === 0) return null;
 
@@ -179,6 +162,7 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
               ? `Estimated combined: ${fmtMoney(proCostRange[0])} – ${fmtMoney(proCostRange[1])}`
               : undefined
           }
+          progress={totalHigh > 0 ? { fixed: fixedHigh, total: totalHigh, pct: progressPct } : undefined}
         />
 
         {/* Selling As-Is */}
@@ -210,6 +194,7 @@ function ActionCard({
   onClick,
   footer,
   accent,
+  progress,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -219,6 +204,7 @@ function ActionCard({
   onClick: () => void;
   footer?: string;
   accent: "brain-blue" | "health-amber" | "primary";
+  progress?: { fixed: number; total: number; pct: number };
 }) {
   const ringCls =
     accent === "brain-blue"
@@ -247,6 +233,19 @@ function ActionCard({
       )}
       {footer && (
         <p className="mt-2 text-[10px] text-foreground/80 font-medium">{footer}</p>
+      )}
+      {progress && (
+        <div className="mt-2">
+          <p className="text-[10px] text-muted-foreground mb-1">
+            {progress.fixed} of {progress.total} items fixed
+          </p>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-health-green transition-all"
+              style={{ width: `${progress.pct}%` }}
+            />
+          </div>
+        </div>
       )}
       <button
         onClick={onClick}
