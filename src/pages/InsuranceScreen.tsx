@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Shield, Upload, Phone, AlertTriangle, ChevronRight, Plus, FileText,
   MessageSquare, Send, Bot, Clock, ExternalLink, Star, Trash2, X,
-  CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart
+  CheckCircle2, AlertCircle, Bell, Search, ArrowLeft, Heart, Pencil
 } from "lucide-react";
 import DiscountPotentialSection from "@/components/DiscountPotentialSection";
 import RefreshButton from "@/components/RefreshButton";
@@ -84,6 +84,7 @@ const fmt = (n: number | null | undefined): string | null =>
 // ─── Component ───
 const InsuranceScreen = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, properties } = useAuth();
   const activeProperty = properties.find((p) => p.is_active) || properties[0];
 
@@ -101,7 +102,7 @@ const InsuranceScreen = () => {
     insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "",
     premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "",
     claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "",
-    liability_coverage: "", deductible_amount: "",
+    liability_coverage: "", deductible_amount: "", agent_email: "", notes: "",
   });
 
   // Claims form
@@ -121,6 +122,13 @@ const InsuranceScreen = () => {
 
   useEffect(() => { loadData(); }, [user, activeProperty]);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+
+  // Open the manual entry form directly when arriving via ?add=manual
+  useEffect(() => {
+    if (searchParams.get("add") === "manual") {
+      setShowAddPolicy(true);
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     if (!user || !activeProperty) return;
@@ -171,10 +179,15 @@ const InsuranceScreen = () => {
 
   const handleAddPolicy = async () => {
     if (!user || !activeProperty) return;
+    if (!pForm.insurance_company.trim() && !pForm.policy_number.trim()) {
+      toast.error("Add at least the insurance company or policy number");
+      return;
+    }
     const { error } = await supabase.from("insurance_policies").insert({
       user_id: user.id,
       property_id: activeProperty.id,
       policy_type: newPolicyType,
+      data_status: "owner_submitted",
       insurance_company: pForm.insurance_company || null,
       policy_number: pForm.policy_number || null,
       coverage_start: pForm.coverage_start || null,
@@ -189,11 +202,18 @@ const InsuranceScreen = () => {
       personal_property_coverage: pForm.personal_property_coverage ? Number(pForm.personal_property_coverage) : null,
       liability_coverage: pForm.liability_coverage ? Number(pForm.liability_coverage) : null,
       deductible_amount: pForm.deductible_amount ? Number(pForm.deductible_amount) : null,
+      // Stash agent email + notes inside ai_analysis until dedicated columns exist.
+      ai_analysis: (pForm.agent_email || pForm.notes) ? {
+        owner_entered: {
+          agent_email: pForm.agent_email || null,
+          notes: pForm.notes || null,
+        },
+      } : null,
     });
     if (error) { toast.error("Failed to save policy"); return; }
     toast.success("Policy added!");
     setShowAddPolicy(false);
-    setPForm({ insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "", premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "", claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "", liability_coverage: "", deductible_amount: "" });
+    setPForm({ insurance_company: "", policy_number: "", coverage_start: "", coverage_end: "", premium_amount: "", premium_frequency: "annual", agent_name: "", agent_phone: "", claims_phone: "", online_portal_url: "", dwelling_coverage: "", personal_property_coverage: "", liability_coverage: "", deductible_amount: "", agent_email: "", notes: "" });
     loadData();
   };
 
