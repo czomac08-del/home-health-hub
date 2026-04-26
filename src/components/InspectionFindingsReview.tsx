@@ -20,6 +20,7 @@ export interface InspectionFinding {
   standard_citation?: string | null;
   standard_source?: string | null;
   rationale?: string;
+  page_reference?: number | null;
   confidence?: number;
 }
 
