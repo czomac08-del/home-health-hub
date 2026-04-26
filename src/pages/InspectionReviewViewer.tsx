@@ -38,7 +38,7 @@ export default function InspectionReviewViewer() {
   const [yearBuilt, setYearBuilt] = useState<string | null>(null);
 
   const initialPage = searchParams.get("page") ? Number(searchParams.get("page")) : null;
-  const [jumpToPage] = useState<number | null>(initialPage);
+  const [jumpToPage, setJumpToPage] = useState<number | null>(initialPage);
   const [mobileTab, setMobileTab] = useState<"analysis" | "report">("analysis");
 
   // Print state — shared between TopBar button and the analysis panel button.
@@ -257,6 +257,11 @@ export default function InspectionReviewViewer() {
             printFilter={printFilter}
             onPrintFilterChange={setPrintFilter}
             onReportLoaded={setPrintableReport}
+            onJumpToPage={(page) => {
+              // Re-set even when same page requested by passing a fresh number
+              setJumpToPage(page);
+              if (isMobile) setMobileTab("report");
+            }}
           />
         )}
         <p className="text-[10px] text-muted-foreground italic border-t border-border pt-3">

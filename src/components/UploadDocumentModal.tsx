@@ -217,8 +217,12 @@ export default function UploadDocumentModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto sm:rounded-2xl rounded-none sm:h-auto h-screen sm:max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent
+        className="max-w-lg p-0 gap-0 sm:rounded-2xl rounded-none flex flex-col overflow-hidden
+                   sm:max-h-[85vh] sm:h-auto
+                   h-[100dvh] max-h-[100dvh]"
+      >
+        <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
             Upload a Document
@@ -228,6 +232,8 @@ export default function UploadDocumentModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Scrollable body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
         {activeProperty && (
           <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-3 py-2 text-xs">
             <Home className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -322,10 +328,6 @@ export default function UploadDocumentModal({
                 </p>
               </div>
             </div>
-
-            <Button onClick={handleUpload} disabled={!file} className="w-full">
-              Upload & Analyze
-            </Button>
           </div>
         )}
 
@@ -354,9 +356,7 @@ export default function UploadDocumentModal({
             </div>
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
-              <div className="max-h-[60vh] overflow-y-auto">
-                <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
-              </div>
+              <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
             ) : (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -367,7 +367,7 @@ export default function UploadDocumentModal({
                     AI couldn't extract structured details from this document. Your file is still saved.
                   </p>
                 ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-2">
                     {extractedEntries.map(([k, v]) => (
                       <div key={k} className="flex justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
                         <span className="text-xs text-muted-foreground capitalize">{k.replace(/_/g, " ")}</span>
@@ -378,19 +378,6 @@ export default function UploadDocumentModal({
                 )}
               </div>
             )}
-
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
-                Save file only
-              </Button>
-              <Button
-                onClick={handleConfirm}
-                className="flex-1"
-                disabled={extractedEntries.length === 0 && !inspectionReport}
-              >
-                Confirm & Save
-              </Button>
-            </div>
           </div>
         )}
 
@@ -413,7 +400,37 @@ export default function UploadDocumentModal({
                 <p className="text-muted-foreground">{errorMsg}</p>
               </div>
             </div>
-            <Button onClick={() => setStep("form")} variant="outline" className="w-full">Try again</Button>
+          </div>
+        )}
+        </div>
+
+        {/* Pinned footer — primary action always visible */}
+        {(step === "form" || step === "review" || step === "error") && (
+          <div className="shrink-0 border-t border-border px-6 py-3 bg-background">
+            {step === "form" && (
+              <Button onClick={handleUpload} disabled={!file} className="w-full">
+                Upload & Analyze
+              </Button>
+            )}
+            {step === "review" && (
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
+                  Save file only
+                </Button>
+                <Button
+                  onClick={handleConfirm}
+                  className="flex-1"
+                  disabled={extractedEntries.length === 0 && !inspectionReport}
+                >
+                  Confirm & Save
+                </Button>
+              </div>
+            )}
+            {step === "error" && (
+              <Button onClick={() => setStep("form")} variant="outline" className="w-full">
+                Try again
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>
