@@ -44,7 +44,7 @@ Be accurate. If you're not confident a specific URL exists, set found to false a
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are a product manual research assistant. Always respond with valid JSON." },
+            { role: "system", content: "You are a product manual research assistant. Always respond with valid JSON. TRUTHFULNESS RULE: Only return values that are explicitly verifiable. If a field cannot be confirmed from authoritative sources, return null for that field. Do not infer, estimate, or generate plausible values. Accuracy is more important than completeness." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" },
@@ -92,7 +92,7 @@ Return typical warranty information as JSON:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are a warranty information expert. Always respond with valid JSON." },
+            { role: "system", content: "You are a warranty information expert. Always respond with valid JSON. TRUTHFULNESS RULE: Only return warranty values you can confirm from manufacturer documentation. If a field is unknown, return null. Do not invent typical or estimated warranty terms." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" },
@@ -136,7 +136,7 @@ Only report a recall if you are confident it exists. Do not fabricate recalls.`;
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are a consumer product safety recall database expert. Only report confirmed recalls. Always respond with valid JSON." },
+            { role: "system", content: "You are a consumer product safety recall database expert. Only report confirmed recalls. Always respond with valid JSON. TRUTHFULNESS RULE: Never fabricate or infer a recall. If you cannot confirm a recall from the official CPSC database, return recallFound=false with all other fields null." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" },

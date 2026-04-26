@@ -701,32 +701,41 @@ const SectionHeader = ({ title }: { title: string }) => (
   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 mt-2">{title}</h2>
 );
 
+const HONEST_EMPTY_PLACEHOLDER = "Unknown — tap to add";
+
 const Field = ({ label, value, onChange, placeholder, type = "text", ai = false }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean;
-}) => (
-  <div>
-    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-      {label} {ai && <AiBadge />}
-    </label>
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
-  </div>
-);
+}) => {
+  // Honest empty: when no value and no AI source, show "Unknown — tap to add"
+  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+        {label} {ai && <AiBadge />}
+      </label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
+        className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+    </div>
+  );
+};
 
 const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, scanField }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; scanField: string;
-}) => (
-  <div>
-    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-      {label} {ai && <AiBadge />}
-    </label>
-    <div className="flex gap-2">
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
-      <AiFieldScanButton fieldName={scanField} onResult={onChange} />
+}) => {
+  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+        {label} {ai && <AiBadge />}
+      </label>
+      <div className="flex gap-2">
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
+          className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+        <AiFieldScanButton fieldName={scanField} onResult={onChange} />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ToggleRow = ({ label, checked, onChange }: {
   label: string; checked: boolean; onChange: (v: boolean) => void;
@@ -750,13 +759,17 @@ const SpecFieldInput = ({ field, value, onChange, ai = false }: {
   switch (field.type) {
     case "text":
     case "number":
-      return (
-        <div>
-          {labelEl}
-          <input type={field.type === "number" ? "number" : "text"} value={(value as string) || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder}
-            className={`w-full rounded-xl border ${borderClass} bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50`} />
-        </div>
-      );
+      {
+        const strVal = (value as string) || "";
+        const ph = !strVal && !ai ? HONEST_EMPTY_PLACEHOLDER : field.placeholder;
+        return (
+          <div>
+            {labelEl}
+            <input type={field.type === "number" ? "number" : "text"} value={strVal} onChange={(e) => onChange(e.target.value)} placeholder={ph}
+              className={`w-full rounded-xl border ${borderClass} bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50`} />
+          </div>
+        );
+      }
     case "date":
       return (
         <div>
