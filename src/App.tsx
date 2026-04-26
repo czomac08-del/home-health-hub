@@ -177,6 +177,16 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen w-full">
+      {/* Default noindex on private/app routes. Public pages render their own SEO
+          afterwards which overrides this (react-helmet-async dedupes by tag name). */}
+      {!isPublicIndexable && (
+        <SEO
+          title="ComingHomeIQ"
+          description="ComingHomeIQ — your home's complete intelligence platform."
+          path={location.pathname}
+          noIndex
+        />
+      )}
       {/* Desktop sidebar — only show on authenticated app pages */}
       {showNav && <DesktopSidebar />}
 
