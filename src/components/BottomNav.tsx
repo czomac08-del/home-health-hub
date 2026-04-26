@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Grid3X3, Wrench, User, Briefcase, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Grid3X3, FileText, User, Briefcase, ShieldAlert } from "lucide-react";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
 
 const BottomNav = () => {
@@ -14,7 +14,7 @@ const BottomNav = () => {
     ...(isBusiness ? [{ path: "/portfolio", icon: Briefcase, label: "Portfolio" }] : []),
     { path: "/systems", icon: Grid3X3, label: "Systems" },
     { path: "/home-defense", icon: ShieldAlert, label: "Defense" },
-    { path: "/guides", icon: Wrench, label: "Guides" },
+    { path: "/documents", icon: FileText, label: "Docs" },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 
