@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
+import ClosedDealLogger from "@/components/ClosedDealLogger";
 import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
@@ -477,6 +478,8 @@ const InvestorDashboard = () => {
       </div>
 
       {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
+
+      <ClosedDealLogger />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[

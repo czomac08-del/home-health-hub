@@ -57,6 +57,7 @@ import LegalFooter from "./components/LegalFooter";
 import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 import JoinReferralScreen from "./pages/JoinReferralScreen";
 import AdminRewardsPage from "./pages/AdminRewardsPage";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
@@ -202,6 +203,7 @@ const AppContent = () => {
             <Route path="/home-defense" element={<ProtectedRoute><HomeDefenseHubScreen /></ProtectedRoute>} />
             <Route path="/report" element={<ScoreReportPage />} />
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
+            <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
