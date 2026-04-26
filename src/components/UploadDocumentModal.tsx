@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import InspectionFindingsReview, { type InspectionReportData } from "./InspectionFindingsReview";
 import FreeToReviewBanner from "./FreeToReviewBanner";
+import { recordRecentUpload } from "./RecentUploadBanner";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -191,6 +192,16 @@ export default function UploadDocumentModal({
 
       toast.success("Document saved to your home record");
       setStep("saved");
+      // Record for the 24h dashboard banner so users always know where the file went.
+      try {
+        recordRecentUpload({
+          id: recordId || "",
+          name: file?.name || "Document",
+          uploadedAt: new Date().toISOString(),
+          category: docType,
+          url: null,
+        });
+      } catch {}
       setTimeout(() => handleClose(false), 1200);
     } catch (e) {
       toast.error("Failed to save");
