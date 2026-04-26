@@ -157,6 +157,9 @@ export default function FixVerificationModal({
         const documents = diyReceipt
           ? await uploadFiles(userId, "fix_verification", [{ file: diyReceipt, kind: "receipt" }])
           : [];
+        // Rule 2 — a receipt/invoice photo upgrades DIY to "Receipt Verified".
+        const diyFlag: "unverified" | "receipt_verified" =
+          diyReceipt ? "receipt_verified" : "unverified";
         payload = {
           user_id: userId,
           property_id: propertyId,
@@ -166,9 +169,10 @@ export default function FixVerificationModal({
           description: diyDesc,
           photos,
           documents,
-          data_quality_flag: "unverified",
+          data_quality_flag: diyFlag,
           has_permit: false,
         };
+        dataQualityFlag = diyFlag as any;
       } else {
         const parsed = proSchema.safeParse({
           contractor_name: proName,
@@ -222,7 +226,15 @@ export default function FixVerificationModal({
         .eq("id", findingId);
       if (updErr) throw updErr;
 
-      toast.success("Fix verified and saved permanently");
+      if (dataQualityFlag === "receipt_verified") {
+        toast.success("Your fix record has been upgraded to Receipt Verified");
+      } else if (dataQualityFlag === "permit_verified") {
+        toast.success("Your fix record has been upgraded to Permit Verified");
+      } else if (dataQualityFlag === "pro_verified") {
+        toast.success("Your fix record has been upgraded to Pro Verified");
+      } else {
+        toast.success("Fix saved as Owner Self-Reported");
+      }
       onSubmitted?.();
       reset();
       onOpenChange(false);
