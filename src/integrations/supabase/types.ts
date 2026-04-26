@@ -1264,6 +1264,7 @@ export type Database = {
           answer: string
           checkup_id: string
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           id: string
           item_id: string
           notes: string | null
@@ -1276,6 +1277,7 @@ export type Database = {
           answer: string
           checkup_id: string
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           id?: string
           item_id: string
           notes?: string | null
@@ -1288,6 +1290,7 @@ export type Database = {
           answer?: string
           checkup_id?: string
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           id?: string
           item_id?: string
           notes?: string | null
@@ -1356,6 +1359,7 @@ export type Database = {
           bedrooms: number | null
           cooking_frequency: string | null
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           dusty_hobbies: boolean | null
           guest_frequency: string | null
           health_factors: string[] | null
@@ -1375,6 +1379,7 @@ export type Database = {
           bedrooms?: number | null
           cooking_frequency?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           dusty_hobbies?: boolean | null
           guest_frequency?: string | null
           health_factors?: string[] | null
@@ -1394,6 +1399,7 @@ export type Database = {
           bedrooms?: number | null
           cooking_frequency?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           dusty_hobbies?: boolean | null
           guest_frequency?: string | null
           health_factors?: string[] | null
@@ -1784,6 +1790,7 @@ export type Database = {
           coverage_gaps: string[] | null
           coverage_start: string | null
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           deductible_amount: number | null
           dwelling_coverage: number | null
           earthquake_coverage: boolean | null
@@ -1813,6 +1820,7 @@ export type Database = {
           coverage_gaps?: string[] | null
           coverage_start?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           deductible_amount?: number | null
           dwelling_coverage?: number | null
           earthquake_coverage?: boolean | null
@@ -1842,6 +1850,7 @@ export type Database = {
           coverage_gaps?: string[] | null
           coverage_start?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           deductible_amount?: number | null
           dwelling_coverage?: number | null
           earthquake_coverage?: boolean | null
@@ -2037,6 +2046,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      needs_info: {
+        Row: {
+          created_at: string
+          field_label: string | null
+          field_name: string
+          id: string
+          last_prompted_at: string | null
+          prompt_shown_count: number
+          property_id: string
+          resolved_at: string | null
+          section: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_label?: string | null
+          field_name: string
+          id?: string
+          last_prompted_at?: string | null
+          prompt_shown_count?: number
+          property_id: string
+          resolved_at?: string | null
+          section: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_label?: string | null
+          field_name?: string
+          id?: string
+          last_prompted_at?: string | null
+          prompt_shown_count?: number
+          property_id?: string
+          resolved_at?: string | null
+          section?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       permanent_archive: {
         Row: {
@@ -2277,6 +2328,7 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           health_score: number | null
           id: string
           is_active: boolean
@@ -2290,6 +2342,7 @@ export type Database = {
         Insert: {
           address: string
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           health_score?: number | null
           id?: string
           is_active?: boolean
@@ -2303,6 +2356,7 @@ export type Database = {
         Update: {
           address?: string
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           health_score?: number | null
           id?: string
           is_active?: boolean
@@ -3045,6 +3099,7 @@ export type Database = {
         Row: {
           brand: string | null
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           extended_warranty: boolean | null
           health_score: number | null
           id: string
@@ -3071,6 +3126,7 @@ export type Database = {
         Insert: {
           brand?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           extended_warranty?: boolean | null
           health_score?: number | null
           id?: string
@@ -3097,6 +3153,7 @@ export type Database = {
         Update: {
           brand?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           extended_warranty?: boolean | null
           health_score?: number | null
           id?: string
@@ -3387,6 +3444,7 @@ export type Database = {
           coverage_end: string | null
           coverage_start: string | null
           created_at: string
+          data_status: Database["public"]["Enums"]["data_status"]
           document_path: string | null
           document_url: string | null
           extended_doc_path: string | null
@@ -3407,6 +3465,7 @@ export type Database = {
           coverage_end?: string | null
           coverage_start?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           document_path?: string | null
           document_url?: string | null
           extended_doc_path?: string | null
@@ -3427,6 +3486,7 @@ export type Database = {
           coverage_end?: string | null
           coverage_start?: string | null
           created_at?: string
+          data_status?: Database["public"]["Enums"]["data_status"]
           document_path?: string | null
           document_url?: string | null
           extended_doc_path?: string | null
@@ -3543,6 +3603,12 @@ export type Database = {
         | "county_record"
         | "ai_extracted"
         | "owner_submitted"
+      data_status:
+        | "confirmed"
+        | "unknown"
+        | "ai_extracted"
+        | "inspector_verified"
+        | "county_record"
       dispute_status:
         | "open"
         | "under_review"
@@ -3704,6 +3770,13 @@ export const Constants = {
         "county_record",
         "ai_extracted",
         "owner_submitted",
+      ],
+      data_status: [
+        "confirmed",
+        "unknown",
+        "ai_extracted",
+        "inspector_verified",
+        "county_record",
       ],
       dispute_status: [
         "open",
