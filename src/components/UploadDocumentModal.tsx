@@ -304,7 +304,7 @@ export default function UploadDocumentModal({
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
               <div className="max-h-[60vh] overflow-y-auto">
-                <InspectionFindingsReview data={inspectionReport} />
+                <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
               </div>
             ) : (
               <div>
