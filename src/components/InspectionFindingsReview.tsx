@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck } from "lucide-react";
 
 export interface InspectionFinding {
   id: string;
@@ -16,6 +16,13 @@ export interface InspectionFinding {
 
 export interface InspectionReportData {
   document_type?: string;
+  inspector?: {
+    inspector_name?: string | null;
+    inspector_company?: string | null;
+    inspector_license?: string | null;
+    inspection_date?: string | null;
+    property_address?: string | null;
+  } | null;
   findings: InspectionFinding[];
   summary?: {
     level_1_count: number;
@@ -70,9 +77,11 @@ const LEVEL_META = {
 
 interface Props {
   data: InspectionReportData;
+  /** When true, show the pre-save attribution disclaimer banner. */
+  showAttributionDisclaimer?: boolean;
 }
 
-export default function InspectionFindingsReview({ data }: Props) {
+export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false }: Props) {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
 
@@ -82,6 +91,12 @@ export default function InspectionFindingsReview({ data }: Props) {
   }
 
   const totalFindings = data.findings?.length || 0;
+  const inspector = data.inspector || null;
+  const inspectorName = inspector?.inspector_name || "Unknown inspector";
+  const inspectorCompany = inspector?.inspector_company || "Company not extracted";
+  const inspectorLicense = inspector?.inspector_license || null;
+  const inspectionDate = inspector?.inspection_date || null;
+  const attributionLine = `Source: ${inspector?.inspector_name || "Inspector of record"}${inspector?.inspector_company ? `, ${inspector.inspector_company}` : ""}${inspectionDate ? `, ${inspectionDate}` : ""}`;
 
   if (totalFindings === 0) {
     return (
@@ -95,6 +110,42 @@ export default function InspectionFindingsReview({ data }: Props) {
 
   return (
     <div className="space-y-3">
+      {showAttributionDisclaimer && (
+        <div className="rounded-xl border border-[hsl(var(--health-amber))]/40 bg-[hsl(var(--health-amber))]/10 p-3">
+          <div className="flex items-start gap-2">
+            <ShieldAlert className="h-4 w-4 text-[hsl(var(--health-amber))] shrink-0 mt-0.5" />
+            <div className="text-[11px] text-foreground leading-relaxed">
+              <p className="font-semibold mb-1">Inspector attribution — please review before saving</p>
+              <p className="text-muted-foreground">
+                The findings in this report were made by a licensed home inspector at the time of inspection.
+                ComingHomeIQ extracts and organizes this information to help you track your home — we do not
+                independently verify, certify, or guarantee any inspection finding. All conclusions, severity
+                ratings, and recommendations are those of the inspector of record, not ComingHomeIQ or its AI.
+              </p>
+              <div className="mt-2 grid grid-cols-1 gap-1 text-[11px]">
+                <p><span className="text-muted-foreground">Inspector:</span> <span className="font-medium text-foreground">{inspectorName}</span></p>
+                <p><span className="text-muted-foreground">Company:</span> <span className="font-medium text-foreground">{inspectorCompany}</span></p>
+                <p><span className="text-muted-foreground">License:</span> <span className="font-medium text-foreground">{inspectorLicense || "Not present on report"}</span></p>
+                <p><span className="text-muted-foreground">Inspection date:</span> <span className="font-medium text-foreground">{inspectionDate || "Not extracted"}</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showAttributionDisclaimer && inspector && (inspector.inspector_name || inspector.inspector_company) && (
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center gap-2">
+          <UserCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <p className="text-[11px] text-muted-foreground">
+            Findings reported by{" "}
+            <span className="font-medium text-foreground">{inspector.inspector_name || "inspector of record"}</span>
+            {inspector.inspector_company && <> · <span className="text-foreground">{inspector.inspector_company}</span></>}
+            {inspectorLicense && <> · Lic. {inspectorLicense}</>}
+            {inspectionDate && <> · {inspectionDate}</>}
+          </p>
+        </div>
+      )}
+
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
         <p className="text-xs font-semibold text-foreground mb-2">
           {totalFindings} findings categorized by industry standards (ASHI, InterNACHI, NFPA)
@@ -211,6 +262,11 @@ export default function InspectionFindingsReview({ data }: Props) {
                                 )}
                               </div>
                             )}
+                            <div className="pt-1.5 border-t border-border/60">
+                              <p className="text-[10px] text-muted-foreground italic">
+                                {attributionLine}
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -226,6 +282,20 @@ export default function InspectionFindingsReview({ data }: Props) {
       <p className="text-[10px] text-muted-foreground text-center pt-1">
         Severity assigned via ASHI, InterNACHI, NFPA, NEC, and IRC standards — never by AI judgment alone.
       </p>
+
+      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">Conflicting data?</span> If a finding conflicts with
+          county records or previous entries, ComingHomeIQ shows both sources. Conflicts between inspector
+          findings and public records are the responsibility of the licensed inspector of record, not ComingHomeIQ.
+        </p>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          ComingHomeIQ is an information platform. We organize what inspectors, government agencies, and you tell us.
+          We are not responsible for conditions that develop after the inspection date, for issues a visual inspection
+          could not detect, or for any actions taken or not taken based on this information. Always consult licensed
+          professionals before making repair or purchase decisions.
+        </p>
+      </div>
     </div>
   );
 }
