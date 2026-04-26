@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, Wrench, ClipboardList, Tag, ChevronRight, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { InspectionFinding, InspectionReportData } from "@/components/InspectionFindingsReview";
 import { scoreLabel, estCost, fmtMoney, isDiy as isDiyFn } from "@/lib/inspectionScoring";
@@ -19,6 +20,7 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
   const [statusMap, setStatusMap] = useState<Record<string, FindingStatus>>({});
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
+  const [prevScore, setPrevScore] = useState<string | null>(null);
 
   // Refresh when a fix verification is submitted from the findings review
   useEffect(() => {
@@ -90,6 +92,19 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
 
   // Live score reflects what's still open
   const score = scoreLabel(l1Open.length, l2Open.length);
+
+  useEffect(() => {
+    if (loading) return;
+    if (prevScore && prevScore !== score.label) {
+      const remaining = l1Open.length + l2Open.length;
+      toast.success(
+        `Home score updated to ${score.label}` +
+          (remaining > 0 ? ` — keep going! ${remaining} priority item${remaining === 1 ? "" : "s"} remaining.` : " — all priority items resolved!"),
+      );
+    }
+    setPrevScore(score.label);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score.label, loading]);
 
   // Progress on Level 1 + Level 2 items
   const totalHigh = findings.filter((f) => f.level === 1 || f.level === 2).length;
