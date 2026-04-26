@@ -161,6 +161,32 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     });
   }
 
+  // Plumbing — inferred from any plumbing-category findings (so a generic plumbing
+  // section in the report still produces a documented system tile).
+  if (Array.isArray(rep?.findings)) {
+    const plumbingFindings = rep.findings.filter((f: any) =>
+      (f.category || "").toLowerCase() === "plumbing" ||
+      /plumbing|pipe|leak|drain|supply line/i.test(`${f.title} ${f.description || ""}`),
+    );
+    if (plumbingFindings.length > 0) {
+      const conditions = plumbingFindings.map((f: any) => f.title).slice(0, 3);
+      items.push({
+        key: "plumbing",
+        label: "Plumbing",
+        value: `${plumbingFindings.length} finding${plumbingFindings.length !== 1 ? "s" : ""} noted`,
+        target: {
+          kind: "system",
+          systemName: "Plumbing",
+          spec: {
+            condition_noted: conditions.join("; "),
+            inspector_findings_count: plumbingFindings.length,
+          },
+        },
+        decision: null,
+      });
+    }
+  }
+
   // Inspector record — pulled from the report header
   const insp = rep?.inspector;
   if (insp && (insp.inspector_name || insp.inspector_company)) {
@@ -258,6 +284,21 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
     const isInspectionSource = items.some((i) => i.key === "inspector");
     const dataStatus = isInspectionSource ? "inspector_verified" : "ai_extracted";
 
+    // Pull the inspection date once so we can stamp every system row's specs with it.
+    let inspectionDate: string | null = null;
+    if (isInspectionSource) {
+      const { data: rec } = await supabase
+        .from("property_records")
+        .select("ai_extracted_data, document_date")
+        .eq("id", recordId)
+        .maybeSingle();
+      const rep = (rec?.ai_extracted_data as any)?.inspection_report;
+      inspectionDate =
+        rep?.inspector?.inspection_date ||
+        rec?.document_date ||
+        null;
+    }
+
     for (const item of items) {
       if (item.decision !== "add") continue;
 
@@ -272,6 +313,12 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
             added++;
           }
         } else if (item.target.kind === "system") {
+          // Stamp inspection date inside specs so the system carries its source-of-truth date,
+          // even for historical inspections (e.g. a 2022 report is still valid baseline data).
+          const specWithDate = {
+            ...(item.target.spec as Record<string, any>),
+            ...(inspectionDate ? { last_inspected_date: inspectionDate } : {}),
+          };
           // Upsert by (property_id, system_name) to avoid unique-constraint failures
           // when the user already added this system manually.
           const { error } = await supabase.from("system_details").upsert(
@@ -279,7 +326,7 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
               property_id: activeProperty.id,
               user_id: user.id,
               system_name: item.target.systemName,
-              specs: item.target.spec as any,
+              specs: specWithDate as any,
               install_date: (item.target.spec as any)?.year || null,
               brand: (item.target.spec as any)?.brand || null,
               location_in_home: (item.target.spec as any)?.location || null,
@@ -298,7 +345,13 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
     setSaving(false);
     setSummary({ added });
     setDone(true);
-    if (added > 0) toast.success(`${added} item${added !== 1 ? "s" : ""} added to your profile`);
+    if (added > 0) {
+      toast.success(`${added} item${added !== 1 ? "s" : ""} added to your profile`);
+      // Notify the dashboard / IQ ring to recompute immediately — no page refresh needed.
+      try {
+        window.dispatchEvent(new CustomEvent("system-details-updated"));
+      } catch {}
+    }
   };
 
   // "Skip for Now" — record pending imports in needs_info so the dashboard can resurface them.
