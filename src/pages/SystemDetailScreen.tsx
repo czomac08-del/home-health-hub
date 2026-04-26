@@ -11,6 +11,7 @@ import WarrantySection from "@/components/WarrantySection";
 import ApplianceScanner from "@/components/ApplianceScanner";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
+import UploadPromptCard from "@/components/UploadPromptCard";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -33,6 +34,29 @@ const systemNotDocumentedLabels: Record<string, string> = {
   plumbing: "Plumbing Not Documented",
   electrical: "Panel Not Documented",
   roof: "Roof Not Documented",
+};
+
+const systemUploadPrompts: Record<string, { title: string; description: string; docType: string }> = {
+  hvac: {
+    title: "Have a service record? Upload it here.",
+    description: "Tune-up receipt, install paperwork, or warranty — we'll log the details automatically.",
+    docType: "repair_receipt",
+  },
+  roof: {
+    title: "Have an inspection report or warranty? Add it.",
+    description: "Roof age, material, and warranty terms strengthen your home's record.",
+    docType: "inspection_report",
+  },
+  plumbing: {
+    title: "Water heater receipt or plumbing permit? Add it.",
+    description: "Documenting age and parts protects you against future surprises.",
+    docType: "repair_receipt",
+  },
+  electrical: {
+    title: "Panel inspection or electrician invoice? Upload it.",
+    description: "Helps document panel age, amperage, and safety upgrades.",
+    docType: "inspection_report",
+  },
 };
 
 const systemDetails: Record<string, {
@@ -141,6 +165,17 @@ const SystemDetailScreen = () => {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Contextual upload prompt */}
+      {systemUploadPrompts[system.id] && (
+        <UploadPromptCard
+          title={systemUploadPrompts[system.id].title}
+          description={systemUploadPrompts[system.id].description}
+          defaultDocType={systemUploadPrompts[system.id].docType}
+          defaultSystemType={system.id}
+          className="mb-6"
+        />
       )}
 
       {/* AI Recommendation — ONLY shown when assessed */}
