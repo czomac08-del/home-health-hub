@@ -183,11 +183,11 @@ const InsuranceScreen = () => {
       toast.error("Add at least the insurance company or policy number");
       return;
     }
-    const { error } = await supabase.from("insurance_policies").insert({
+    const payload = {
       user_id: user.id,
       property_id: activeProperty.id,
       policy_type: newPolicyType,
-      data_status: "owner_submitted" as const,
+      data_status: "owner_submitted",
       insurance_company: pForm.insurance_company || null,
       policy_number: pForm.policy_number || null,
       coverage_start: pForm.coverage_start || null,
@@ -204,9 +204,10 @@ const InsuranceScreen = () => {
       deductible_amount: pForm.deductible_amount ? Number(pForm.deductible_amount) : null,
       // Stash agent email + notes inside ai_analysis until dedicated columns exist.
       ai_analysis: (pForm.agent_email || pForm.notes)
-        ? ({ owner_entered: { agent_email: pForm.agent_email || null, notes: pForm.notes || null } } as any)
+        ? { owner_entered: { agent_email: pForm.agent_email || null, notes: pForm.notes || null } }
         : null,
-    });
+    };
+    const { error } = await supabase.from("insurance_policies").insert(payload as any);
     if (error) { toast.error("Failed to save policy"); return; }
     toast.success("Policy added!");
     setShowAddPolicy(false);
