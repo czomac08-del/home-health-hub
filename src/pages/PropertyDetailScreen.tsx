@@ -16,6 +16,7 @@ import { Info } from "lucide-react";
 import RefreshButton from "@/components/RefreshButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import InspectionAlertBanner from "@/components/InspectionAlertBanner";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -59,6 +60,9 @@ const PropertyDetailScreen = () => {
 
       {/* Refresh */}
       <RefreshButton scope="full" variant="compact" className="mb-4" />
+
+      {/* Inspection Alert Banner — top of page, persistent until findings resolved */}
+      {propertyId && <InspectionAlertBanner propertyId={propertyId} />}
 
       {/* Property Header */}
       <div className="rounded-xl border border-border bg-card p-5 mb-6">
