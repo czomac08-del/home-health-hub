@@ -6,18 +6,22 @@ interface SEOProps {
   path: string;
   type?: "website" | "article";
   jsonLd?: object;
+  /** When true, emits noindex,nofollow so private app pages don't get crawled. */
+  noIndex?: boolean;
 }
 
 const SITE_URL = "https://cominghomeiq.com";
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
-const SEO = ({ title, description, path, type = "website", jsonLd }: SEOProps) => {
+const SEO = ({ title, description, path, type = "website", jsonLd, noIndex = false }: SEOProps) => {
   const url = `${SITE_URL}${path}`;
   return (
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
+      {noIndex && <meta name="robots" content="noindex, nofollow" />}
+      {!noIndex && <meta name="robots" content="index, follow" />}
 
       <meta property="og:type" content={type} />
       <meta property="og:title" content={title} />

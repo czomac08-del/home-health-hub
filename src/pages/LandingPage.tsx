@@ -7,15 +7,43 @@ import { useState } from "react";
 import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
 import FeatureDetailModal, { type FeatureKey } from "@/components/FeatureDetailModal";
 
+// Combined SoftwareApplication + Organization schema for the homepage.
 const landingJsonLd = {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "ComingHomeIQ",
-  "description": "The complete property intelligence platform for homeowners, realtors, inspectors, and investors.",
-  "url": "https://cominghomeiq.com",
-  "applicationCategory": "HomeApplication",
-  "operatingSystem": "Web",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "ComingHomeIQ",
+      "description": "The most complete home intelligence platform. Track every system, appliance, permit, and inspection record — all in one place.",
+      "url": "https://cominghomeiq.com",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "name": "Homeowner Pro",
+        "price": "9.99",
+        "priceCurrency": "USD",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "9.99",
+          "priceCurrency": "USD",
+          "unitText": "MONTH",
+        },
+      },
+    },
+    {
+      "@type": "Organization",
+      "name": "ComingHomeIQ",
+      "url": "https://cominghomeiq.com",
+      "logo": "https://cominghomeiq.com/og-image.png",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support@cominghomeiq.com",
+        "availableLanguage": ["English"],
+      },
+    },
+  ],
 };
 
 const tiers = [
@@ -79,8 +107,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="ComingHomeIQ — The Carfax for Your Home"
-        description="The complete property record platform. Track every system, warranty, permit, and maintenance record. Records verified against government data and satellite imagery."
+        title="ComingHomeIQ | The Carfax for Your Home"
+        description="The most complete home intelligence platform. Track every system, appliance, permit, and inspection record — all in one place."
         path="/"
         jsonLd={landingJsonLd}
       />

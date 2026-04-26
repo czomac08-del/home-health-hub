@@ -63,11 +63,31 @@ import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
 import PropertyContextBanner from "./components/PropertyContextBanner";
+import SEO from "./components/SEO";
 
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding"];
 const hideNavPrefixes = ["/inspection-review/"];
+
+/**
+ * Routes that have their own per-page SEO and should be crawled.
+ * Anything else gets a global noindex tag so private app data does
+ * not leak into search engines.
+ */
+const PUBLIC_INDEXABLE_ROUTES = new Set<string>([
+  "/",
+  "/pricing",
+  "/terms",
+  "/privacy",
+  "/privacy-rights",
+  "/api-docs",
+  "/realtor",
+  "/inspector",
+  "/contractor",
+  "/investor",
+]);
+const PUBLIC_INDEXABLE_PREFIXES = ["/report/"]; // shared certification reports stay indexable
 
 // Pages where the Upload Document FAB should appear (homeowner property pages).
 const uploadFabRoutes = [
@@ -136,6 +156,13 @@ const AppContent = () => {
     !hideNavPrefixes.some((r) => location.pathname.startsWith(r));
   const showUploadFab = user && uploadFabRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
+  // Global SEO fallback: emit noindex on any private/app route. Public pages
+  // override this via their own <SEO /> rendered later in the tree (Helmet
+  // de-duplicates by tag).
+  const isPublicIndexable =
+    PUBLIC_INDEXABLE_ROUTES.has(location.pathname) ||
+    PUBLIC_INDEXABLE_PREFIXES.some((p) => location.pathname.startsWith(p));
+
   // Welcome toast on sign in
   useEffect(() => {
     const handler = () => {
@@ -150,6 +177,16 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen w-full">
+      {/* Default noindex on private/app routes. Public pages render their own SEO
+          afterwards which overrides this (react-helmet-async dedupes by tag name). */}
+      {!isPublicIndexable && (
+        <SEO
+          title="ComingHomeIQ"
+          description="ComingHomeIQ — your home's complete intelligence platform."
+          path={location.pathname}
+          noIndex
+        />
+      )}
       {/* Desktop sidebar — only show on authenticated app pages */}
       {showNav && <DesktopSidebar />}
 

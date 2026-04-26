@@ -157,8 +157,8 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen pb-20">
       <SEO
-        title="Pricing — ComingHomeIQ Plans for Homeowners & Pros"
-        description="Simple pricing for ComingHomeIQ. Free homeowner plan, Pro plans for unlimited properties, and business tools for realtors, inspectors, contractors, and investors. 14-day free trial."
+        title="Pricing | ComingHomeIQ"
+        description="Homeowner, Realtor, Inspector, Contractor, and Investor plans. Start free."
         path="/pricing"
       />
       {/* Nav */}

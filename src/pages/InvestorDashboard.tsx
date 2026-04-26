@@ -11,6 +11,7 @@ import {
   CheckCircle2, AlertTriangle, X, Download
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import SEO from "@/components/SEO";
 
 type FlipProject = {
   id: string;
@@ -472,6 +473,11 @@ const InvestorDashboard = () => {
   // ── MAIN DASHBOARD ──
   return (
     <div className="min-h-screen max-w-lg lg:max-w-6xl mx-auto px-4 py-6 pb-24 space-y-5">
+      <SEO
+        title="Investor Tools | ComingHomeIQ"
+        description="Flip analyzer, ROI tables, and budget tracking."
+        path="/investor"
+      />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Investor Dashboard</h1>
         <p className="text-sm text-muted-foreground">{profile?.full_name || "Investor"} · Portfolio Summary</p>
