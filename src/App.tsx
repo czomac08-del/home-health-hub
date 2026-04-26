@@ -58,6 +58,7 @@ import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 import JoinReferralScreen from "./pages/JoinReferralScreen";
 import AdminRewardsPage from "./pages/AdminRewardsPage";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import InspectionReviewViewer from "./pages/InspectionReviewViewer";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
@@ -66,6 +67,7 @@ import PropertyContextBanner from "./components/PropertyContextBanner";
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding"];
+const hideNavPrefixes = ["/inspection-review/"];
 
 // Pages where the Upload Document FAB should appear (homeowner property pages).
 const uploadFabRoutes = [
@@ -128,7 +130,10 @@ const RoleRedirect = () => {
 const AppContent = () => {
   const location = useLocation();
   const { user, profile } = useAuth();
-  const showNav = user && !hideNavRoutes.some((r) => location.pathname === r || location.pathname.startsWith("/report/"));
+  const showNav =
+    user &&
+    !hideNavRoutes.some((r) => location.pathname === r || location.pathname.startsWith("/report/")) &&
+    !hideNavPrefixes.some((r) => location.pathname.startsWith(r));
   const showUploadFab = user && uploadFabRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   // Welcome toast on sign in
@@ -204,6 +209,7 @@ const AppContent = () => {
             <Route path="/report" element={<ScoreReportPage />} />
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
             <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
+            <Route path="/inspection-review/:id/viewer" element={<ProtectedRoute><InspectionReviewViewer /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
