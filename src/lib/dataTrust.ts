@@ -77,12 +77,13 @@ export async function writeTrustedField(
   } = args;
 
   // Look up current source for this field
-  const { data: existing } = await supabase
+  const { data: existingRaw } = await supabase
     .from("field_sources" as any)
     .select("*")
     .eq("property_id", propertyId)
     .eq("field_path", fieldPath)
-    .maybeSingle<FieldSource>();
+    .maybeSingle();
+  const existing = existingRaw as FieldSource | null;
 
   let flagged = false;
   let flagReason: string | null = null;
@@ -207,7 +208,7 @@ export async function getFieldSources(
     .select("*")
     .eq("property_id", propertyId);
   const map: Record<string, FieldSource> = {};
-  (data as FieldSource[] | null)?.forEach((row) => {
+  ((data as unknown) as FieldSource[] | null)?.forEach((row) => {
     map[row.field_path] = row;
   });
   return map;
