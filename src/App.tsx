@@ -56,10 +56,26 @@ import LegalFooter from "./components/LegalFooter";
 import HomeDefenseHubScreen from "./pages/HomeDefenseHubScreen";
 import JoinReferralScreen from "./pages/JoinReferralScreen";
 import AdminRewardsPage from "./pages/AdminRewardsPage";
+import UploadDocumentFab from "./components/UploadDocumentFab";
 
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/legal-onboarding"];
+
+// Pages where the Upload Document FAB should appear (homeowner property pages).
+const uploadFabRoutes = [
+  "/dashboard",
+  "/property",
+  "/systems",
+  "/system",
+  "/system-config",
+  "/documents",
+  "/insurance",
+  "/warranties",
+  "/well-water",
+  "/utilities",
+  "/home-defense",
+];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -108,6 +124,7 @@ const AppContent = () => {
   const location = useLocation();
   const { user, profile } = useAuth();
   const showNav = user && !hideNavRoutes.some((r) => location.pathname === r || location.pathname.startsWith("/report/"));
+  const showUploadFab = user && uploadFabRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   // Welcome toast on sign in
   useEffect(() => {
@@ -197,6 +214,7 @@ const AppContent = () => {
           <HelpButton />
         </div>
       )}
+      {showUploadFab && <UploadDocumentFab />}
     </div>
   );
 };
