@@ -184,7 +184,7 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
           if (!Number.isNaN(yb)) {
             await supabase
               .from("properties")
-              .update({ year_built: yb })
+              .update({ year_built: String(yb) })
               .eq("id", activeProperty.id);
             added++;
           }
