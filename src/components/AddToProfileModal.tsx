@@ -355,9 +355,11 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
         .select("ai_extracted_data, document_date")
         .eq("id", recordId)
         .maybeSingle();
-      const rep = (rec?.ai_extracted_data as any)?.inspection_report;
+      const ai = (rec?.ai_extracted_data as any) || {};
+      const rep = ai.inspection_report;
       inspectionDate =
         rep?.inspector?.inspection_date ||
+        ai.inspection_date ||
         rec?.document_date ||
         null;
     }
@@ -381,6 +383,7 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
           const specWithDate = {
             ...(item.target.spec as Record<string, any>),
             ...(inspectionDate ? { last_inspected_date: inspectionDate } : {}),
+            ...(isInspectionSource ? { source_record_id: recordId } : {}),
           };
           // Upsert by (property_id, system_name) to avoid unique-constraint failures
           // when the user already added this system manually.
@@ -398,7 +401,11 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
             } as any,
             { onConflict: "property_id,system_name" },
           );
-          if (!error) added++;
+          if (error) {
+            console.warn("system_details upsert failed", item.target.systemName, error);
+          } else {
+            added++;
+          }
         }
       } catch (e) {
         console.warn("Import item failed", item.key, e);
