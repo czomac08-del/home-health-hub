@@ -80,7 +80,7 @@ export default function AffiliateDashboard() {
   if (!partner) {
     return (
       <div className="max-w-3xl mx-auto p-6 lg:p-8">
-        <SEO title="Affiliate Dashboard" description="ComingHomeIQ affiliate partner dashboard" />
+        <SEO title="Affiliate Dashboard" description="ComingHomeIQ affiliate partner dashboard" path="/affiliate-dashboard" />
         <Card className="p-8 text-center space-y-4">
           <h1 className="text-2xl font-semibold">Affiliate access not enabled</h1>
           <p className="text-muted-foreground">
@@ -102,7 +102,7 @@ export default function AffiliateDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-6">
-      <SEO title={`Affiliate Dashboard — ${partner.name}`} description="Track referrals and earnings" />
+      <SEO title={`Affiliate Dashboard — ${partner.name}`} description="Track referrals and earnings" path="/affiliate-dashboard" />
 
       <div className="flex items-start justify-between gap-4">
         <div>
