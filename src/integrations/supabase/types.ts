@@ -180,6 +180,45 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_log: {
+        Row: {
+          consent_type: string
+          consent_value: boolean
+          context: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          policy_version: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          consent_type: string
+          consent_value: boolean
+          context?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          policy_version?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          consent_type?: string
+          consent_value?: boolean
+          context?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          policy_version?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       contractor_jobs: {
         Row: {
           created_at: string
@@ -1513,6 +1552,48 @@ export type Database = {
           },
         ]
       }
+      privacy_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          handled_by: string | null
+          id: string
+          request_details: string | null
+          request_type: string
+          requested_at: string
+          response_notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          handled_by?: string | null
+          id?: string
+          request_details?: string | null
+          request_type: string
+          requested_at?: string
+          response_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          handled_by?: string | null
+          id?: string
+          request_details?: string | null
+          request_type?: string
+          requested_at?: string
+          response_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       professional_license_boards: {
         Row: {
           board_name: string
@@ -1557,32 +1638,56 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age_confirmed_at: string | null
+          anonymized: boolean
+          anonymized_at: string | null
           avatar_url: string | null
           created_at: string
           email: string
           full_name: string
           id: string
+          marketing_opted_in: boolean
+          marketing_opted_in_at: string | null
+          privacy_accepted_at: string | null
           role: Database["public"]["Enums"]["app_role"]
+          terms_accepted_at: string | null
+          terms_version_accepted: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          age_confirmed_at?: string | null
+          anonymized?: boolean
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
+          marketing_opted_in?: boolean
+          marketing_opted_in_at?: string | null
+          privacy_accepted_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          terms_accepted_at?: string | null
+          terms_version_accepted?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          age_confirmed_at?: string | null
+          anonymized?: boolean
+          anonymized_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
+          marketing_opted_in?: boolean
+          marketing_opted_in_at?: string | null
+          privacy_accepted_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          terms_accepted_at?: string | null
+          terms_version_accepted?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1654,6 +1759,7 @@ export type Database = {
           storage_path: string | null
           system_type: string
           updated_at: string
+          upload_consent_at: string | null
           uploaded_by_user_id: string
           url: string | null
           verified: boolean
@@ -1673,6 +1779,7 @@ export type Database = {
           storage_path?: string | null
           system_type: string
           updated_at?: string
+          upload_consent_at?: string | null
           uploaded_by_user_id: string
           url?: string | null
           verified?: boolean
@@ -1692,6 +1799,7 @@ export type Database = {
           storage_path?: string | null
           system_type?: string
           updated_at?: string
+          upload_consent_at?: string | null
           uploaded_by_user_id?: string
           url?: string | null
           verified?: boolean

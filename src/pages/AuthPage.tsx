@@ -9,6 +9,8 @@ import type { UserRole } from "@/contexts/RoleContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import { friendlyAuthError, getDeviceToken } from "@/lib/authErrors";
 import { captureReferralFromUrl, attributeSignupReferral, getStoredReferralCode } from "@/lib/referrals";
+import { logConsent, CURRENT_TERMS_VERSION } from "@/lib/privacy";
+import { supabase as sb } from "@/integrations/supabase/client";
 
 const roleCards: { key: UserRole; icon: typeof Home; title: string; desc: string; accent: string }[] = [
   { key: "homeowner", icon: Home, title: "Homeowner", desc: "Manage and protect your home", accent: "border-t-primary" },
@@ -27,6 +29,9 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pendingReferralCode, setPendingReferralCode] = useState<string | null>(null);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [confirmedAge, setConfirmedAge] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -48,6 +53,11 @@ const AuthPage = () => {
     setLoading(true);
     try {
       if (isSignUp) {
+        if (!agreedTerms || !confirmedAge) {
+          toast.error("Please confirm the required checkboxes to continue.");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -62,6 +72,18 @@ const AuthPage = () => {
         const { data: { user: newUser } } = await supabase.auth.getUser();
         if (newUser) {
           await attributeSignupReferral(newUser.id);
+          const now = new Date().toISOString();
+          await sb.from("profiles").update({
+            terms_accepted_at: now,
+            terms_version_accepted: CURRENT_TERMS_VERSION,
+            privacy_accepted_at: now,
+            age_confirmed_at: now,
+            marketing_opted_in: marketingOptIn,
+            marketing_opted_in_at: marketingOptIn ? now : null,
+          } as never).eq("user_id", newUser.id);
+          await logConsent("terms_accepted", true, { userId: newUser.id, context: "signup" });
+          await logConsent("age_confirmed", true, { userId: newUser.id, context: "signup" });
+          await logConsent("marketing_opt_in", marketingOptIn, { userId: newUser.id, context: "signup" });
         }
         toast.success("Account created! Check your email to verify.");
         navigate("/verify-email", { state: { email } });
