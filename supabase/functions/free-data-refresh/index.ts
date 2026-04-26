@@ -76,14 +76,6 @@ Deno.serve(async (req) => {
   const cutoff = new Date(Date.now() - REFRESH_INTERVAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // Pick properties to refresh: those whose state row is missing OR older than cutoff.
-  const { data: properties } = await admin
-    .from("properties")
-    .select("id, address")
-    .limit(manual.property_id ? 1 : 200)
-    .maybeSingle()
-    .then(() => ({ data: undefined } as { data: undefined }))
-    .catch(() => ({ data: undefined } as { data: undefined }));
-
   const { data: props } = await admin
     .from("properties")
     .select("id, address")
