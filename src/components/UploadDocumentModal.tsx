@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X } from "lucide-react";
+import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -184,6 +184,14 @@ export default function UploadDocumentModal({
             Add inspection reports, warranties, permits, or any home document.
           </DialogDescription>
         </DialogHeader>
+
+        {activeProperty && (
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-3 py-2 text-xs">
+            <Home className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-muted-foreground">Uploading to:</span>
+            <span className="font-semibold text-foreground truncate">{activeProperty.address}</span>
+          </div>
+        )}
 
         {step === "form" && (
           <div className="space-y-4">
