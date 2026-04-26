@@ -2,8 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
 import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info } from "lucide-react";
 import { systems } from "./DashboardScreen";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import BreakerPanelMapper from "@/components/BreakerPanelMapper";
 import { FloatingAiScanButton, AiPhotoPicker, AiScanReview, ScanHistory } from "@/components/AiPhotoScanner";
 import type { ScanResult } from "@/components/AiPhotoScanner";
@@ -90,15 +92,133 @@ const systemDetails: Record<string, {
   },
 };
 
+// Same pattern map the dashboard uses to associate dashboard tile IDs
+// with the system_name strings stored in system_details.
+const systemMatchers: Record<string, RegExp> = {
+  hvac: /^hvac/i,
+  plumbing: /^(plumbing|water heater)/i,
+  electrical: /^electrical/i,
+  roof: /^roof/i,
+};
+
+type DbSystemRow = {
+  id: string;
+  system_name: string;
+  brand: string | null;
+  model: string | null;
+  install_date: string | null;
+  data_status: string | null;
+  status: string | null;
+  specs: any;
+};
+
+// Inspector-verified or AI-extracted rows score in the 70-85 band, scaled by
+// finding severity. No findings → 85. Major defect → 60. Significant → 70.
+function scoreFromRows(rows: DbSystemRow[], findingsByLevel: Record<number, number>): number {
+  if (!rows.length) return 50;
+  const isInspector = rows.some((r) => r.data_status === "inspector_verified");
+  const max = Math.max(0, ...rows.map((r) => Number(r.specs?.inspector_findings_count) || 0));
+  // Pull worst-case condition string out of any matching row.
+  const condition = (rows.find((r) => r.specs?.condition)?.specs?.condition || "").toLowerCase();
+  let base = isInspector ? 82 : 70;
+  if (/major defect/i.test(condition) || (findingsByLevel[4] || 0) > 0) base = 60;
+  else if (/significant/i.test(condition) || (findingsByLevel[3] || 0) > 0) base = 70;
+  else if (/minor/i.test(condition) || (findingsByLevel[2] || 0) > 0) base = 78;
+  if (max >= 5) base -= 5;
+  return Math.max(40, Math.min(95, base));
+}
+
+function formatInspectionDate(d?: string | null): string | null {
+  if (!d) return null;
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return null;
+  return dt.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
 const SystemDetailScreen = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { activeProperty } = useAuth();
   const system = systems.find((s) => s.id === id);
   const details = id ? systemDetails[id] : undefined;
   const [checked, setChecked] = useState<boolean[]>(details ? details.steps.map(() => false) : []);
   const [showPicker, setShowPicker] = useState(false);
   const [scanReview, setScanReview] = useState<ScanResult | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanResult[]>([]);
+  const [rows, setRows] = useState<DbSystemRow[]>([]);
+  const [findingsByLevel, setFindingsByLevel] = useState<Record<number, number>>({});
+  const [inspector, setInspector] = useState<{ name: string | null; date: string | null } | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!activeProperty?.id || !id) { setLoaded(true); return; }
+    const matcher = systemMatchers[id];
+    if (!matcher) { setLoaded(true); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: details } = await supabase
+        .from("system_details")
+        .select("id, system_name, brand, model, install_date, data_status, status, specs")
+        .eq("property_id", activeProperty.id);
+      const matched = ((details as any[]) || []).filter((r) => matcher.test(r.system_name)) as DbSystemRow[];
+
+      // Pull inspection findings tied to this system category so the score
+      // can react to severity beyond what's stamped in specs.
+      const categoryMap: Record<string, string> = { hvac: "hvac", plumbing: "plumbing", electrical: "electrical", roof: "roof" };
+      let levelCounts: Record<number, number> = {};
+      let inspectorInfo: { name: string | null; date: string | null } | null = null;
+      const cat = categoryMap[id];
+      if (cat) {
+        const { data: f } = await supabase
+          .from("inspection_findings")
+          .select("level, inspection_record_id")
+          .eq("property_id", activeProperty.id)
+          .ilike("category", cat);
+        for (const row of (f || []) as any[]) {
+          const lv = Number(row.level) || 0;
+          levelCounts[lv] = (levelCounts[lv] || 0) + 1;
+        }
+        const recId = (f as any[] | null)?.[0]?.inspection_record_id;
+        if (recId) {
+          const { data: rec } = await supabase
+            .from("property_records")
+            .select("ai_extracted_data, document_date")
+            .eq("id", recId)
+            .maybeSingle();
+          const ai = (rec?.ai_extracted_data as any) || {};
+          inspectorInfo = {
+            name: ai.inspector_name || ai.inspection_report?.inspector?.inspector_name || null,
+            date: ai.inspection_date || ai.inspection_report?.inspector?.inspection_date || rec?.document_date || null,
+          };
+        }
+      }
+
+      if (cancelled) return;
+      setRows(matched);
+      setFindingsByLevel(levelCounts);
+      setInspector(inspectorInfo);
+      setLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [activeProperty?.id, id]);
+
+  // Pull the most useful display fields out of the imported rows.
+  const importedView = useMemo(() => {
+    if (!rows.length) return null;
+    const brand = rows.find((r) => r.brand)?.brand || null;
+    const condition = rows.find((r) => r.specs?.condition)?.specs?.condition
+      || rows.find((r) => r.specs?.condition_noted)?.specs?.condition_noted
+      || null;
+    const lastInspectedRaw = rows.find((r) => r.specs?.last_inspected_date)?.specs?.last_inspected_date
+      || inspector?.date
+      || null;
+    const lastInspected = formatInspectionDate(lastInspectedRaw);
+    const findingsCount = rows.reduce((sum, r) => sum + (Number(r.specs?.inspector_findings_count) || 0), 0)
+      || Object.values(findingsByLevel).reduce((a, b) => a + b, 0);
+    const isInspector = rows.some((r) => r.data_status === "inspector_verified");
+    const score = scoreFromRows(rows, findingsByLevel);
+    return { brand, condition, lastInspected, findingsCount, isInspector, score, inspectorName: inspector?.name || null };
+  }, [rows, inspector, findingsByLevel]);
 
   if (!system || !details) {
     return (
@@ -108,7 +228,13 @@ const SystemDetailScreen = () => {
     );
   }
 
-  const isAssessed = system.assessed && system.health !== null;
+  // A system is "assessed" if either (a) the static demo system has health, or
+  // (b) we found inspector_verified / ai_extracted rows in system_details.
+  const isAssessed = (system.assessed && system.health !== null) || !!importedView;
+  const displayHealth = system.assessed && system.health !== null ? system.health : importedView?.score ?? null;
+  const documentedLine = importedView
+    ? [importedView.condition, importedView.lastInspected ? `Inspected ${importedView.lastInspected}` : null].filter(Boolean).join(" — ")
+    : "";
 
   const toggleStep = (i: number) => {
     setChecked((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
@@ -136,8 +262,25 @@ const SystemDetailScreen = () => {
           {iconMap[system.id]}
           <h1 className="text-2xl font-bold text-foreground">{system.name}</h1>
         </div>
-        <HealthRing percentage={isAssessed ? system.health : null} size={130} strokeWidth={9} />
-        {isAssessed ? (
+        <HealthRing percentage={displayHealth} size={130} strokeWidth={9} />
+        {importedView ? (
+          <div className="flex flex-col items-center gap-1 text-center">
+            <span className="text-sm font-medium text-foreground">
+              {documentedLine || "Documented from inspection"}
+            </span>
+            {(importedView.brand || importedView.findingsCount > 0) && (
+              <span className="text-xs text-muted-foreground">
+                {[importedView.brand, importedView.findingsCount > 0 ? `${importedView.findingsCount} finding${importedView.findingsCount !== 1 ? "s" : ""}` : null].filter(Boolean).join(" · ")}
+              </span>
+            )}
+            {importedView.inspectorName && (
+              <span className="text-[11px] text-muted-foreground">Inspector: {importedView.inspectorName}</span>
+            )}
+            <span className="mt-1 inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {importedView.isInspector ? "Inspector Verified" : "AI Extracted"}
+            </span>
+          </div>
+        ) : isAssessed ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Calendar className="h-4 w-4" />
             <span>Last serviced: {details.lastService}</span>
@@ -154,8 +297,8 @@ const SystemDetailScreen = () => {
         )}
       </div>
 
-      {/* Not Assessed prompt — shown when no user data exists */}
-      {!isAssessed && (
+      {/* Not Assessed prompt — only when there's no system_details row at all */}
+      {loaded && !isAssessed && (
         <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-start gap-3 mb-6">
           <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
           <div>
