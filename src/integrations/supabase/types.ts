@@ -575,6 +575,68 @@ export type Database = {
           },
         ]
       }
+      date_verifications: {
+        Row: {
+          claimed_date: string
+          created_at: string
+          document_storage_path: string | null
+          document_type: string | null
+          document_url: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["verification_entity"]
+          exif_date: string | null
+          exif_matches_claim: boolean | null
+          id: string
+          notes: string | null
+          property_id: string
+          updated_at: string
+          user_id: string
+          verification_level: Database["public"]["Enums"]["verification_level"]
+        }
+        Insert: {
+          claimed_date: string
+          created_at?: string
+          document_storage_path?: string | null
+          document_type?: string | null
+          document_url?: string | null
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["verification_entity"]
+          exif_date?: string | null
+          exif_matches_claim?: boolean | null
+          id?: string
+          notes?: string | null
+          property_id: string
+          updated_at?: string
+          user_id: string
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Update: {
+          claimed_date?: string
+          created_at?: string
+          document_storage_path?: string | null
+          document_type?: string | null
+          document_url?: string | null
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["verification_entity"]
+          exif_date?: string | null
+          exif_matches_claim?: boolean | null
+          id?: string
+          notes?: string | null
+          property_id?: string
+          updated_at?: string
+          user_id?: string
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "date_verifications_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disclosure_awareness: {
         Row: {
           acknowledged: boolean
@@ -1250,6 +1312,66 @@ export type Database = {
           },
           {
             foreignKeyName: "inspection_findings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_notifications: {
+        Row: {
+          action_taken: string | null
+          id: string
+          inspection_record_id: string | null
+          notification_type: Database["public"]["Enums"]["inspection_notification_type"]
+          notified_user_id: string
+          payload: Json
+          property_id: string
+          read_at: string | null
+          sent_at: string
+          user_role:
+            | Database["public"]["Enums"]["property_connection_role"]
+            | null
+        }
+        Insert: {
+          action_taken?: string | null
+          id?: string
+          inspection_record_id?: string | null
+          notification_type?: Database["public"]["Enums"]["inspection_notification_type"]
+          notified_user_id: string
+          payload?: Json
+          property_id: string
+          read_at?: string | null
+          sent_at?: string
+          user_role?:
+            | Database["public"]["Enums"]["property_connection_role"]
+            | null
+        }
+        Update: {
+          action_taken?: string | null
+          id?: string
+          inspection_record_id?: string | null
+          notification_type?: Database["public"]["Enums"]["inspection_notification_type"]
+          notified_user_id?: string
+          payload?: Json
+          property_id?: string
+          read_at?: string | null
+          sent_at?: string
+          user_role?:
+            | Database["public"]["Enums"]["property_connection_role"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_notifications_inspection_record_id_fkey"
+            columns: ["inspection_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_notifications_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -2007,6 +2129,50 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_connections: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          property_id: string
+          role: Database["public"]["Enums"]["property_connection_role"]
+          status: Database["public"]["Enums"]["property_connection_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          property_id: string
+          role: Database["public"]["Enums"]["property_connection_role"]
+          status?: Database["public"]["Enums"]["property_connection_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string
+          role?: Database["public"]["Enums"]["property_connection_role"]
+          status?: Database["public"]["Enums"]["property_connection_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_connections_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -3161,6 +3327,15 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      notify_property_connections: {
+        Args: {
+          _inspection_record_id: string
+          _notification_type?: Database["public"]["Enums"]["inspection_notification_type"]
+          _payload?: Json
+          _property_id: string
+        }
+        Returns: number
+      }
       spend_credits: { Args: { _amount: number }; Returns: boolean }
     }
     Enums: {
@@ -3180,7 +3355,29 @@ export type Database = {
         | "under_review"
         | "resolved_upheld"
         | "resolved_updated"
+      inspection_notification_type:
+        | "new_inspection_uploaded"
+        | "finding_resolved"
+        | "fix_verified"
       profile_type: "personal" | "business"
+      property_connection_role:
+        | "co_owner"
+        | "renter"
+        | "realtor"
+        | "inspector"
+        | "contractor"
+        | "investor"
+      property_connection_status: "active" | "pending" | "revoked"
+      verification_entity:
+        | "maintenance_history"
+        | "inspection_finding"
+        | "fix_verification"
+        | "property_record"
+      verification_level:
+        | "permit_verified"
+        | "receipt_verified"
+        | "photo_timestamp"
+        | "owner_claimed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3321,7 +3518,33 @@ export const Constants = {
         "resolved_upheld",
         "resolved_updated",
       ],
+      inspection_notification_type: [
+        "new_inspection_uploaded",
+        "finding_resolved",
+        "fix_verified",
+      ],
       profile_type: ["personal", "business"],
+      property_connection_role: [
+        "co_owner",
+        "renter",
+        "realtor",
+        "inspector",
+        "contractor",
+        "investor",
+      ],
+      property_connection_status: ["active", "pending", "revoked"],
+      verification_entity: [
+        "maintenance_history",
+        "inspection_finding",
+        "fix_verification",
+        "property_record",
+      ],
+      verification_level: [
+        "permit_verified",
+        "receipt_verified",
+        "photo_timestamp",
+        "owner_claimed",
+      ],
     },
   },
 } as const
