@@ -479,6 +479,8 @@ const InvestorDashboard = () => {
 
       {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
+      <ClosedDealLogger />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Active Projects", value: activeProjects.length.toString(), icon: Building2, color: "text-primary" },
