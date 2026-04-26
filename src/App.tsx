@@ -156,6 +156,13 @@ const AppContent = () => {
     !hideNavPrefixes.some((r) => location.pathname.startsWith(r));
   const showUploadFab = user && uploadFabRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
+  // Global SEO fallback: emit noindex on any private/app route. Public pages
+  // override this via their own <SEO /> rendered later in the tree (Helmet
+  // de-duplicates by tag).
+  const isPublicIndexable =
+    PUBLIC_INDEXABLE_ROUTES.has(location.pathname) ||
+    PUBLIC_INDEXABLE_PREFIXES.some((p) => location.pathname.startsWith(p));
+
   // Welcome toast on sign in
   useEffect(() => {
     const handler = () => {
