@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import InspectionFindingsReview, { type InspectionReportData } from "./InspectionFindingsReview";
+import FreeToReviewBanner from "./FreeToReviewBanner";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -386,6 +387,9 @@ export default function UploadDocumentModal({
           <div className="py-8 text-center">
             <CheckCircle2 className="h-10 w-10 text-health-green mx-auto mb-3" />
             <p className="text-sm font-semibold text-foreground">Saved to your home record</p>
+            <div className="mt-4 max-w-sm mx-auto text-left">
+              <FreeToReviewBanner />
+            </div>
           </div>
         )}
 
