@@ -6,50 +6,78 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
-interface FallbackData {
-  source: "geocode_fallback";
-  message: string;
-  state?: string | null;
-  county?: string | null;
-  countyFips?: string | null;
-  zipCode?: string | null;
-  coordinates?: { lat: number; lng: number } | null;
-  formattedAddress?: string | null;
-}
+const FALLBACK_NOTE =
+  "Property valuation data is not available for this address. Location and environmental data shown from public records.";
 
-async function getGeocodeFallback(address: string): Promise<FallbackData | null> {
+async function callFn(
+  path: string,
+  params: Record<string, string> = {},
+): Promise<any | null> {
   try {
-    const resp = await fetch(
-      `${SUPABASE_URL}/functions/v1/geocode?address=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          apikey: SUPABASE_ANON_KEY,
-        },
-      }
-    );
-    if (!resp.ok) return null;
-    const geo = await resp.json();
-    const match = geo?.matches?.[0];
-    if (!match && !geo?.state) return null;
-
-    return {
-      source: "geocode_fallback",
-      message:
-        "Limited RentCast coverage for this area — showing verified public data from other sources.",
-      state: geo.state || match?.state || null,
-      county: geo.county || match?.county || null,
-      countyFips: geo.countyFips || match?.countyFips || null,
-      zipCode: geo.zipCode || match?.zipCode || null,
-      coordinates: match?.coordinates
-        ? { lat: match.coordinates.y, lng: match.coordinates.x }
-        : null,
-      formattedAddress: match?.matchedAddress || geo.matchedAddress || null,
-    };
+    const qs = new URLSearchParams(params).toString();
+    const url = `${SUPABASE_URL}/functions/v1/${path}${qs ? `?${qs}` : ""}`;
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+    if (!resp.ok) {
+      console.warn(`Fallback ${path} returned ${resp.status}`);
+      return null;
+    }
+    return await resp.json();
   } catch (err) {
-    console.error("Geocode fallback failed:", err);
+    console.error(`Fallback ${path} failed:`, err);
     return null;
   }
+}
+
+async function buildCensusFallback(address: string) {
+  // Step 1: Census geocode
+  const geo = await callFn("geocode", { address });
+  const match = geo?.matches?.[0];
+  const state = geo?.state || match?.state || null;
+  const county = geo?.county || match?.county || null;
+  const countyFips = geo?.countyFips || match?.countyFips || null;
+  const coords = match?.coordinates
+    ? { lat: match.coordinates.y, lng: match.coordinates.x }
+    : null;
+  const formattedAddress = match?.matchedAddress || geo?.matchedAddress || null;
+
+  // Steps 2–5: environmental data in parallel (best effort)
+  const [fema, noaa, drought, epa] = await Promise.all([
+    state
+      ? callFn("fema-disasters", { state, ...(county ? { county } : {}) })
+      : Promise.resolve(null),
+    coords
+      ? callFn("noaa-storms", { lat: String(coords.lat), lng: String(coords.lng) })
+      : state
+      ? callFn("noaa-storms", { state })
+      : Promise.resolve(null),
+    countyFips ? callFn("drought-status", { fips: countyFips }) : Promise.resolve(null),
+    countyFips
+      ? callFn("epa-echo", { countyFips })
+      : state
+      ? callFn("epa-echo", { state })
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    found: false,
+    rentcast_available: false,
+    data_source: "census_fallback",
+    note: FALLBACK_NOTE,
+    formattedAddress,
+    state,
+    county,
+    countyFips,
+    coordinates: coords,
+    fema: fema ?? null,
+    noaa: noaa ?? null,
+    drought: drought ?? null,
+    epa: epa ?? null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -64,18 +92,17 @@ Deno.serve(async (req) => {
     if (!address || address.trim().length < 5) {
       return new Response(
         JSON.stringify({ error: "Address parameter is required (min 5 chars)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
     if (!apiKey) {
-      console.warn("RENTCAST_API_KEY missing — going straight to geocode fallback");
-      const fallback = await getGeocodeFallback(address);
-      return new Response(
-        JSON.stringify({ found: false, fallback, reason: "no_api_key" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.warn("RENTCAST_API_KEY missing — going straight to census fallback");
+      const fallback = await buildCensusFallback(address);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const rentcastUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address.trim())}`;
@@ -85,20 +112,14 @@ Deno.serve(async (req) => {
       headers: { "X-Api-Key": apiKey, Accept: "application/json" },
     });
 
-    // Failure path (400/404/etc) — fall through to geocode-derived fallback
+    // Failure path (400/404/etc) — silently fall through to census + environmental fallback
     if (!resp.ok) {
       const errText = await resp.text();
-      console.error("RentCast API error:", resp.status, errText, "— falling back to geocoder");
-      const fallback = await getGeocodeFallback(address);
-      return new Response(
-        JSON.stringify({
-          found: false,
-          fallback,
-          reason: "rentcast_error",
-          rentcastStatus: resp.status,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.warn("RentCast API error:", resp.status, errText, "— using census fallback");
+      const fallback = await buildCensusFallback(address);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await resp.json();
@@ -106,17 +127,18 @@ Deno.serve(async (req) => {
 
     const property = Array.isArray(data) ? data[0] : data;
 
-    // Empty result path — also fall through to geocode fallback
+    // Empty result path — also fall through to census + environmental fallback
     if (!property) {
-      const fallback = await getGeocodeFallback(address);
-      return new Response(
-        JSON.stringify({ found: false, fallback, reason: "no_results" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const fallback = await buildCensusFallback(address);
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const result = {
       found: true,
+      rentcast_available: true,
+      data_source: "rentcast",
       yearBuilt: property.yearBuilt ?? null,
       squareFootage: property.squareFootage ?? property.livingArea ?? null,
       lotSize: property.lotSize ?? null,
@@ -141,8 +163,14 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("rentcast-lookup error:", err);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        found: false,
+        rentcast_available: false,
+        data_source: "error",
+        note: FALLBACK_NOTE,
+        error: "Internal server error",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
