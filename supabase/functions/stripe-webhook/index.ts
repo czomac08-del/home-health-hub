@@ -152,6 +152,24 @@ Deno.serve(async (req) => {
         // One-time payments also count as "converted to paid" for referral attribution.
         if (session.mode === "payment" && session.payment_status === "paid") {
           await markReferralConverted(supabase, userId);
+
+          // Refresh-credit purchase: grant credits.
+          if (session.metadata?.purchase_type === "refresh_credit") {
+            try {
+              const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
+              let total = 0;
+              for (const li of lineItems.data) {
+                const pid = (li.price?.id as string) || "";
+                const credits = REFRESH_CREDIT_PRICES[pid] || 0;
+                total += credits * (li.quantity || 1);
+              }
+              if (total > 0) {
+                await supabase.rpc("grant_credits", { _user_id: userId, _amount: total });
+              }
+            } catch (e) {
+              console.error("Failed to grant refresh credits:", e);
+            }
+          }
         }
         break;
       }
