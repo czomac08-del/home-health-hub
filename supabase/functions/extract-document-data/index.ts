@@ -102,6 +102,7 @@ Return JSON ONLY in this exact shape:
       "standard_citation": "Required for Level 1 & 2. Format: 'NFPA 72 — Smoke alarms required in all sleeping areas' or 'ASHI Standard 7.1 — Water heater'. Use null for Level 3 & 4.",
       "standard_source": "ASHI|InterNACHI|NFPA|NEC|IRC|null",
       "rationale": "One sentence explaining WHY this severity level (e.g. 'Fire safety hazard — required by code in all sleeping areas')",
+      "page_reference": "Integer page number in the source PDF where this finding appears, or null if unknown. Use the printed/visible page number when available.",
       "confidence": 0-100
     }
   ],
