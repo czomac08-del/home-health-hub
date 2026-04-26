@@ -18,11 +18,16 @@ interface SystemCardProps {
   flagged?: boolean;
   showPulse?: boolean;
   assessed?: boolean;
+  brand?: string | null;
+  condition?: string | null;
   onClick: () => void;
 }
 
-const SystemCard = ({ id, name, health, status, flagged, showPulse, assessed = true, onClick }: SystemCardProps) => {
+const SystemCard = ({ id, name, health, status, flagged, showPulse, assessed = true, brand, condition, onClick }: SystemCardProps) => {
   const isAssessed = assessed && health !== null;
+  // When we don't have a numeric health score yet but the system IS documented
+  // (brand/condition pulled from inspection), show those instead of "Add Info".
+  const documentedNoScore = assessed && health === null && (brand || condition);
 
   return (
     <div className="w-full rounded-2xl border border-border bg-card p-4 hover:border-[hsl(var(--border-accent))] hover:-translate-y-[3px] transition-all duration-200">
@@ -45,15 +50,19 @@ const SystemCard = ({ id, name, health, status, flagged, showPulse, assessed = t
           </div>
           {isAssessed ? (
             <span className={`text-sm font-medium ${getColorClass(health)}`}>{status}</span>
+          ) : documentedNoScore ? (
+            <span className="text-sm font-medium text-foreground truncate block">
+              {[brand, condition].filter(Boolean).join(" · ")}
+            </span>
           ) : (
             <span className="text-sm font-medium text-muted-foreground">Add Info to Get Score</span>
           )}
         </div>
         <span className="text-muted-foreground text-sm whitespace-nowrap">
-          {isAssessed ? "View Guide →" : "Add Details →"}
+          {isAssessed || documentedNoScore ? "View Guide →" : "Add Details →"}
         </span>
       </button>
-      {isAssessed && (
+      {(isAssessed || documentedNoScore) && (
         <div className="mt-2 ml-[80px]">
           <QuickCheckInButton systemName={name} />
         </div>
