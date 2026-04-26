@@ -253,6 +253,9 @@ const AppContent = () => {
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
             <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/inspection-review/:id/viewer" element={<ProtectedRoute><InspectionReviewViewer /></ProtectedRoute>} />
+            <Route path="/subto" element={<SubToLandingPage />} />
+            <Route path="/contrarian" element={<ContrarianLandingPage />} />
+            <Route path="/partners" element={<PartnersPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
