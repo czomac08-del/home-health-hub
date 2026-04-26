@@ -476,7 +476,18 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
       {/* Add Policy Form */}
       {showAddPolicy && (
         <div className="rounded-2xl border border-border bg-card p-5 mb-6 space-y-4">
-          <h3 className="font-heading font-bold text-foreground">Add Insurance Policy</h3>
+          <div>
+            <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-primary" /> Add Policy Manually
+            </h3>
+            <div className="mt-2 rounded-xl bg-brain-blue/10 border border-brain-blue/30 p-3">
+              <p className="text-xs text-foreground">
+                <span className="font-semibold">Don't have your document?</span>{" "}
+                Enter what you know now — you can upload the full policy PDF anytime later.
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">Only the insurance company name or policy number is required.</p>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Policy Type</label>
             <select value={newPolicyType} onChange={(e) => setNewPolicyType(e.target.value as PolicyType)} className="w-full rounded-xl border border-border bg-bg-secondary py-2.5 px-3 text-sm text-foreground">
@@ -497,12 +508,24 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
             </div>
             <FormInput label="Agent Name" value={pForm.agent_name} onChange={(v) => setPForm({ ...pForm, agent_name: v })} />
             <FormInput label="Agent Phone" value={pForm.agent_phone} onChange={(v) => setPForm({ ...pForm, agent_phone: v })} />
+            <FormInput label="Agent Email" value={pForm.agent_email} onChange={(v) => setPForm({ ...pForm, agent_email: v })} />
             <FormInput label="Claims Phone (24hr)" value={pForm.claims_phone} onChange={(v) => setPForm({ ...pForm, claims_phone: v })} />
             <FormInput label="Online Portal URL" value={pForm.online_portal_url} onChange={(v) => setPForm({ ...pForm, online_portal_url: v })} />
             <FormInput label="Dwelling Coverage" type="number" value={pForm.dwelling_coverage} onChange={(v) => setPForm({ ...pForm, dwelling_coverage: v })} />
             <FormInput label="Personal Property" type="number" value={pForm.personal_property_coverage} onChange={(v) => setPForm({ ...pForm, personal_property_coverage: v })} />
             <FormInput label="Liability Coverage" type="number" value={pForm.liability_coverage} onChange={(v) => setPForm({ ...pForm, liability_coverage: v })} />
             <FormInput label="Deductible" type="number" value={pForm.deductible_amount} onChange={(v) => setPForm({ ...pForm, deductible_amount: v })} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Notes</label>
+            <textarea
+              value={pForm.notes}
+              onChange={(e) => setPForm({ ...pForm, notes: e.target.value })}
+              rows={3}
+              maxLength={1000}
+              placeholder="Anything else worth remembering about this policy…"
+              className="w-full rounded-xl border border-border bg-bg-secondary py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
           </div>
           <div className="flex gap-2">
             <button onClick={handleAddPolicy} className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-heading font-bold text-primary-foreground hover:opacity-90">Save Policy</button>
