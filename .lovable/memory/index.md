@@ -12,6 +12,7 @@
 - **Nationwide**: All 50 states + 3,143 counties. No hardcoded state/county assumptions. Geocode via Census Bureau → Nominatim fallback. State data in `src/data/stateData.ts`.
 - **Free uploads rule**: Reviewing user-uploaded data (reports, docs, photos, receipts) is always free — never paywall it. Credits only apply to AI Q&A beyond plan limits and outside-source refreshes. Receipt photos upgrade DIY fixes to `receipt_verified`.
 - **Maximum Truthful Reach**: Push coverage, legal leverage, SEO presence, and trust badges as far as legally defensible across all 50 states — but every claim must be sourced and true. Downgrade the *claim* before downgrading the reach. See `mem://principles/maximum-truthful-reach`.
+- **"I don't know" + suppress empty**: Every input field offers "I don't know" (stored as `data_status='unknown'`, neutral to Home IQ score, opens AI scanner CTA). Never render `—`/`N/A`/`0`/blank cards anywhere — hide unknown fields entirely or replace with a soft fill-in prompt. See `mem://principles/i-dont-know-and-suppress-empty`.
 
 ## Memories
 - [System Organization](mem://features/system-organization) — Home systems divided into Core Infrastructure and Appliances & Extras
