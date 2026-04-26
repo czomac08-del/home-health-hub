@@ -254,6 +254,10 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
     setSaving(true);
     let added = 0;
 
+    // Detect "from inspection" so we can mark items as inspector_verified rather than ai_extracted.
+    const isInspectionSource = items.some((i) => i.key === "inspector");
+    const dataStatus = isInspectionSource ? "inspector_verified" : "ai_extracted";
+
     for (const item of items) {
       if (item.decision !== "add") continue;
 
@@ -263,19 +267,28 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
           if (!Number.isNaN(yb)) {
             await supabase
               .from("properties")
-              .update({ year_built: String(yb) })
+              .update({ year_built: String(yb), data_status: dataStatus as any })
               .eq("id", activeProperty.id);
             added++;
           }
         } else if (item.target.kind === "system") {
-          await supabase.from("system_details").insert({
-            property_id: activeProperty.id,
-            user_id: user.id,
-            system_name: item.target.systemName,
-            specs: item.target.spec as any,
-            data_status: "ai_extracted" as any,
-          } as any);
-          added++;
+          // Upsert by (property_id, system_name) to avoid unique-constraint failures
+          // when the user already added this system manually.
+          const { error } = await supabase.from("system_details").upsert(
+            {
+              property_id: activeProperty.id,
+              user_id: user.id,
+              system_name: item.target.systemName,
+              specs: item.target.spec as any,
+              install_date: (item.target.spec as any)?.year || null,
+              brand: (item.target.spec as any)?.brand || null,
+              location_in_home: (item.target.spec as any)?.location || null,
+              status: "configured",
+              data_status: dataStatus as any,
+            } as any,
+            { onConflict: "property_id,system_name" },
+          );
+          if (!error) added++;
         }
       } catch (e) {
         console.warn("Import item failed", item.key, e);
@@ -286,6 +299,28 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
     setSummary({ added });
     setDone(true);
     if (added > 0) toast.success(`${added} item${added !== 1 ? "s" : ""} added to your profile`);
+  };
+
+  // "Skip for Now" — record pending imports in needs_info so the dashboard can resurface them.
+  const handleSkipForNow = async () => {
+    if (!user || !activeProperty) {
+      onOpenChange(false);
+      return;
+    }
+    const rows = items.map((i) => ({
+      user_id: user.id,
+      property_id: activeProperty.id,
+      section: "inspection_import",
+      field_name: i.key,
+      field_label: i.label,
+    }));
+    if (rows.length) {
+      await supabase
+        .from("needs_info" as any)
+        .upsert(rows, { onConflict: "property_id,section,field_name", ignoreDuplicates: true });
+    }
+    toast("We'll remind you about these on your dashboard.");
+    onOpenChange(false);
   };
 
   return (
