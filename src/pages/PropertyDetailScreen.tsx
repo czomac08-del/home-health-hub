@@ -12,6 +12,7 @@ import BeyondPublicRecords from "@/components/BeyondPublicRecords";
 import LegalFlag from "@/components/LegalFlag";
 import EditorialNote from "@/components/EditorialNote";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
+import { Info } from "lucide-react";
 import RefreshButton from "@/components/RefreshButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,6 +155,23 @@ const PropertyDetailScreen = () => {
         >
           Prepare to Sell / Transfer Home
         </button>
+      </div>
+
+      <div className="mt-8 rounded-xl border border-border bg-muted/20 p-4">
+        <div className="flex items-start gap-2">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="font-semibold text-foreground mb-1">About the information shown here</p>
+            <p>
+              ComingHomeIQ is an information platform. We organize what licensed inspectors, government
+              agencies, and you tell us — we do not independently verify or certify any finding. We are
+              not responsible for conditions that develop after an inspection date, for issues a visual
+              inspection could not detect, or for any actions taken or not taken based on information
+              displayed here. Always consult licensed professionals before making repair, sale, or
+              purchase decisions.
+            </p>
+          </div>
+        </div>
       </div>
 
       <LegalDisclaimer />
