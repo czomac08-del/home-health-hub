@@ -13,6 +13,9 @@ import { scoreLabel } from "@/lib/inspectionScoring";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/SEO";
+import PrintFindingsButton from "@/components/PrintFindingsButton";
+import PrintFindingsReport, { type PrintFilter } from "@/components/PrintFindingsReport";
+import { useInspectionFindings } from "@/hooks/useInspectionFindings";
 
 /**
  * /inspection-review/:id/viewer
@@ -38,6 +41,10 @@ export default function InspectionReviewViewer() {
   const [jumpToPage] = useState<number | null>(initialPage);
   const [mobileTab, setMobileTab] = useState<"analysis" | "report">("analysis");
 
+  // Print state — shared between TopBar button and the analysis panel button.
+  const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
+  const [printableReport, setPrintableReport] = useState<InspectionReportData | null>(null);
+
   useEffect(() => {
     if (!propertyRecordId) return;
     let cancelled = false;
@@ -58,6 +65,7 @@ export default function InspectionReviewViewer() {
       const extracted = (rec.ai_extracted_data as any) || null;
       const ir: InspectionReportData | null = extracted?.inspection_report ?? null;
       setReport(ir);
+      if (ir) setPrintableReport(ir);
       setPropertyId(rec.property_id);
       setReportDate(rec.document_date ?? rec.created_at ?? null);
       setStoragePath(rec.storage_path ?? null);
