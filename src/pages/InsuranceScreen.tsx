@@ -203,12 +203,9 @@ const InsuranceScreen = () => {
       liability_coverage: pForm.liability_coverage ? Number(pForm.liability_coverage) : null,
       deductible_amount: pForm.deductible_amount ? Number(pForm.deductible_amount) : null,
       // Stash agent email + notes inside ai_analysis until dedicated columns exist.
-      ai_analysis: (pForm.agent_email || pForm.notes) ? {
-        owner_entered: {
-          agent_email: pForm.agent_email || null,
-          notes: pForm.notes || null,
-        },
-      } : null,
+      ai_analysis: (pForm.agent_email || pForm.notes)
+        ? ({ owner_entered: { agent_email: pForm.agent_email || null, notes: pForm.notes || null } } as any)
+        : null,
     });
     if (error) { toast.error("Failed to save policy"); return; }
     toast.success("Policy added!");
