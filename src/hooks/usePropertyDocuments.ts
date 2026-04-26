@@ -90,6 +90,17 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     ]);
 
     (recs.data || []).forEach((r: any) => {
+      // Skip system-generated internal records that aren't real user documents.
+      // These are placeholder rows created by data-refresh / civic pulls.
+      const rt = (r.record_type || "").toLowerCase();
+      const isSystemGenerated =
+        rt === "property_details" ||
+        rt === "property_detail" ||
+        rt === "civic_data" ||
+        rt === "rentcast_snapshot";
+      const hasNoRealFile = !r.file_name && !r.storage_path && !r.url;
+      if (isSystemGenerated || hasNoRealFile) return;
+
       const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
       const rep = ext && (r.ai_extracted_data as any).inspection_report;
       all.push({

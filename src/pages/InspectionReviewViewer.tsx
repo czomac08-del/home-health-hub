@@ -8,6 +8,7 @@ import InspectionPdfViewer from "@/components/InspectionPdfViewer";
 import InspectionFindingsReview, {
   type InspectionReportData,
 } from "@/components/InspectionFindingsReview";
+import InspectionAnalysisPanel from "@/components/InspectionAnalysisPanel";
 import { scoreLabel } from "@/lib/inspectionScoring";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,6 +31,8 @@ export default function InspectionReviewViewer() {
   const [propertyAddress, setPropertyAddress] = useState<string>("");
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [reportDate, setReportDate] = useState<string | null>(null);
+  const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [yearBuilt, setYearBuilt] = useState<string | null>(null);
 
   const initialPage = searchParams.get("page") ? Number(searchParams.get("page")) : null;
   const [jumpToPage] = useState<number | null>(initialPage);
@@ -57,6 +60,7 @@ export default function InspectionReviewViewer() {
       setReport(ir);
       setPropertyId(rec.property_id);
       setReportDate(rec.document_date ?? rec.created_at ?? null);
+      setStoragePath(rec.storage_path ?? null);
 
       // Resolve a usable URL for the PDF. Prefer a fresh signed URL, fall back to stored url.
       let url: string | null = rec.url ?? null;
@@ -72,10 +76,13 @@ export default function InspectionReviewViewer() {
       if (rec.property_id) {
         const { data: prop } = await supabase
           .from("properties")
-          .select("address")
+          .select("address, year_built")
           .eq("id", rec.property_id)
           .maybeSingle();
-        if (prop) setPropertyAddress(prop.address ?? "");
+        if (prop) {
+          setPropertyAddress(prop.address ?? "");
+          setYearBuilt(prop.year_built ?? null);
+        }
       }
 
       setLoading(false);
@@ -197,17 +204,15 @@ export default function InspectionReviewViewer() {
         <p className="text-sm font-semibold text-foreground">ComingHomeIQ Analysis</p>
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
-        {report ? (
-          <InspectionFindingsReview
-            data={report}
-            propertyId={propertyId ?? undefined}
+        {propertyRecordId && (
+          <InspectionAnalysisPanel
             propertyRecordId={propertyRecordId}
+            propertyId={propertyId}
             reportUrl={reportUrl}
+            storagePath={storagePath}
+            initialReport={report}
+            yearBuilt={yearBuilt}
           />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No extracted analysis is available for this inspection yet.
-          </p>
         )}
         <p className="text-[10px] text-muted-foreground italic border-t border-border pt-3">
           ComingHomeIQ analysis is AI-extracted from the original report shown.
