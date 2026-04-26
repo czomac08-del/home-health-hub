@@ -377,6 +377,9 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{item.label}</p>
                       <p className="text-xs text-muted-foreground truncate">{item.value}</p>
+                      <p className="text-[10px] text-primary mt-1">
+                        Found in inspection report — Inspector Verified
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-2 ml-7">
@@ -423,6 +426,12 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : `Add ${selectedCount} item${selectedCount !== 1 ? "s" : ""}`}
               </Button>
             </div>
+            <button
+              onClick={handleSkipForNow}
+              className="w-full text-xs text-muted-foreground hover:text-foreground py-1"
+            >
+              Skip for now
+            </button>
           </>
         )}
       </DialogContent>
