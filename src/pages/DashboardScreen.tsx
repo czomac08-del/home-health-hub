@@ -24,7 +24,24 @@ import RecentUploadBanner from "@/components/RecentUploadBanner";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
-const defaultSystems = [
+// system_name patterns from system_details that map to each dashboard tile.
+const defaultSystems: Array<{
+  id: string;
+  name: string;
+  match: RegExp;
+  health: number | null;
+  status: string;
+  flagged: boolean;
+  assessed: boolean;
+}> = [
+  { id: "hvac", name: "HVAC", match: /^hvac/i, health: null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "plumbing", name: "Plumbing", match: /^(plumbing|water heater)/i, health: null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "electrical", name: "Electrical", match: /^electrical/i, health: null, status: "Not Assessed Yet", flagged: false, assessed: false },
+  { id: "roof", name: "Roof", match: /^roof/i, health: null, status: "Not Assessed Yet", flagged: false, assessed: false },
+];
+
+// Backwards-compatible export — kept as a plain shape for any consumer that imports it.
+const defaultSystemsExport = [
   { id: "hvac", name: "HVAC", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
   { id: "plumbing", name: "Plumbing", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
   { id: "electrical", name: "Electrical", health: null as number | null, status: "Not Assessed Yet", flagged: false, assessed: false },
@@ -36,6 +53,7 @@ const DashboardScreen = () => {
   const [showSwitcher, setShowSwitcher] = useState(false);
   const { profile, properties, activeProperty, setActivePropertyId } = useAuth();
   const [recordCount, setRecordCount] = useState<number | null>(null);
+  const [assessedSystemNames, setAssessedSystemNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (!activeProperty?.id) { setRecordCount(0); return; }
@@ -46,7 +64,34 @@ const DashboardScreen = () => {
       .then(({ count }) => setRecordCount(count ?? 0));
   }, [activeProperty?.id]);
 
-  const systems = defaultSystems;
+  // Load any system_details rows for this property so the IQ score reflects real data,
+  // even if only one system has been documented.
+  useEffect(() => {
+    if (!activeProperty?.id) { setAssessedSystemNames([]); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("system_name")
+        .eq("property_id", activeProperty.id);
+      if (cancelled) return;
+      setAssessedSystemNames((data || []).map((r) => r.system_name).filter(Boolean));
+    };
+    void load();
+    // Refresh whenever AddToProfileModal (or anywhere else) tells us system data changed.
+    const onUpdated = () => { void load(); };
+    window.addEventListener("system-details-updated", onUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("system-details-updated", onUpdated);
+    };
+  }, [activeProperty?.id]);
+
+  // Mark each tile assessed if any system_details row matches its pattern.
+  const systems = defaultSystems.map((s) => {
+    const isAssessed = assessedSystemNames.some((n) => s.match.test(n));
+    return { ...s, assessed: isAssessed };
+  });
   // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
   const needsAttention = systems.filter((s) => s.assessed && s.health !== null && s.health < 70);
   const healthySystems = systems.filter((s) => s.assessed && s.health !== null && s.health >= 70);
@@ -255,4 +300,4 @@ const DashboardScreen = () => {
 };
 
 export default DashboardScreen;
-export { defaultSystems as systems };
+export { defaultSystemsExport as systems };
