@@ -94,7 +94,8 @@ const DashboardScreen = () => {
   });
   // Only systems with user-entered data AND a real issue qualify for "Needs Attention"
   const needsAttention = systems.filter((s) => s.assessed && s.health !== null && s.health < 70);
-  const healthySystems = systems.filter((s) => s.assessed && s.health !== null && s.health >= 70);
+  // Anything assessed (with or without a health number) belongs to All Systems.
+  const healthySystems = systems.filter((s) => s.assessed && (s.health === null || s.health >= 70));
   // Only systems with zero data — assessed systems disappear from "Not Yet Documented".
   const notDocumented = systems.filter((s) => !s.assessed);
   const currentHealthScore = activeProperty?.health_score || null;
