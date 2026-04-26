@@ -31,7 +31,7 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
   const rep = ai.inspection_report;
 
   // Year built — common across permits + inspections
-  const yb = ai.year_built || rep?.year_built;
+  const yb = ai.year_built || rep?.year_built || rep?.inspector?.year_built;
   if (yb) {
     items.push({
       key: "year_built",
@@ -42,54 +42,133 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     });
   }
 
-  // HVAC units extracted from inspection findings or summary
-  const hvac = rep?.hvac_units || ai.hvac_units;
+  // HVAC units — from explicit field or by inferring from findings
+  let hvac: any[] | null = rep?.hvac_units || ai.hvac_units || null;
+  if (!hvac && Array.isArray(rep?.findings)) {
+    const hvacFindings = rep.findings.filter((f: any) =>
+      (f.category || "").toLowerCase() === "hvac" || /hvac|condenser|furnace|air handler/i.test(f.title || ""),
+    );
+    // Detect "left/right" or "unit 1/2" mentions
+    const seen = new Map<string, any>();
+    for (const f of hvacFindings) {
+      const text = `${f.title} ${f.description || ""} ${f.location || ""}`;
+      const side = /left|unit\s*1|first/i.test(text) ? "Unit 1"
+        : /right|unit\s*2|second/i.test(text) ? "Unit 2"
+        : "Main";
+      const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+      const functional = !/not\s+function|inoperable|fail|broken/i.test(text);
+      const existing = seen.get(side) || { location: side };
+      if (yearMatch && !existing.year) existing.year = yearMatch[0];
+      existing.condition = functional ? "Functional" : "Not functional";
+      seen.set(side, existing);
+    }
+    if (seen.size > 0) hvac = Array.from(seen.values());
+  }
   if (Array.isArray(hvac)) {
     hvac.forEach((u: any, i: number) => {
       items.push({
         key: `hvac_${i}`,
-        label: `HVAC unit ${i + 1}`,
+        label: `HVAC ${u.location || `Unit ${i + 1}`}`,
         value: [u.location, u.year, u.brand, u.condition].filter(Boolean).join(" · "),
-        target: { kind: "system", systemName: "HVAC", spec: u },
+        target: { kind: "system", systemName: i === 0 ? "HVAC" : `HVAC ${u.location || i + 1}`, spec: u },
         decision: null,
       });
     });
   }
 
-  // Water heaters
-  const wh = rep?.water_heaters || ai.water_heaters;
+  // Water heaters — explicit or inferred
+  let wh: any[] | null = rep?.water_heaters || ai.water_heaters || null;
+  if (!wh && Array.isArray(rep?.findings)) {
+    const whFindings = rep.findings.filter((f: any) =>
+      /water heater|tankless|navien|rheem/i.test(`${f.title} ${f.description || ""}`),
+    );
+    const seen: any[] = [];
+    for (const f of whFindings) {
+      const text = `${f.title} ${f.description || ""}`;
+      const brand =
+        /navien/i.test(text) ? "Navien" :
+        /rheem/i.test(text) ? "Rheem" :
+        /bradford/i.test(text) ? "Bradford White" : null;
+      const type = /tankless/i.test(text) ? "Tankless" : /tank/i.test(text) ? "Tank" : null;
+      const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+      const gallons = text.match(/(\d{2,3})\s*-?\s*gal/i);
+      const key = `${brand || ""}-${yearMatch?.[0] || ""}`;
+      if (key !== "-" && !seen.find((s) => s.key === key)) {
+        seen.push({
+          key,
+          brand,
+          type,
+          year: yearMatch?.[0] || null,
+          capacity_gallons: gallons ? parseInt(gallons[1], 10) : null,
+        });
+      }
+    }
+    if (seen.length) wh = seen;
+  }
   if (Array.isArray(wh)) {
     wh.forEach((u: any, i: number) => {
       items.push({
         key: `wh_${i}`,
         label: `Water heater ${i + 1}`,
         value: [u.brand, u.type, u.capacity_gallons ? `${u.capacity_gallons} gal` : null, u.year].filter(Boolean).join(" · "),
-        target: { kind: "system", systemName: "Water Heater", spec: u },
+        target: { kind: "system", systemName: i === 0 ? "Water Heater" : `Water Heater ${i + 1}`, spec: u },
         decision: null,
       });
     });
   }
 
-  // Electrical panel
-  const panel = rep?.electrical_panel || ai.electrical_panel;
+  // Electrical panel — explicit or inferred from findings
+  let panel: any | null = rep?.electrical_panel || ai.electrical_panel || null;
+  if (!panel && Array.isArray(rep?.findings)) {
+    const elec = rep.findings.find((f: any) =>
+      /panel|amp|breaker/i.test(`${f.title} ${f.description || ""}`),
+    );
+    if (elec) {
+      const text = `${elec.title} ${elec.description || ""}`;
+      const amp = text.match(/(\d{2,4})\s*-?\s*amp/i);
+      const brand = /federal pacific|fpe/i.test(text) ? "Federal Pacific" : null;
+      panel = { amperage: amp ? parseInt(amp[1], 10) : null, brand, notes: elec.title };
+    }
+  }
   if (panel) {
     items.push({
       key: "electrical_panel",
       label: "Electrical panel",
-      value: [panel.amperage ? `${panel.amperage} amp` : null, panel.brand].filter(Boolean).join(" · "),
+      value: [panel.amperage ? `${panel.amperage} amp` : null, panel.brand, panel.notes].filter(Boolean).join(" · "),
       target: { kind: "system", systemName: "Electrical", spec: panel },
       decision: null,
     });
   }
 
-  // Foundation type
-  const ft = rep?.foundation_type || ai.foundation_type;
+  // Foundation type — explicit or inferred
+  let ft = rep?.foundation_type || ai.foundation_type;
+  if (!ft && Array.isArray(rep?.findings)) {
+    const fnd = rep.findings.find((f: any) =>
+      /crawlspace|crawl space|basement|slab/i.test(`${f.title} ${f.description || ""} ${f.location || ""}`),
+    );
+    if (fnd) {
+      const text = `${fnd.title} ${fnd.description || ""} ${fnd.location || ""}`;
+      ft = /crawl/i.test(text) ? "Crawlspace" : /basement/i.test(text) ? "Basement" : /slab/i.test(text) ? "Slab" : null;
+    }
+  }
   if (ft) {
     items.push({
       key: "foundation_type",
       label: "Foundation type",
       value: String(ft),
       target: { kind: "system", systemName: "Foundation", spec: { foundation_type: ft } },
+      decision: null,
+    });
+  }
+
+  // Inspector record — pulled from the report header
+  const insp = rep?.inspector;
+  if (insp && (insp.inspector_name || insp.inspector_company)) {
+    items.push({
+      key: "inspector",
+      label: "Inspector on file",
+      value: [insp.inspector_name, insp.inspector_company, insp.inspection_date].filter(Boolean).join(" · "),
+      target: { kind: "note" },
       decision: null,
     });
   }
