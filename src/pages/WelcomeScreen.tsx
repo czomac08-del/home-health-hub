@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MapPin, Loader2, CheckCircle2, Heart, BadgeCheck, Home, BedDouble, Bath, Ruler, Calendar } from "lucide-react";
+import { Search, MapPin, Loader2, CheckCircle2, Heart, BadgeCheck, Home, BedDouble, Bath, Ruler, Calendar, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +14,9 @@ interface AddressSuggestion {
 
 interface RentCastData {
   found: boolean;
+  rentcast_available?: boolean;
+  data_source?: string;
+  note?: string;
   yearBuilt?: number | null;
   squareFootage?: number | null;
   lotSize?: number | null;
@@ -55,11 +58,8 @@ const WelcomeScreen = () => {
       const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(addr)}`);
       if (res.ok) {
         const data: RentCastData = await res.json();
-        if (data.found) {
-          setPropertyData(data);
-        } else {
-          setPropertyData(null);
-        }
+        // Always keep the response — fallback responses still carry useful context
+        setPropertyData(data);
       } else {
         setPropertyData(null);
       }
@@ -274,6 +274,15 @@ const WelcomeScreen = () => {
             {propertyData.lotSize && (
               <p className="text-xs text-muted-foreground mt-2">Lot size: {fmt(propertyData.lotSize)} sq ft</p>
             )}
+          </div>
+        )}
+
+        {propertyData && propertyData.rentcast_available === false && !fetchingProperty && (
+          <div className="w-full rounded-xl border border-border bg-muted/40 p-3 flex items-start gap-2 animate-fade-in">
+            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Valuation data unavailable for this address — common for rural properties. All available public records will be shown on your dashboard.
+            </p>
           </div>
         )}
 
