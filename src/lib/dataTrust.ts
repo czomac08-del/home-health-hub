@@ -83,7 +83,7 @@ export async function writeTrustedField(
     .eq("property_id", propertyId)
     .eq("field_path", fieldPath)
     .maybeSingle();
-  const existing = existingRaw as FieldSource | null;
+  const existing = (existingRaw as unknown) as FieldSource | null;
 
   let flagged = false;
   let flagReason: string | null = null;
@@ -239,7 +239,7 @@ export async function fileDispute(args: {
     .select("id")
     .single();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: (error as { message: string }).message };
 
   // Flag the related field as having an open dispute
   if (args.fieldPath) {
@@ -261,5 +261,5 @@ export async function fileDispute(args: {
     metadata: { homeowner_statement: args.homeownerStatement },
   });
 
-  return { ok: true, id: (data as { id: string } | null)?.id };
+  return { ok: true, id: ((data as unknown) as { id: string } | null)?.id };
 }
