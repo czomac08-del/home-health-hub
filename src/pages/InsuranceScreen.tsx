@@ -187,7 +187,7 @@ const InsuranceScreen = () => {
       user_id: user.id,
       property_id: activeProperty.id,
       policy_type: newPolicyType,
-      data_status: "owner_submitted",
+      data_status: "owner_submitted" as const,
       insurance_company: pForm.insurance_company || null,
       policy_number: pForm.policy_number || null,
       coverage_start: pForm.coverage_start || null,
