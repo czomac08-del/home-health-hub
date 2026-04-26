@@ -3,6 +3,12 @@ import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-04-30.basil" });
 
+// Refresh-credit price IDs → credits granted (matches PurchaseRefreshModal).
+const REFRESH_CREDIT_PRICES: Record<string, number> = {
+  price_1TMrG7ECIkzmsZKyoQa2INd3: 1,
+  price_1TMrGXECIkzmsZKycELTtFGb: 5,
+};
+
 // Phase 1 referral economics — mirrors src/components/ProPartnerWidget.tsx and
 // ShareAndSaveWidget. We only flip `converted_to_paid` here; reward dollars are
 // computed from those flags in the UI. No money is moved automatically yet.
