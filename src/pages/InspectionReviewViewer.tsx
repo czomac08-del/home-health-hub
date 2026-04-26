@@ -323,6 +323,20 @@ export default function InspectionReviewViewer() {
           <div className="min-h-0 overflow-hidden">{AnalysisPanel}</div>
         </div>
       )}
+
+      {/* Print-only block — hidden on screen via #print-findings-root CSS. */}
+      {printableReport && (
+        <PrintFindingsReport
+          report={printableReport}
+          dbFindings={dbFindings}
+          propertyAddress={propertyAddress}
+          yearBuilt={yearBuilt}
+          reportDateLabel={reportDate}
+          estTotal={printEstTotal}
+          scoreLabel={score.label}
+          filter={printFilter}
+        />
+      )}
     </div>
   );
 }
