@@ -1,14 +1,14 @@
-import { Home, ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus, Heart } from "lucide-react";
+import { ChevronDown, User, Settings, HelpCircle, LogOut, ArrowLeftRight, Plus, Heart } from "lucide-react";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import PropertySelector from "@/components/PropertySelector";
 
 const DesktopHeader = () => {
-  const { user, profile, properties, activeProperty, setActivePropertyId, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [showSwitcher, setShowSwitcher] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -42,31 +42,7 @@ const DesktopHeader = () => {
 
       {/* Center — property switcher */}
       <div className="relative flex-1 min-w-0 max-w-md mx-4">
-        <button
-          onClick={() => setShowSwitcher(!showSwitcher)}
-          className="flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-foreground hover:bg-muted/80 transition-colors max-w-full"
-        >
-          <Home className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span className="font-heading font-bold truncate shrink-0">{activeProperty?.label || "My Home"}</span>
-          <span className="text-muted-foreground text-xs hidden xl:inline truncate min-w-0">— {activeProperty?.address || "No property"}</span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-        </button>
-        {showSwitcher && (
-          <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 rounded-xl border border-border bg-card shadow-lg py-1 z-50 min-w-[240px]">
-            {properties.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => { setActivePropertyId(p.id); setShowSwitcher(false); }}
-                className={`w-full px-4 py-2.5 text-sm hover:bg-muted text-left ${p.id === activeProperty?.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
-              >
-                {p.label} — {p.address}
-              </button>
-            ))}
-            {properties.length === 0 && (
-              <p className="px-4 py-2 text-sm text-muted-foreground italic">No properties yet</p>
-            )}
-          </div>
-        )}
+        <PropertySelector variant="pill" className="flex justify-center" />
       </div>
 
       {/* Right */}
@@ -104,7 +80,7 @@ const DesktopHeader = () => {
               </div>
               {[
                 { icon: User, label: "My Profile", action: () => navigate("/profile") },
-                { icon: ArrowLeftRight, label: "Switch Property", action: () => { setShowUserMenu(false); setShowSwitcher(true); } },
+              { icon: ArrowLeftRight, label: "Add Property", action: () => navigate("/onboarding") },
                 { icon: Settings, label: "Account Settings", action: () => navigate("/integrations") },
                 { icon: HelpCircle, label: "Help & Support", action: () => navigate("/feedback") },
               ].map((item) => (
