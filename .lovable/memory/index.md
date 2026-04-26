@@ -11,6 +11,7 @@
 - **Tone**: Celebrate what's documented, never emphasize what's missing. Data permanence: records belong to the property permanently.
 - **Nationwide**: All 50 states + 3,143 counties. No hardcoded state/county assumptions. Geocode via Census Bureau → Nominatim fallback. State data in `src/data/stateData.ts`.
 - **Free uploads rule**: Reviewing user-uploaded data (reports, docs, photos, receipts) is always free — never paywall it. Credits only apply to AI Q&A beyond plan limits and outside-source refreshes. Receipt photos upgrade DIY fixes to `receipt_verified`.
+- **Maximum Truthful Reach**: Push coverage, legal leverage, SEO presence, and trust badges as far as legally defensible across all 50 states — but every claim must be sourced and true. Downgrade the *claim* before downgrading the reach. See `mem://principles/maximum-truthful-reach`.
 
 ## Memories
 - [System Organization](mem://features/system-organization) — Home systems divided into Core Infrastructure and Appliances & Extras
