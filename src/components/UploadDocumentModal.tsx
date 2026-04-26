@@ -157,6 +157,35 @@ export default function UploadDocumentModal({
         .from("property_records")
         .update({ ai_verified: true, ai_extracted_data: merged })
         .eq("id", recordId);
+
+      // Fan out cross-role notifications when an inspection report is confirmed
+      if (docType === "inspection_report" && activeProperty?.id) {
+        try {
+          const findings = inspectionReport?.findings ?? [];
+          const counts = findings.reduce(
+            (acc, f) => {
+              const k = `level_${f.level}` as const;
+              acc[k] = (acc[k] ?? 0) + 1;
+              return acc;
+            },
+            { level_1: 0, level_2: 0, level_3: 0, level_4: 0 } as Record<string, number>,
+          );
+          await supabase.rpc("notify_property_connections", {
+            _property_id: activeProperty.id,
+            _inspection_record_id: recordId,
+            _notification_type: "new_inspection_uploaded",
+            _payload: {
+              counts,
+              overall_score: inspectionReport?.overall_score ?? null,
+              file_name: file?.name ?? null,
+              uploaded_at: new Date().toISOString(),
+            },
+          });
+        } catch (notifyErr) {
+          console.warn("Notification fan-out failed (non-fatal):", notifyErr);
+        }
+      }
+
       toast.success("Document saved to your home record");
       setStep("saved");
       setTimeout(() => handleClose(false), 1200);
