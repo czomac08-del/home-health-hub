@@ -213,3 +213,47 @@
   position: absolute;
   animation: scan-line-move 2.5s ease-in-out infinite;
 }
+
+/* ---------- Print: Inspection Findings Report ---------- */
+/* The print container is rendered into the page but only displays during print. */
+#print-findings-root { display: none; }
+
+@media print {
+  /* Force light, paper-friendly rendering regardless of theme */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Hide everything by default, then re-show only the print root */
+  body * { visibility: hidden !important; }
+  #print-findings-root, #print-findings-root * { visibility: visible !important; }
+  #print-findings-root {
+    display: block !important;
+    position: absolute;
+    left: 0; top: 0; right: 0;
+    width: 100%;
+    padding: 0.5in;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  }
+  #print-findings-root .print-section { page-break-inside: auto; break-inside: auto; }
+  #print-findings-root .print-finding { page-break-inside: avoid; break-inside: avoid; }
+  #print-findings-root .print-level-header {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  #print-findings-root .print-level + .print-level {
+    page-break-before: auto;
+  }
+  /* Force black text everywhere in the print output */
+  #print-findings-root, #print-findings-root * {
+    color: #000000 !important;
+    background: transparent !important;
+    border-color: #000000 !important;
+    box-shadow: none !important;
+  }
+  @page { size: letter; margin: 0.5in; }
+}
