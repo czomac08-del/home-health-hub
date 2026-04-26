@@ -176,7 +176,9 @@ export default function UploadDocumentModal({
             _notification_type: "new_inspection_uploaded",
             _payload: {
               counts,
-              overall_score: inspectionReport?.overall_score ?? null,
+              overall_score:
+                (inspectionReport as unknown as { overall_score?: number | null })
+                  ?.overall_score ?? null,
               file_name: file?.name ?? null,
               uploaded_at: new Date().toISOString(),
             },
