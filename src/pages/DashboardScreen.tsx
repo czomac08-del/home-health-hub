@@ -19,6 +19,8 @@ import DroughtAlertBanner from "@/components/DroughtAlertBanner";
 import ShareAndSaveWidget from "@/components/ShareAndSaveWidget";
 import PendingRewardsCard from "@/components/PendingRewardsCard";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
+import DocumentHub from "@/components/DocumentHub";
+import RecentUploadBanner from "@/components/RecentUploadBanner";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -109,6 +111,7 @@ const DashboardScreen = () => {
       {/* Main content */}
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
         <InspectionNotificationBanner variant="homeowner" />
+        <RecentUploadBanner />
         <div className="mb-4">
           <DroughtAlertBanner />
         </div>
@@ -227,6 +230,11 @@ const DashboardScreen = () => {
 
         {/* Home Story Timeline */}
         <HomeStoryTimeline />
+
+        {/* My Documents */}
+        <div className="mt-6 mb-6 lg:max-w-2xl">
+          <DocumentHub propertyId={activeProperty?.id} limit={3} compact />
+        </div>
 
         {/* Utility Contacts */}
         <div className="lg:max-w-xl">

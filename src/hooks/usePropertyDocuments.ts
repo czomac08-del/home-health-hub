@@ -1,0 +1,191 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type DocCategory =
+  | "inspection"
+  | "warranty"
+  | "receipt"
+  | "permit"
+  | "insurance"
+  | "manual"
+  | "other";
+
+export interface UnifiedDocument {
+  id: string;
+  source_table:
+    | "property_records"
+    | "inspector_media"
+    | "insurance_documents"
+    | "fix_verifications";
+  category: DocCategory;
+  title: string;
+  fileType: "pdf" | "image" | "doc" | "other";
+  uploadedAt: string;
+  url: string | null;
+  storagePath: string | null;
+  bucket: string;
+  // Source-specific extras for the "Review" affordance
+  recordType?: string | null;
+  systemType?: string | null;
+  inspectorName?: string | null;
+  findingsCount?: number | null;
+  overallScore?: number | null;
+  hasExtractedData?: boolean;
+  raw?: any;
+}
+
+function inferFileType(name: string | null | undefined): UnifiedDocument["fileType"] {
+  if (!name) return "other";
+  const n = name.toLowerCase();
+  if (n.endsWith(".pdf")) return "pdf";
+  if (/\.(jpe?g|png|heic|webp|gif)$/.test(n)) return "image";
+  if (/\.(docx?|rtf|txt)$/.test(n)) return "doc";
+  return "other";
+}
+
+function categorizeRecord(record_type: string | null, system_type: string | null): DocCategory {
+  const rt = (record_type || "").toLowerCase();
+  const st = (system_type || "").toLowerCase();
+  if (rt === "inspection_report" || st === "inspection") return "inspection";
+  if (rt === "warranty" || st === "warranty") return "warranty";
+  if (rt === "permit" || st === "permit") return "permit";
+  if (rt === "insurance_policy" || st === "insurance") return "insurance";
+  if (rt === "appliance_manual" || rt === "manual") return "manual";
+  if (rt === "repair_receipt" || rt === "receipt" || rt === "invoice") return "receipt";
+  return "other";
+}
+
+export function usePropertyDocuments(propertyId: string | undefined) {
+  const [docs, setDocs] = useState<UnifiedDocument[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!propertyId) {
+      setDocs([]);
+      return;
+    }
+    setLoading(true);
+    const all: UnifiedDocument[] = [];
+
+    const [recs, media, ins, fixes] = await Promise.all([
+      supabase
+        .from("property_records")
+        .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
+        .eq("property_id", propertyId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("inspector_media")
+        .select("id, file_name, url, storage_path, created_at, system_type, inspector_name, caption")
+        .eq("property_id", propertyId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("insurance_documents")
+        .select("id, file_name, url, storage_path, created_at, doc_type")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("fix_verifications")
+        .select("id, photos, documents, date_completed, created_at, fix_type, contractor_name")
+        .eq("property_id", propertyId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    (recs.data || []).forEach((r: any) => {
+      const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
+      const rep = ext && (r.ai_extracted_data as any).inspection_report;
+      all.push({
+        id: r.id,
+        source_table: "property_records",
+        category: categorizeRecord(r.record_type, r.system_type),
+        title: r.file_name || r.record_type || "Document",
+        fileType: inferFileType(r.file_name),
+        uploadedAt: r.created_at,
+        url: r.url,
+        storagePath: r.storage_path,
+        bucket: "property-records",
+        recordType: r.record_type,
+        systemType: r.system_type,
+        inspectorName: rep?.inspector?.inspector_name ?? null,
+        findingsCount: Array.isArray(rep?.findings) ? rep.findings.length : null,
+        overallScore: null,
+        hasExtractedData: !!ext,
+        raw: r,
+      });
+    });
+
+    (media.data || []).forEach((m: any) => {
+      all.push({
+        id: m.id,
+        source_table: "inspector_media",
+        category: "inspection",
+        title: m.caption || m.file_name || "Inspector media",
+        fileType: inferFileType(m.file_name),
+        uploadedAt: m.created_at,
+        url: m.url,
+        storagePath: m.storage_path,
+        bucket: "inspector-media",
+        systemType: m.system_type,
+        inspectorName: m.inspector_name,
+        raw: m,
+      });
+    });
+
+    (ins.data || []).forEach((d: any) => {
+      all.push({
+        id: d.id,
+        source_table: "insurance_documents",
+        category: "insurance",
+        title: d.file_name || "Insurance document",
+        fileType: inferFileType(d.file_name),
+        uploadedAt: d.created_at,
+        url: d.url,
+        storagePath: d.storage_path,
+        bucket: "insurance-documents",
+        recordType: d.doc_type,
+        raw: d,
+      });
+    });
+
+    (fixes.data || []).forEach((f: any) => {
+      const photos = Array.isArray(f.photos) ? f.photos : [];
+      const documents = Array.isArray(f.documents) ? f.documents : [];
+      [...documents, ...photos].forEach((item: any, idx: number) => {
+        const url = typeof item === "string" ? item : item?.url || null;
+        const name = typeof item === "string" ? item.split("/").pop() : item?.name || `Receipt ${idx + 1}`;
+        if (!url) return;
+        all.push({
+          id: `${f.id}-${idx}`,
+          source_table: "fix_verifications",
+          category: "receipt",
+          title: name || "Repair receipt",
+          fileType: inferFileType(name || ""),
+          uploadedAt: f.created_at,
+          url,
+          storagePath: null,
+          bucket: "fix-verification",
+          recordType: f.fix_type,
+          raw: f,
+        });
+      });
+    });
+
+    all.sort((a, b) => +new Date(b.uploadedAt) - +new Date(a.uploadedAt));
+    setDocs(all);
+    setLoading(false);
+  }, [propertyId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { docs, loading, reload: load };
+}
+
+export const CATEGORY_LABEL: Record<DocCategory, string> = {
+  inspection: "Inspection Report",
+  warranty: "Warranty",
+  receipt: "Receipt",
+  permit: "Permit",
+  insurance: "Insurance",
+  manual: "Manual",
+  other: "Other",
+};
