@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Home, Shield, Star, Check, Lock, AlertTriangle, Clock, FileText } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const systemsData = [
   { name: "HVAC", health: 92, status: "green", last: "Mar 2024" },
@@ -22,6 +23,7 @@ const timeline = [
 
 const ScoreReportPage = () => {
   const { id } = useParams();
+  const { activeProperty } = useAuth();
   const [showPaywall, setShowPaywall] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
 
@@ -37,7 +39,10 @@ const ScoreReportPage = () => {
           <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Verified by ComingHomeIQ</span>
         </div>
         <h1 className="text-2xl font-bold text-foreground mb-1">Home Passport Report — Powered by ComingHomeIQ</h1>
-        <p className="text-sm text-muted-foreground">123 Main St · Built 2005</p>
+        <p className="text-sm text-muted-foreground">
+          {activeProperty?.address || "Your Home"}
+          {activeProperty?.year_built ? ` · Built ${activeProperty.year_built}` : ""}
+        </p>
       </div>
 
       {/* Score Circle */}

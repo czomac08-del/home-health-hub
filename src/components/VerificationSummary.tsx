@@ -11,6 +11,13 @@ const VerificationSummary = ({ propertyId }: Props) => {
   const { user } = useAuth();
   const [stats, setStats] = useState({ trueRecords: 0, verified: 0, documented: 0, conflicts: 0, total: 0 });
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onUpdate = () => setReloadKey((k) => k + 1);
+    window.addEventListener("property-data-updated", onUpdate);
+    return () => window.removeEventListener("property-data-updated", onUpdate);
+  }, []);
 
   useEffect(() => {
     if (!propertyId || !user) return;
@@ -37,7 +44,7 @@ const VerificationSummary = ({ propertyId }: Props) => {
     };
 
     fetchStats();
-  }, [propertyId, user]);
+  }, [propertyId, user, reloadKey]);
 
   if (loading) {
     return (

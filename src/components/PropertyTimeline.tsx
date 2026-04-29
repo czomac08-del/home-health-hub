@@ -71,6 +71,13 @@ const PropertyTimeline = ({ propertyId, yearBuilt }: Props) => {
   const [loading, setLoading] = useState(true);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onUpdate = () => setReloadKey((k) => k + 1);
+    window.addEventListener("property-data-updated", onUpdate);
+    return () => window.removeEventListener("property-data-updated", onUpdate);
+  }, []);
 
   useEffect(() => {
     if (!propertyId || !user) return;
@@ -83,7 +90,7 @@ const PropertyTimeline = ({ propertyId, yearBuilt }: Props) => {
         setEvents((data as TimelineEvent[]) || []);
         setLoading(false);
       });
-  }, [propertyId, user]);
+  }, [propertyId, user, reloadKey]);
 
   // Generate estimated events from year_built if no real events exist
   const allEvents = events.length > 0 ? events : yearBuilt ? [
