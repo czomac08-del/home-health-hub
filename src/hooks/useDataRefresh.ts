@@ -275,9 +275,11 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                   data: rcData,
                 };
                }
-              // RentCast returned no data — use geocode fallback if available
-              if (rcData?.fallback) {
-                const fb = rcData.fallback;
+              // RentCast returned no data — current rentcast-lookup edge fn
+              // returns the census fallback fields at the top level when
+              // `found:false`. Backfill geo so other sources can run.
+              if (rcData && rcData.found === false) {
+                const fb = rcData.fallback ?? rcData;
                 // Backfill geo state/county/fips/coords from fallback so other
                 // sources (FEMA/NOAA/EPA) can run for this rural address.
                 if (fb.state && !geoState) geoState = fb.state;
@@ -291,7 +293,7 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                 return {
                   source,
                   status: "no_changes",
-                  summary: fb.message,
+                  summary: fb.note || fb.message || "Limited public records for this address.",
                   data: fb,
                 };
               }
