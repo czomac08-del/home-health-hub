@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, Check, Shield, Star, ArrowRight, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const includedSystems = [
   { name: "HVAC", health: 92, lastService: "Mar 2024" },
@@ -14,6 +15,7 @@ const includedSystems = [
 
 const ClaimHomeScreen = () => {
   const navigate = useNavigate();
+  const { activeProperty } = useAuth();
   const [claimed, setClaimed] = useState(false);
   const [newAppliances, setNewAppliances] = useState<string[]>([]);
   const [verifyFirst, setVerifyFirst] = useState("");
@@ -74,8 +76,10 @@ const ClaimHomeScreen = () => {
       </div>
 
       <div className="rounded-xl border border-primary/30 bg-card p-5 mb-6">
-        <p className="text-lg font-bold text-foreground mb-0.5">123 Main St</p>
-        <p className="text-xs text-muted-foreground mb-3">Built 2005</p>
+        <p className="text-lg font-bold text-foreground mb-0.5">{activeProperty?.address || "Your Home"}</p>
+        {activeProperty?.year_built && (
+          <p className="text-xs text-muted-foreground mb-3">Built {activeProperty.year_built}</p>
+        )}
 
         <div className="flex items-center gap-4 mb-4">
           <div className="flex items-center gap-1.5">
