@@ -266,11 +266,7 @@ const SmallField = ({ label, value, onChange, placeholder }: { label: string; va
 );
 
 /* ═══ Step 5: Generate ═══ */
-const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => (
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  null
-);
-const StepGenerateImpl = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => {
+const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => {
   const { activeProperty } = useAuth();
   return (
   <div>
@@ -319,6 +315,7 @@ const StepGenerateImpl = ({ stayingItems, welcomeNote, onGenerate }: { stayingIt
 
 /* ═══ Step 6: Transfer Method ═══ */
 const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void }) => {
+  const { activeProperty } = useAuth();
   if (transferDone) {
     return (
       <div>
@@ -335,7 +332,7 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
         ) : (
           <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4">
             <p className="text-sm font-semibold text-foreground mb-1">Are you sure?</p>
-            <p className="text-xs text-muted-foreground mb-4">This will remove 123 Main St from your account. The Home Passport Report will remain available for the new owner to claim.</p>
+            <p className="text-xs text-muted-foreground mb-4">This will remove {activeProperty?.address || "this property"} from your account. The Home Passport Report will remain available for the new owner to claim.</p>
             <div className="flex gap-2">
               <button onClick={() => { toast.success("Property removed from your account."); navigate("/profile"); }} className="flex-1 rounded-xl bg-destructive py-3 text-sm font-semibold text-destructive-foreground">Yes, Remove</button>
               <button onClick={() => setShowRemoveConfirm(false)} className="flex-1 rounded-xl bg-secondary py-3 text-sm font-semibold text-secondary-foreground">Cancel</button>
