@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Star, QrCode, Mail, FileText, Download, Trash2, Sparkles, Home } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STEPS = ["What's Staying", "Scrub Info", "Rate Systems", "Welcome Note", "Generate", "Transfer"];
 
@@ -266,6 +267,12 @@ const SmallField = ({ label, value, onChange, placeholder }: { label: string; va
 
 /* ═══ Step 5: Generate ═══ */
 const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => (
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  null
+);
+const StepGenerateImpl = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems: SystemEntry[]; welcomeNote: string; onGenerate: () => void }) => {
+  const { activeProperty } = useAuth();
+  return (
   <div>
     <h2 className="text-lg font-bold text-foreground mb-1">Generate Your Home Passport Report</h2>
     <p className="text-xs text-muted-foreground mb-4">Review what the new owner will receive.</p>
@@ -274,8 +281,11 @@ const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems:
       <div className="flex items-center gap-3 mb-4">
         <div className="h-11 w-11 rounded-xl bg-primary/20 flex items-center justify-center"><Home className="h-6 w-6 text-primary" /></div>
         <div>
-          <p className="font-bold text-foreground">123 Main St</p>
-          <p className="text-xs text-muted-foreground">Built 2005 · Overall Health: 78%</p>
+          <p className="font-bold text-foreground">{activeProperty?.address || "Your Home"}</p>
+          <p className="text-xs text-muted-foreground">
+            {activeProperty?.year_built ? `Built ${activeProperty.year_built} · ` : ""}
+            Overall Health: {activeProperty?.health_score != null ? `${activeProperty.health_score}%` : "—"}
+          </p>
         </div>
       </div>
 
@@ -304,7 +314,8 @@ const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems:
       <Sparkles className="h-5 w-5" /> Generate Transfer Package
     </button>
   </div>
-);
+  );
+};
 
 /* ═══ Step 6: Transfer Method ═══ */
 const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void }) => {
