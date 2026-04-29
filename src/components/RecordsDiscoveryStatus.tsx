@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, CheckCircle2, AlertTriangle, HelpCircle } from "lucide-react";
+import { Search, CheckCircle2, AlertTriangle, HelpCircle, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDataRefresh } from "@/hooks/useDataRefresh";
 
 interface Props {
   propertyId: string;
@@ -11,6 +12,7 @@ interface Props {
 
 const RecordsDiscoveryStatus = ({ propertyId, onNeedsInputClick }: Props) => {
   const { user } = useAuth();
+  const { isRefreshing, lastRefresh, refresh, canRefresh } = useDataRefresh("full");
   const [stats, setStats] = useState({
     totalTypes: 0,
     recordsFound: 0,
@@ -18,6 +20,7 @@ const RecordsDiscoveryStatus = ({ propertyId, onNeedsInputClick }: Props) => {
     needsInput: 0,
     completeness: 0,
   });
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!propertyId || !user) return;
@@ -38,13 +41,43 @@ const RecordsDiscoveryStatus = ({ propertyId, onNeedsInputClick }: Props) => {
         completeness: Math.min(pct, 100),
       });
     });
-  }, [propertyId, user]);
+  }, [propertyId, user, reloadKey, lastRefresh]);
+
+  // Listen for property data updates so we re-fetch counts after a refresh writes.
+  useEffect(() => {
+    const onUpdate = () => setReloadKey((k) => k + 1);
+    window.addEventListener("property-data-updated", onUpdate);
+    return () => window.removeEventListener("property-data-updated", onUpdate);
+  }, []);
+
+  // Auto-trigger Discovery the first time a property is loaded with zero
+  // refresh history — so users don't see permanent zeros.
+  useEffect(() => {
+    if (!propertyId || !user) return;
+    if (lastRefresh) return; // already ran at least once
+    if (isRefreshing) return;
+    if (!canRefresh) return;
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId, user, lastRefresh, canRefresh]);
+
+  const hasRun = !!lastRefresh;
+  const headline = isRefreshing ? "Discovery Running" : hasRun ? "Discovery Complete" : "Discovery Pending";
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Search className="h-5 w-5 text-primary animate-pulse" />
-        <h3 className="font-bold text-foreground text-sm">Discovery Running</h3>
+        <Search className={`h-5 w-5 text-primary ${isRefreshing ? "animate-pulse" : ""}`} />
+        <h3 className="font-bold text-foreground text-sm">{headline}</h3>
+        {hasRun && !isRefreshing && (
+          <button
+            onClick={() => refresh()}
+            disabled={!canRefresh}
+            className="ml-auto text-[10px] text-primary hover:underline disabled:opacity-40 inline-flex items-center gap-1"
+          >
+            <RefreshCw className="h-3 w-3" /> Re-check
+          </button>
+        )}
       </div>
 
       <Progress value={stats.completeness} className="h-2 mb-3" />
@@ -79,6 +112,11 @@ const RecordsDiscoveryStatus = ({ propertyId, onNeedsInputClick }: Props) => {
             </div>
             <span className="font-mono font-bold text-destructive">{stats.needsInput} ← tap to resolve</span>
           </button>
+        )}
+        {hasRun && !isRefreshing && stats.recordsFound === 0 && (
+          <p className="text-[11px] text-muted-foreground italic pt-1">
+            Public records for this address are limited. This is common in rural counties — you can add details manually as you go.
+          </p>
         )}
       </div>
     </div>
