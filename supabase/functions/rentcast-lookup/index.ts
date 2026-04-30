@@ -177,10 +177,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ---- Address-keyed 24h cache (shared across all users on this address) ----
+    const addrHash = await sha256Hex(normalizeAddress(address));
+    const cacheKey = `addr:${addrHash}:rentcast`;
+    const cached = await readCache(cacheKey);
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache": "HIT" },
+      });
+    }
+
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
     if (!apiKey) {
       console.warn("RENTCAST_API_KEY missing — going straight to census fallback");
       const fallback = await buildCensusFallback(address, __auth);
+      await writeCache(cacheKey, "rentcast", fallback, null, addrHash);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -198,6 +209,7 @@ Deno.serve(async (req) => {
       const errText = await resp.text();
       console.warn("RentCast API error:", resp.status, errText, "— using census fallback");
       const fallback = await buildCensusFallback(address, __auth);
+      await writeCache(cacheKey, "rentcast", fallback, (fallback as any)?.countyFips ?? null, addrHash);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -211,6 +223,7 @@ Deno.serve(async (req) => {
     // Empty result path — also fall through to census + environmental fallback
     if (!property) {
       const fallback = await buildCensusFallback(address, __auth);
+      await writeCache(cacheKey, "rentcast", fallback, (fallback as any)?.countyFips ?? null, addrHash);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -237,6 +250,8 @@ Deno.serve(async (req) => {
     };
 
     console.log("Mapped result:", JSON.stringify(result));
+
+    await writeCache(cacheKey, "rentcast", result, null, addrHash);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
