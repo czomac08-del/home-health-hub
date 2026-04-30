@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      address_refresh_cache: {
+        Row: {
+          address_hash: string | null
+          cache_key: string
+          county_fips: string | null
+          expires_at: string
+          last_refreshed_at: string
+          payload: Json
+          source: string
+        }
+        Insert: {
+          address_hash?: string | null
+          cache_key: string
+          county_fips?: string | null
+          expires_at?: string
+          last_refreshed_at?: string
+          payload?: Json
+          source: string
+        }
+        Update: {
+          address_hash?: string | null
+          cache_key?: string
+          county_fips?: string | null
+          expires_at?: string
+          last_refreshed_at?: string
+          payload?: Json
+          source?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -192,6 +222,27 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_failure_log: {
+        Row: {
+          created_at: string
+          email_lower: string
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_lower: string
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_lower?: string
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
       certification_shares: {
         Row: {
           created_at: string
@@ -264,6 +315,50 @@ export type Database = {
             columns: ["property_record_id"]
             isOneToOne: false
             referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_attempt_log: {
+        Row: {
+          attempted_by_user_id: string | null
+          claim_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          outcome: string
+          property_id: string | null
+          reason: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempted_by_user_id?: string | null
+          claim_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          outcome: string
+          property_id?: string | null
+          reason?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempted_by_user_id?: string | null
+          claim_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          outcome?: string
+          property_id?: string | null
+          reason?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_attempt_log_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "property_claims"
             referencedColumns: ["id"]
           },
         ]
@@ -2125,20 +2220,27 @@ export type Database = {
       permanent_archive: {
         Row: {
           ai_analysis: string | null
+          auto_suppressed: boolean
           confidence_score: number
           created_at: string
           description: string | null
+          dispute_count: number
           documents: Json | null
           evidence_sources: Json | null
           existed_from: string | null
           existed_until: string | null
           homeowner_notes: string | null
           id: string
+          legal_acknowledgment_text: string | null
           property_id: string
+          provenance_locked: boolean
           record_type: string
           removal_reason: string | null
           satellite_images: Json | null
           status: string
+          submitted_at: string | null
+          submitted_by_user_id: string | null
+          submitted_ip: string | null
           title: string
           updated_at: string
           user_id: string
@@ -2146,20 +2248,27 @@ export type Database = {
         }
         Insert: {
           ai_analysis?: string | null
+          auto_suppressed?: boolean
           confidence_score?: number
           created_at?: string
           description?: string | null
+          dispute_count?: number
           documents?: Json | null
           evidence_sources?: Json | null
           existed_from?: string | null
           existed_until?: string | null
           homeowner_notes?: string | null
           id?: string
+          legal_acknowledgment_text?: string | null
           property_id: string
+          provenance_locked?: boolean
           record_type: string
           removal_reason?: string | null
           satellite_images?: Json | null
           status?: string
+          submitted_at?: string | null
+          submitted_by_user_id?: string | null
+          submitted_ip?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -2167,20 +2276,27 @@ export type Database = {
         }
         Update: {
           ai_analysis?: string | null
+          auto_suppressed?: boolean
           confidence_score?: number
           created_at?: string
           description?: string | null
+          dispute_count?: number
           documents?: Json | null
           evidence_sources?: Json | null
           existed_from?: string | null
           existed_until?: string | null
           homeowner_notes?: string | null
           id?: string
+          legal_acknowledgment_text?: string | null
           property_id?: string
+          provenance_locked?: boolean
           record_type?: string
           removal_reason?: string | null
           satellite_images?: Json | null
           status?: string
+          submitted_at?: string | null
+          submitted_by_user_id?: string | null
+          submitted_ip?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -2192,6 +2308,44 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permanent_archive_disputes: {
+        Row: {
+          archive_id: string
+          created_at: string
+          disputed_by_user_id: string
+          id: string
+          reason: string | null
+          resolved: boolean
+          resolved_at: string | null
+        }
+        Insert: {
+          archive_id: string
+          created_at?: string
+          disputed_by_user_id: string
+          id?: string
+          reason?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+        }
+        Update: {
+          archive_id?: string
+          created_at?: string
+          disputed_by_user_id?: string
+          id?: string
+          reason?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permanent_archive_disputes_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "permanent_archive"
             referencedColumns: ["id"]
           },
         ]
@@ -2406,6 +2560,65 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "app_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_claims: {
+        Row: {
+          claimant_user_id: string
+          county_typed: string | null
+          created_at: string
+          document_match_confidence: number | null
+          id: string
+          ip_address: string | null
+          property_id: string
+          reviewed_at: string | null
+          status: string
+          typed_address: string
+          updated_at: string
+          user_agent: string | null
+          verification_path: string
+          zip_last4: string | null
+        }
+        Insert: {
+          claimant_user_id: string
+          county_typed?: string | null
+          created_at?: string
+          document_match_confidence?: number | null
+          id?: string
+          ip_address?: string | null
+          property_id: string
+          reviewed_at?: string | null
+          status?: string
+          typed_address: string
+          updated_at?: string
+          user_agent?: string | null
+          verification_path: string
+          zip_last4?: string | null
+        }
+        Update: {
+          claimant_user_id?: string
+          county_typed?: string | null
+          created_at?: string
+          document_match_confidence?: number | null
+          id?: string
+          ip_address?: string | null
+          property_id?: string
+          reviewed_at?: string | null
+          status?: string
+          typed_address?: string
+          updated_at?: string
+          user_agent?: string | null
+          verification_path?: string
+          zip_last4?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_claims_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -2957,6 +3170,9 @@ export type Database = {
       }
       refresh_logs: {
         Row: {
+          address_hash: string | null
+          cache_key: string | null
+          county_fips: string | null
           created_at: string
           id: string
           property_id: string
@@ -2968,6 +3184,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address_hash?: string | null
+          cache_key?: string | null
+          county_fips?: string | null
           created_at?: string
           id?: string
           property_id: string
@@ -2979,6 +3198,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address_hash?: string | null
+          cache_key?: string | null
+          county_fips?: string | null
           created_at?: string
           id?: string
           property_id?: string
@@ -2992,6 +3214,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "refresh_logs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          property_id: string
+          report_kind: string
+          revoked: boolean
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          property_id: string
+          report_kind?: string
+          revoked?: boolean
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          property_id?: string
+          report_kind?: string
+          revoked?: boolean
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_reports_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -3415,12 +3681,14 @@ export type Database = {
           field_path: string
           field_value: string | null
           id: string
+          ip_address: string | null
           property_id: string
           result: string
           source_name: string | null
           source_priority: number
           source_type: string
           source_weight: string
+          user_agent: string | null
           user_id: string
           verified_at: string | null
         }
@@ -3434,12 +3702,14 @@ export type Database = {
           field_path: string
           field_value?: string | null
           id?: string
+          ip_address?: string | null
           property_id: string
           result?: string
           source_name?: string | null
           source_priority?: number
           source_type?: string
           source_weight?: string
+          user_agent?: string | null
           user_id: string
           verified_at?: string | null
         }
@@ -3453,12 +3723,14 @@ export type Database = {
           field_path?: string
           field_value?: string | null
           id?: string
+          ip_address?: string | null
           property_id?: string
           result?: string
           source_name?: string | null
           source_priority?: number
           source_type?: string
           source_weight?: string
+          user_agent?: string | null
           user_id?: string
           verified_at?: string | null
         }
@@ -3603,6 +3875,17 @@ export type Database = {
       generate_referral_code: {
         Args: { _full_name: string; _referrer_type: string; _user_id: string }
         Returns: string
+      }
+      get_shared_report: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          property_id: string
+          report_kind: string
+        }[]
       }
       grant_credits: {
         Args: { _amount: number; _user_id: string }
