@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       if (source === "rentcast") {
         const r = await fetch(
           `${SUPABASE_URL}/functions/v1/rentcast-lookup?address=${encodeURIComponent(address)}`,
-          { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } },
+          { headers: { Authorization: auth, apikey: SUPABASE_ANON_KEY } },
         );
         if (!r.ok) throw new Error(`rentcast ${r.status}`);
         payload = await r.json();
