@@ -221,6 +221,29 @@ function classifyTier(result: ExtractionResult, source: string): {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // ---- JWT enforcement (security hardening) ----
+  const __auth = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!__auth || !__auth.toLowerCase().startsWith("bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  try {
+    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: __auth } } },
+    );
+    const __t = __auth.replace(/^Bearer\s+/i, "");
+    const { data: __c, error: __e } = await __sb.auth.getClaims(__t);
+    if (__e || !__c?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (_jwtErr) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  // ---- end JWT enforcement ----
+
+
+
   try {
     const { documentUrl, systemType, documentText, source } = await req.json();
     
