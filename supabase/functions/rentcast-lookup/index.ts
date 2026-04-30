@@ -12,13 +12,14 @@ const FALLBACK_NOTE =
 async function callFn(
   path: string,
   params: Record<string, string> = {},
+  authHeader?: string,
 ): Promise<any | null> {
   try {
     const qs = new URLSearchParams(params).toString();
     const url = `${SUPABASE_URL}/functions/v1/${path}${qs ? `?${qs}` : ""}`;
     const resp = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: authHeader || `Bearer ${SUPABASE_ANON_KEY}`,
         apikey: SUPABASE_ANON_KEY,
       },
     });
@@ -33,9 +34,9 @@ async function callFn(
   }
 }
 
-async function buildCensusFallback(address: string) {
+async function buildCensusFallback(address: string, authHeader?: string) {
   // Step 1: Census geocode
-  const geo = await callFn("geocode", { address });
+  const geo = await callFn("geocode", { address }, authHeader);
   const match = geo?.matches?.[0];
   const state = geo?.state || match?.state || null;
   const county = geo?.county || match?.county || null;
