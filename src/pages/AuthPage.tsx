@@ -95,6 +95,12 @@ const AuthPage = () => {
             navigate("/verify-email", { state: { email } });
             return;
           }
+          // Best-effort: log failed sign-in attempt (no PII beyond email)
+          if (msg.includes("invalid") || msg.includes("credentials")) {
+            try {
+              await supabase.functions.invoke("auth-fail-notify", { body: { email } });
+            } catch (_) { /* swallow */ }
+          }
           throw error;
         }
 

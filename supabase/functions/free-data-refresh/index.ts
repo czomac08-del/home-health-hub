@@ -16,7 +16,7 @@ async function geocode(address: string) {
   try {
     const r = await fetch(
       `${SUPABASE_URL}/functions/v1/geocode?address=${encodeURIComponent(address)}`,
-      { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } },
+      { headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}`, apikey: SUPABASE_ANON_KEY } },
     );
     if (!r.ok) return null;
     return await r.json();
@@ -33,7 +33,7 @@ async function refreshOne(propertyId: string, address: string, source: string) {
   const lat = geo?.matches?.[0]?.coordinates?.y;
   const lng = geo?.matches?.[0]?.coordinates?.x;
 
-  const headers = { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY };
+  const headers = { Authorization: `Bearer ${SERVICE_ROLE_KEY}`, apikey: SUPABASE_ANON_KEY };
   try {
     if (source === "fema") {
       if (!state) return "skipped";
@@ -64,6 +64,29 @@ async function refreshOne(propertyId: string, address: string, source: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // ---- JWT enforcement (security hardening) ----
+  const __auth = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!__auth || !__auth.toLowerCase().startsWith("bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  try {
+    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: __auth } } },
+    );
+    const __t = __auth.replace(/^Bearer\s+/i, "");
+    const { data: __c, error: __e } = await __sb.auth.getClaims(__t);
+    if (__e || !__c?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  } catch (_jwtErr) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  // ---- end JWT enforcement ----
+
+
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
