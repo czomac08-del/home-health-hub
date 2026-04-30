@@ -5,6 +5,63 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+const CACHE_TTL_HOURS = 24;
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function normalizeAddress(addr: string): string {
+  return addr.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+async function readCache(cacheKey: string): Promise<unknown | null> {
+  if (!SERVICE_ROLE_KEY) return null;
+  try {
+    const sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+      SUPABASE_URL, SERVICE_ROLE_KEY,
+    );
+    const { data } = await sb
+      .from("address_refresh_cache")
+      .select("payload, expires_at")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    return (data as { payload?: unknown } | null)?.payload ?? null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function writeCache(
+  cacheKey: string,
+  source: string,
+  payload: unknown,
+  countyFips: string | null,
+  addressHash: string | null,
+): Promise<void> {
+  if (!SERVICE_ROLE_KEY) return;
+  try {
+    const sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+      SUPABASE_URL, SERVICE_ROLE_KEY,
+    );
+    const expires = new Date(Date.now() + CACHE_TTL_HOURS * 3600 * 1000).toISOString();
+    await sb.from("address_refresh_cache").upsert({
+      cache_key: cacheKey,
+      source,
+      payload,
+      county_fips: countyFips,
+      address_hash: addressHash,
+      last_refreshed_at: new Date().toISOString(),
+      expires_at: expires,
+    }, { onConflict: "cache_key" });
+  } catch (_) {
+    // best-effort
+  }
+}
 
 const FALLBACK_NOTE =
   "Property valuation data is not available for this address. Location and environmental data shown from public records.";
