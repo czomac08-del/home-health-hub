@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
     if (!apiKey) {
       console.warn("RENTCAST_API_KEY missing — going straight to census fallback");
-      const fallback = await buildCensusFallback(address);
+      const fallback = await buildCensusFallback(address, __auth);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     if (!resp.ok) {
       const errText = await resp.text();
       console.warn("RentCast API error:", resp.status, errText, "— using census fallback");
-      const fallback = await buildCensusFallback(address);
+      const fallback = await buildCensusFallback(address, __auth);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
 
     // Empty result path — also fall through to census + environmental fallback
     if (!property) {
-      const fallback = await buildCensusFallback(address);
+      const fallback = await buildCensusFallback(address, __auth);
       return new Response(JSON.stringify(fallback), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
