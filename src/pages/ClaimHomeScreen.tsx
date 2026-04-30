@@ -247,10 +247,123 @@ const ClaimHomeScreen = () => {
         </div>
       </div>
 
-      <button onClick={() => setClaimed(true)}
-        className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
-        <Check className="h-5 w-5" /> Claim This Home
-      </button>
+      {!verifyOpen ? (
+        <button onClick={() => setVerifyOpen(true)}
+          className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
+          <Check className="h-5 w-5" /> Claim This Home
+        </button>
+      ) : (
+        <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
+          <div>
+            <h3 className="font-semibold text-foreground mb-1">Verify ownership</h3>
+            <p className="text-xs text-muted-foreground">
+              We need to confirm you're the owner before unlocking this home file.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">
+              Step 1 — Type the full property address
+            </label>
+            <input
+              type="text"
+              value={typedAddress}
+              onChange={(e) => setTypedAddress(e.target.value)}
+              placeholder="e.g., 123 Maple Ave, Springfield, IL 62701"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Type it from memory — do not copy from this page.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-2">
+              Step 2 — Choose a verification method
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setVerifyMethod("zip_county")}
+                className={`rounded-lg border p-3 text-left text-xs transition-colors ${
+                  verifyMethod === "zip_county"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <FileText className="h-4 w-4 mb-1" />
+                <div className="font-semibold text-foreground">ZIP + County</div>
+                <div className="text-muted-foreground">Last 4 digits of ZIP + county name</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerifyMethod("document_ocr")}
+                className={`rounded-lg border p-3 text-left text-xs transition-colors ${
+                  verifyMethod === "document_ocr"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <Upload className="h-4 w-4 mb-1" />
+                <div className="font-semibold text-foreground">Upload Bill</div>
+                <div className="text-muted-foreground">Utility, tax, or mortgage</div>
+              </button>
+            </div>
+          </div>
+
+          {verifyMethod === "zip_county" && (
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={zip4}
+                onChange={(e) => setZip4(e.target.value)}
+                placeholder="ZIP last 4"
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm"
+              />
+              <input
+                type="text"
+                value={countyTyped}
+                onChange={(e) => setCountyTyped(e.target.value)}
+                placeholder="County name"
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm"
+              />
+            </div>
+          )}
+
+          {verifyMethod === "document_ocr" && (
+            <div>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+                className="block text-xs text-muted-foreground"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Document is scanned for the address only and is not saved.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setVerifyOpen(false)}
+              className="flex-1 rounded-lg border border-border bg-background py-3 text-sm text-foreground"
+              disabled={verifying}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleVerify}
+              disabled={verifying || !verifyMethod || !typedAddress.trim()}
+              className="flex-1 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {verifying ? "Verifying…" : "Verify & Claim"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
