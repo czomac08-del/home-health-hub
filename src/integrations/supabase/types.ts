@@ -2015,6 +2015,51 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_extraction_requests: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          data_provided_at: string | null
+          id: string
+          legal_documentation_reference: string | null
+          notes: string | null
+          property_id: string | null
+          request_received_at: string
+          request_type: Database["public"]["Enums"]["legal_extraction_type"]
+          requesting_party: string
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          data_provided_at?: string | null
+          id?: string
+          legal_documentation_reference?: string | null
+          notes?: string | null
+          property_id?: string | null
+          request_received_at?: string
+          request_type: Database["public"]["Enums"]["legal_extraction_type"]
+          requesting_party: string
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          data_provided_at?: string | null
+          id?: string
+          legal_documentation_reference?: string | null
+          notes?: string | null
+          property_id?: string | null
+          request_received_at?: string
+          request_type?: Database["public"]["Enums"]["legal_extraction_type"]
+          requesting_party?: string
+        }
+        Relationships: []
+      }
       legal_resources: {
         Row: {
           attorney_type: string
@@ -2663,6 +2708,100 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_record_vault: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          hidden_at: string | null
+          hidden_reason: string | null
+          id: string
+          legal_hold: boolean
+          original_data: Json
+          property_id: string
+          record_source: Database["public"]["Enums"]["vault_record_source"]
+          record_type: Database["public"]["Enums"]["vault_record_type"]
+          source_record_id: string | null
+          source_table: string | null
+          supersedes_vault_id: string | null
+          visible_to_owner: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          hidden_at?: string | null
+          hidden_reason?: string | null
+          id?: string
+          legal_hold?: boolean
+          original_data: Json
+          property_id: string
+          record_source: Database["public"]["Enums"]["vault_record_source"]
+          record_type: Database["public"]["Enums"]["vault_record_type"]
+          source_record_id?: string | null
+          source_table?: string | null
+          supersedes_vault_id?: string | null
+          visible_to_owner?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          hidden_at?: string | null
+          hidden_reason?: string | null
+          id?: string
+          legal_hold?: boolean
+          original_data?: Json
+          property_id?: string
+          record_source?: Database["public"]["Enums"]["vault_record_source"]
+          record_type?: Database["public"]["Enums"]["vault_record_type"]
+          source_record_id?: string | null
+          source_table?: string | null
+          supersedes_vault_id?: string | null
+          visible_to_owner?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_record_vault_supersedes_vault_id_fkey"
+            columns: ["supersedes_vault_id"]
+            isOneToOne: false
+            referencedRelation: "property_record_vault"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_record_vault_visibility: {
+        Row: {
+          hidden_at: string
+          hidden_by_user_id: string
+          id: string
+          property_id: string
+          reason: string | null
+          vault_id: string
+        }
+        Insert: {
+          hidden_at?: string
+          hidden_by_user_id: string
+          id?: string
+          property_id: string
+          reason?: string | null
+          vault_id: string
+        }
+        Update: {
+          hidden_at?: string
+          hidden_by_user_id?: string
+          id?: string
+          property_id?: string
+          reason?: string | null
+          vault_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_record_vault_visibility_vault_id_fkey"
+            columns: ["vault_id"]
+            isOneToOne: false
+            referencedRelation: "property_record_vault"
             referencedColumns: ["id"]
           },
         ]
@@ -3872,6 +4011,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_to_vault: {
+        Args: {
+          _created_by_user_id?: string
+          _original_data: Json
+          _property_id: string
+          _record_source: Database["public"]["Enums"]["vault_record_source"]
+          _record_type: Database["public"]["Enums"]["vault_record_type"]
+          _source_record_id?: string
+          _source_table?: string
+          _supersedes_vault_id?: string
+        }
+        Returns: string
+      }
       generate_referral_code: {
         Args: { _full_name: string; _referrer_type: string; _user_id: string }
         Returns: string
@@ -3896,6 +4048,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      hide_vault_record: {
+        Args: { _reason?: string; _vault_id: string }
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
@@ -3937,6 +4093,12 @@ export type Database = {
         | "new_inspection_uploaded"
         | "finding_resolved"
         | "fix_verified"
+      legal_extraction_type:
+        | "court_order"
+        | "subpoena"
+        | "law_enforcement"
+        | "emergency"
+        | "disclosure_law"
       profile_type: "personal" | "business"
       property_connection_role:
         | "co_owner"
@@ -3946,6 +4108,21 @@ export type Database = {
         | "contractor"
         | "investor"
       property_connection_status: "active" | "pending" | "revoked"
+      vault_record_source:
+        | "homeowner"
+        | "inspector"
+        | "county"
+        | "ai_extracted"
+        | "platform"
+      vault_record_type:
+        | "permit"
+        | "inspection"
+        | "photo"
+        | "document"
+        | "finding"
+        | "system_data"
+        | "owner_submission"
+        | "dispute"
       verification_entity:
         | "maintenance_history"
         | "inspection_finding"
@@ -4108,6 +4285,13 @@ export const Constants = {
         "finding_resolved",
         "fix_verified",
       ],
+      legal_extraction_type: [
+        "court_order",
+        "subpoena",
+        "law_enforcement",
+        "emergency",
+        "disclosure_law",
+      ],
       profile_type: ["personal", "business"],
       property_connection_role: [
         "co_owner",
@@ -4118,6 +4302,23 @@ export const Constants = {
         "investor",
       ],
       property_connection_status: ["active", "pending", "revoked"],
+      vault_record_source: [
+        "homeowner",
+        "inspector",
+        "county",
+        "ai_extracted",
+        "platform",
+      ],
+      vault_record_type: [
+        "permit",
+        "inspection",
+        "photo",
+        "document",
+        "finding",
+        "system_data",
+        "owner_submission",
+        "dispute",
+      ],
       verification_entity: [
         "maintenance_history",
         "inspection_finding",
