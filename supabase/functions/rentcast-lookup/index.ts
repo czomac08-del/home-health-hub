@@ -49,18 +49,18 @@ async function buildCensusFallback(address: string, authHeader?: string) {
   // Steps 2–5: environmental data in parallel (best effort)
   const [fema, noaa, drought, epa] = await Promise.all([
     state
-      ? callFn("fema-disasters", { state, ...(county ? { county } : {}) })
+      ? callFn("fema-disasters", { state, ...(county ? { county } : {}) }, authHeader)
       : Promise.resolve(null),
     coords
-      ? callFn("noaa-storms", { lat: String(coords.lat), lng: String(coords.lng) })
+      ? callFn("noaa-storms", { lat: String(coords.lat), lng: String(coords.lng) }, authHeader)
       : state
-      ? callFn("noaa-storms", { state })
+      ? callFn("noaa-storms", { state }, authHeader)
       : Promise.resolve(null),
-    countyFips ? callFn("drought-status", { fips: countyFips }) : Promise.resolve(null),
+    countyFips ? callFn("drought-status", { fips: countyFips }, authHeader) : Promise.resolve(null),
     countyFips
-      ? callFn("epa-echo", { countyFips })
+      ? callFn("epa-echo", { countyFips }, authHeader)
       : state
-      ? callFn("epa-echo", { state })
+      ? callFn("epa-echo", { state }, authHeader)
       : Promise.resolve(null),
   ]);
 
