@@ -16,7 +16,7 @@ async function geocode(address: string) {
   try {
     const r = await fetch(
       `${SUPABASE_URL}/functions/v1/geocode?address=${encodeURIComponent(address)}`,
-      { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } },
+      { headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}`, apikey: SUPABASE_ANON_KEY } },
     );
     if (!r.ok) return null;
     return await r.json();
@@ -33,7 +33,7 @@ async function refreshOne(propertyId: string, address: string, source: string) {
   const lat = geo?.matches?.[0]?.coordinates?.y;
   const lng = geo?.matches?.[0]?.coordinates?.x;
 
-  const headers = { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY };
+  const headers = { Authorization: `Bearer ${SERVICE_ROLE_KEY}`, apikey: SUPABASE_ANON_KEY };
   try {
     if (source === "fema") {
       if (!state) return "skipped";
