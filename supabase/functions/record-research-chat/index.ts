@@ -74,6 +74,45 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
+    // ---- Ownership check: caller must have this property in their portfolio ----
+    if (context?.address) {
+      const userClient = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: __auth } } },
+      );
+      const { data: tokenClaims } = await userClient.auth.getClaims(__auth.replace(/^Bearer\s+/i, ""));
+      const callerUserId = tokenClaims?.claims?.sub;
+      if (!callerUserId) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+      const wanted = normalize(context.address);
+      const { data: props } = await supabase
+        .from("properties")
+        .select("address")
+        .eq("user_id", callerUserId);
+      const owns = (props || []).some((p: any) => {
+        const have = normalize(p.address || "");
+        if (!have || !wanted) return false;
+        // strict prefix match on house-number+street tokens
+        const a = wanted.split(" ").slice(0, 4).join(" ");
+        const b = have.split(" ").slice(0, 4).join(" ");
+        return a === b;
+      });
+      if (!owns) {
+        return new Response(
+          JSON.stringify({
+            error: "OWNERSHIP_REQUIRED",
+            message: "You can only generate records requests for properties in your ComingHomeIQ account.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const country = (context.country || "US").toUpperCase();
     const stateCode = (context.state || "").toUpperCase();
     const isFederal = looksFederal(context.recordType, context.category);
