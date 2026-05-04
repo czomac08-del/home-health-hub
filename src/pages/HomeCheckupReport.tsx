@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Printer, ChevronLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import {
   CHECKUP_SECTIONS,
   TIER_META,
