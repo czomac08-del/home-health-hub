@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
+import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import ClosedDealLogger from "@/components/ClosedDealLogger";
 import { toast } from "sonner";
 import {
@@ -1019,6 +1020,10 @@ const InvestorDashboard = () => {
           </div>
         </div>
       )}
+      <div className="mt-6 space-y-2">
+        <ComplianceDisclaimer variant="financial" />
+        <ComplianceDisclaimer variant="real-estate" />
+      </div>
     </div>
   );
 };
