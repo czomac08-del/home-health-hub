@@ -736,6 +736,10 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
           ComingHomeIQ may receive compensation when you request a quote through our platform.
         </p>
       </Section>
+      <div className="mt-6 space-y-2">
+        <ComplianceDisclaimer variant="ai-generated" />
+        <ComplianceDisclaimer variant="legal" />
+      </div>
     </div>
   );
 };
