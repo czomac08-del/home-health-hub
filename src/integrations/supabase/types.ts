@@ -1982,11 +1982,15 @@ export type Database = {
           age_confirmed: boolean
           civic_consent: boolean | null
           created_at: string
+          fcra_acknowledged: boolean
           id: string
+          marketing_opt_in: boolean
+          not_professional_advice_acknowledged: boolean
           privacy_accepted: boolean
           professional_disclaimer_accepted: boolean
           state_selected: string | null
           terms_accepted: boolean
+          terms_version: string
           user_id: string
         }
         Insert: {
@@ -1994,11 +1998,15 @@ export type Database = {
           age_confirmed?: boolean
           civic_consent?: boolean | null
           created_at?: string
+          fcra_acknowledged?: boolean
           id?: string
+          marketing_opt_in?: boolean
+          not_professional_advice_acknowledged?: boolean
           privacy_accepted?: boolean
           professional_disclaimer_accepted?: boolean
           state_selected?: string | null
           terms_accepted?: boolean
+          terms_version?: string
           user_id: string
         }
         Update: {
@@ -2006,11 +2014,15 @@ export type Database = {
           age_confirmed?: boolean
           civic_consent?: boolean | null
           created_at?: string
+          fcra_acknowledged?: boolean
           id?: string
+          marketing_opt_in?: boolean
+          not_professional_advice_acknowledged?: boolean
           privacy_accepted?: boolean
           professional_disclaimer_accepted?: boolean
           state_selected?: string | null
           terms_accepted?: boolean
+          terms_version?: string
           user_id?: string
         }
         Relationships: []
