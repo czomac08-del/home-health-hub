@@ -10,6 +10,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ProfileSwitcherProvider } from "@/contexts/ProfileSwitcherContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import ForgotPasswordScreen from "./pages/ForgotPasswordScreen";
@@ -113,6 +115,8 @@ const uploadFabRoutes = [
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
+  const [ackState, setAckState] = useState<"loading" | "ok" | "stale">("loading");
+  const location = useLocation();
 
   useEffect(() => {
     if (loading) {
@@ -120,6 +124,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return () => clearTimeout(t);
     }
   }, [loading]);
+
+  useEffect(() => {
+    if (!user) { setAckState("ok"); return; }
+    let cancelled = false;
+    void supabase
+      .from("legal_acknowledgments")
+      .select("terms_version, fcra_acknowledged, not_professional_advice_acknowledged")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const current =
+          data &&
+          data.terms_version === CURRENT_TERMS_VERSION &&
+          data.fcra_acknowledged === true &&
+          data.not_professional_advice_acknowledged === true;
+        setAckState(current ? "ok" : "stale");
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   if (loading && !timedOut) {
     return (
@@ -133,6 +157,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  // Force re-acknowledgment when terms version is bumped or required acks are missing.
+  if (
+    ackState === "stale" &&
+    location.pathname !== "/legal-onboarding"
+  ) {
+    return <Navigate to="/legal-onboarding" replace />;
+  }
   return <>{children}</>;
 };
 
