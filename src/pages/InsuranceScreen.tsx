@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import DiscountPotentialSection from "@/components/DiscountPotentialSection";
 import RefreshButton from "@/components/RefreshButton";
+import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 
 // ─── Types ───
 type PolicyType = "primary" | "flood" | "earthquake" | "umbrella" | "warranty";
@@ -736,6 +737,10 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
           ComingHomeIQ may receive compensation when you request a quote through our platform.
         </p>
       </Section>
+      <div className="mt-6 space-y-2">
+        <ComplianceDisclaimer variant="ai-generated" />
+        <ComplianceDisclaimer variant="legal" />
+      </div>
     </div>
   );
 };

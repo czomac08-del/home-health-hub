@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
@@ -30,7 +31,15 @@ const LegalOnboardingScreen = () => {
   const [step, setStep] = useState(1);
   const [cardTimers, setCardTimers] = useState([false, false, false]);
   const [stateSelected, setStateSelected] = useState("");
-  const [checks, setChecks] = useState({ terms: false, privacy: false, disclaimer: false, age: false });
+  const [checks, setChecks] = useState({
+    terms: false,
+    privacy: false,
+    disclaimer: false,
+    age: false,
+    fcra: false,
+    notAdvice: false,
+  });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [civicConsent, setCivicConsent] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -45,7 +54,8 @@ const LegalOnboardingScreen = () => {
   }, [step]);
 
   const allCardsRead = cardTimers.every(Boolean);
-  const allChecked = checks.terms && checks.privacy && checks.disclaimer && checks.age;
+  const allChecked =
+    checks.terms && checks.privacy && checks.disclaimer && checks.age && checks.fcra && checks.notAdvice;
 
   const handleComplete = async () => {
     if (!user) return;
@@ -57,6 +67,10 @@ const LegalOnboardingScreen = () => {
         privacy_accepted: true,
         professional_disclaimer_accepted: true,
         age_confirmed: true,
+        fcra_acknowledged: true,
+        not_professional_advice_acknowledged: true,
+        marketing_opt_in: marketingOptIn,
+        terms_version: CURRENT_TERMS_VERSION,
         civic_consent: civicConsent === true,
         state_selected: stateSelected,
         accepted_at: new Date().toISOString(),
@@ -137,6 +151,18 @@ const LegalOnboardingScreen = () => {
               <label className="flex items-start gap-3 cursor-pointer">
                 <Checkbox checked={checks.age} onCheckedChange={(v) => setChecks(p => ({ ...p, age: !!v }))} className="mt-0.5" />
                 <span className="text-sm text-foreground">I am 18 years of age or older.</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox checked={checks.fcra} onCheckedChange={(v) => setChecks(p => ({ ...p, fcra: !!v }))} className="mt-0.5" />
+                <span className="text-sm text-foreground">I understand this platform may not be used for tenant screening, credit decisions, insurance underwriting, employment screening, or any other purpose covered by the Fair Credit Reporting Act (FCRA).</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox checked={checks.notAdvice} onCheckedChange={(v) => setChecks(p => ({ ...p, notAdvice: !!v }))} className="mt-0.5" />
+                <span className="text-sm text-foreground">I understand ComingHomeIQ is not a licensed real estate, legal, financial, or inspection service, and that information on the platform is not a substitute for professional advice.</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer pt-2 border-t border-border">
+                <Checkbox checked={marketingOptIn} onCheckedChange={(v) => setMarketingOptIn(!!v)} className="mt-0.5" />
+                <span className="text-sm text-muted-foreground">(Optional) Send me product updates, tips, and occasional marketing emails. I can unsubscribe at any time.</span>
               </label>
             </div>
 

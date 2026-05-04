@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
+import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
@@ -603,6 +604,11 @@ const BuyerReport = ({ listing, onBack }: { listing: Listing; onBack: () => void
             </div>
           )}
         </div>
+      </div>
+      <div className="mt-6 space-y-2">
+        <ComplianceDisclaimer variant="real-estate" />
+        <ComplianceDisclaimer variant="fair-housing" />
+        <ComplianceDisclaimer variant="contractor-referral" />
       </div>
     </div>
   );
