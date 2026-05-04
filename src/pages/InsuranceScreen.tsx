@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import DiscountPotentialSection from "@/components/DiscountPotentialSection";
 import RefreshButton from "@/components/RefreshButton";
+import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 
 // ─── Types ───
 type PolicyType = "primary" | "flood" | "earthquake" | "umbrella" | "warranty";
