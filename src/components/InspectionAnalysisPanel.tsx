@@ -8,6 +8,7 @@ import type { InspectionReportData, InspectionFinding } from "@/components/Inspe
 import AddToProfileModal from "@/components/AddToProfileModal";
 import PrintFindingsButton from "@/components/PrintFindingsButton";
 import type { PrintFilter } from "@/components/PrintFindingsReport";
+import { InspectionTrialContextNudge } from "@/components/InspectionPaywall";
 
 interface Props {
   propertyRecordId: string;
@@ -23,6 +24,10 @@ interface Props {
   onReportLoaded?: (r: InspectionReportData) => void;
   /** Jump the linked PDF viewer to a specific page (used by "→ Page N" finding links). */
   onJumpToPage?: (page: number) => void;
+  /** When true, hide deep details (cost ranges, contractor groupings, etc.) — overview stays visible. */
+  lockFullAccess?: boolean;
+  /** Free-trial end timestamp, used by contextual nudges. */
+  accessExpiresAt?: string | null;
 }
 
 type Phase = "ready" | "extracting" | "done" | "error";
@@ -91,6 +96,8 @@ export default function InspectionAnalysisPanel({
   onPrintFilterChange,
   onReportLoaded,
   onJumpToPage,
+  lockFullAccess = false,
+  accessExpiresAt = null,
 }: Props) {
   const [report, setReport] = useState<InspectionReportData | null>(initialReport);
   const [phase, setPhase] = useState<Phase>(initialReport ? "done" : "ready");
@@ -263,7 +270,9 @@ export default function InspectionAnalysisPanel({
                   → Page {f.page_reference}
                 </button>
               )}
-              <p className="text-[10px] text-muted-foreground mt-1">Est. DIY: {diyCost(f)}</p>
+              {!lockFullAccess && (
+                <p className="text-[10px] text-muted-foreground mt-1">Est. DIY: {diyCost(f)}</p>
+              )}
             </li>
           ))}
         </ul>
@@ -311,7 +320,9 @@ export default function InspectionAnalysisPanel({
                 </button>
               )}
               <p className="text-[11px] text-destructive/80 mt-1 italic">{whyItMatters(f)}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Est. Pro Repair: {proCost(f)}</p>
+              {!lockFullAccess && (
+                <p className="text-[10px] text-muted-foreground mt-0.5">Est. Pro Repair: {proCost(f)}</p>
+              )}
             </li>
           ))}
         </ul>
@@ -324,6 +335,15 @@ export default function InspectionAnalysisPanel({
           </button>
         )}
       </section>
+
+      {/* Contextual trial nudges — only during the free period (not when locked or fully paid). */}
+      {!lockFullAccess && accessExpiresAt && new Date(accessExpiresAt) > new Date() && (
+        <>
+          <InspectionTrialContextNudge variant="diy" expiresAt={accessExpiresAt} />
+          <InspectionTrialContextNudge variant="pro" expiresAt={accessExpiresAt} />
+          <InspectionTrialContextNudge variant="selling" expiresAt={accessExpiresAt} />
+        </>
+      )}
 
       {/* SECTION C — OVERALL */}
       <section className="rounded-xl border border-[hsl(var(--navy))]/30 overflow-hidden">
