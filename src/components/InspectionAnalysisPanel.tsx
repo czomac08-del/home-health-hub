@@ -270,7 +270,9 @@ export default function InspectionAnalysisPanel({
                   → Page {f.page_reference}
                 </button>
               )}
-              <p className="text-[10px] text-muted-foreground mt-1">Est. DIY: {diyCost(f)}</p>
+              {!lockFullAccess && (
+                <p className="text-[10px] text-muted-foreground mt-1">Est. DIY: {diyCost(f)}</p>
+              )}
             </li>
           ))}
         </ul>
