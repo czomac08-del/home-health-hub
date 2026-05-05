@@ -1661,6 +1661,63 @@ export type Database = {
           },
         ]
       }
+      inspection_review_access: {
+        Row: {
+          created_at: string
+          free_trial_expires_at: string
+          free_trial_started_at: string
+          id: string
+          last_one_time_purchase_at: string | null
+          one_time_access_expires_at: string | null
+          one_time_purchase_count: number
+          property_id: string | null
+          property_record_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          free_trial_expires_at?: string
+          free_trial_started_at?: string
+          id?: string
+          last_one_time_purchase_at?: string | null
+          one_time_access_expires_at?: string | null
+          one_time_purchase_count?: number
+          property_id?: string | null
+          property_record_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          free_trial_expires_at?: string
+          free_trial_started_at?: string
+          id?: string
+          last_one_time_purchase_at?: string | null
+          one_time_access_expires_at?: string | null
+          one_time_purchase_count?: number
+          property_id?: string | null
+          property_record_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_review_access_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_review_access_property_record_id_fkey"
+            columns: ["property_record_id"]
+            isOneToOne: true
+            referencedRelation: "property_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
           checklist_data: Json | null
@@ -4036,9 +4093,24 @@ export type Database = {
         }
         Returns: string
       }
+      extend_inspection_one_time_access: {
+        Args: { _days?: number; _property_record_id: string }
+        Returns: string
+      }
       generate_referral_code: {
         Args: { _full_name: string; _referrer_type: string; _user_id: string }
         Returns: string
+      }
+      get_inspection_access_status: {
+        Args: { _property_record_id: string; _user_id?: string }
+        Returns: {
+          days_remaining: number
+          free_trial_expires_at: string
+          free_trial_started_at: string
+          is_subscribed: boolean
+          one_time_access_expires_at: string
+          status: string
+        }[]
       }
       get_shared_report: {
         Args: { _token: string }
