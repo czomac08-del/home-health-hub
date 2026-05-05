@@ -16,6 +16,12 @@ import SEO from "@/components/SEO";
 import PrintFindingsButton from "@/components/PrintFindingsButton";
 import PrintFindingsReport, { type PrintFilter } from "@/components/PrintFindingsReport";
 import { useInspectionFindings } from "@/hooks/useInspectionFindings";
+import { useInspectionAccess } from "@/hooks/useInspectionAccess";
+import InspectionAccessBadge from "@/components/InspectionAccessBadge";
+import InspectionTrialNudge from "@/components/InspectionTrialNudge";
+import InspectionPaywall from "@/components/InspectionPaywall";
+import { useEffect as useEffectReload } from "react";
+import { useSearchParams as _useSearchParams } from "react-router-dom";
 
 /**
  * /inspection-review/:id/viewer
@@ -40,6 +46,24 @@ export default function InspectionReviewViewer() {
   const initialPage = searchParams.get("page") ? Number(searchParams.get("page")) : null;
   const [jumpToPage, setJumpToPage] = useState<number | null>(initialPage);
   const [mobileTab, setMobileTab] = useState<"analysis" | "report">("analysis");
+
+  // 60-day free trial / one-time / subscription gating for the full review.
+  const access = useInspectionAccess(propertyRecordId ?? null);
+
+  // After Stripe redirects back with ?checkout=success, refresh access state.
+  useEffectReload(() => {
+    if (searchParams.get("checkout") === "success") {
+      // Webhook may need a moment; retry a couple of times.
+      let tries = 0;
+      const t = setInterval(() => {
+        tries += 1;
+        access.reload();
+        if (tries >= 4) clearInterval(t);
+      }, 1500);
+      return () => clearInterval(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Print state — shared between TopBar button and the analysis panel button.
   const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
@@ -206,6 +230,8 @@ export default function InspectionReviewViewer() {
           {score.label}
         </span>
 
+        <InspectionAccessBadge access={access} />
+
         <Button variant="outline" size="sm" className="h-8" onClick={handleShare}>
           <Share2 className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Share Report</span>
@@ -247,6 +273,12 @@ export default function InspectionReviewViewer() {
       </div>
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {propertyRecordId && (
+          <InspectionTrialNudge access={access} propertyRecordId={propertyRecordId} />
+        )}
+        {!access.loading && !access.hasFullAccess && propertyRecordId && (
+          <InspectionPaywall propertyRecordId={propertyRecordId} surface="Inspection Review" />
+        )}
+        {propertyRecordId && (
           <InspectionAnalysisPanel
             propertyRecordId={propertyRecordId}
             propertyId={propertyId}
@@ -262,6 +294,8 @@ export default function InspectionReviewViewer() {
               setJumpToPage(page);
               if (isMobile) setMobileTab("report");
             }}
+            lockFullAccess={!access.loading && !access.hasFullAccess}
+            accessExpiresAt={access.freeTrialExpiresAt}
           />
         )}
         <p className="text-[10px] text-muted-foreground italic border-t border-border pt-3">
