@@ -190,7 +190,13 @@ export default function UploadDocumentModal({
         }
       }
 
-      toast.success("Document saved to your home record");
+      if (docType === "inspection_report") {
+        toast.success("Your inspection review is ready — free for the next 60 days.", {
+          duration: 5000,
+        });
+      } else {
+        toast.success("Document saved to your home record");
+      }
       setStep("saved");
       // Record for the 24h dashboard banner so users always know where the file went.
       try {
