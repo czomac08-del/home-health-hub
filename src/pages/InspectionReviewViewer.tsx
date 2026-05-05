@@ -20,8 +20,6 @@ import { useInspectionAccess } from "@/hooks/useInspectionAccess";
 import InspectionAccessBadge from "@/components/InspectionAccessBadge";
 import InspectionTrialNudge from "@/components/InspectionTrialNudge";
 import InspectionPaywall from "@/components/InspectionPaywall";
-import { useEffect as useEffectReload } from "react";
-import { useSearchParams as _useSearchParams } from "react-router-dom";
 
 /**
  * /inspection-review/:id/viewer
@@ -51,7 +49,7 @@ export default function InspectionReviewViewer() {
   const access = useInspectionAccess(propertyRecordId ?? null);
 
   // After Stripe redirects back with ?checkout=success, refresh access state.
-  useEffectReload(() => {
+  useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       // Webhook may need a moment; retry a couple of times.
       let tries = 0;
