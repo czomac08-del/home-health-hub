@@ -17,6 +17,7 @@ const PRICE_MAP: Record<string, { monthly: string; annual: string }> = {
 };
 
 const ONE_TIME_PRICE = "price_1TKJeVECIkzmsZKylalJ3MFa";
+const INSPECTION_ONE_TIME_PRICE = "price_1TToYBECIkzmsZKyJXaFD9Vx";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
 
     const user = userData.user;
     const body = await req.json();
-    const { planId, billingPeriod, priceId, mode, successUrl, cancelUrl } = body;
+    const { planId, billingPeriod, priceId, mode, successUrl, cancelUrl, propertyRecordId } = body;
 
     // Find or create Stripe customer
     const customers = await stripe.customers.list({ email: user.email!, limit: 1 });
@@ -61,6 +62,29 @@ Deno.serve(async (req) => {
         success_url: successUrl || `${origin}/dashboard?checkout=success`,
         cancel_url: cancelUrl || `${origin}/pricing?checkout=cancel`,
         metadata: { user_id: user.id, purchase_type: "refresh_credit" },
+      });
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Inspection one-time access ($4.99 / 30 days)
+    if (planId === "inspection_one_time") {
+      if (!propertyRecordId) {
+        return new Response(JSON.stringify({ error: "propertyRecordId required" }), { status: 400, headers: corsHeaders });
+      }
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email!,
+        mode: "payment",
+        line_items: [{ price: INSPECTION_ONE_TIME_PRICE, quantity: 1 }],
+        success_url: successUrl || `${origin}/inspection-review/${propertyRecordId}/viewer?checkout=success`,
+        cancel_url: cancelUrl || `${origin}/inspection-review/${propertyRecordId}/viewer?checkout=cancel`,
+        metadata: {
+          user_id: user.id,
+          purchase_type: "inspection_one_time",
+          property_record_id: propertyRecordId,
+        },
       });
       return new Response(JSON.stringify({ url: session.url }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
