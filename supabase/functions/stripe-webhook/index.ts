@@ -171,6 +171,18 @@ Deno.serve(async (req) => {
             }
           }
 
+          // Inspection one-time access: extend the per-record window by 30 days.
+          if (session.metadata?.purchase_type === "inspection_one_time" && session.metadata?.property_record_id) {
+            try {
+              await supabase.rpc("extend_inspection_one_time_access", {
+                _property_record_id: session.metadata.property_record_id,
+                _days: 30,
+              });
+            } catch (e) {
+              console.error("Failed to extend inspection one-time access:", e);
+            }
+          }
+
           // Deal-funded fee: mark the deal as paid so the user can keep using
           // the platform without further nags.
           if (session.metadata?.purchase_type === "deal_funded_fee" && session.metadata?.deal_id) {
