@@ -258,7 +258,7 @@ const OnboardingWizard = () => {
   const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
-    if (step === 1) return !!selectedMatch && !savingAddress;
+    if (step === 1) return !savingAddress; // address is optional
     if (step === 2) return !!data.homeType && !!data.homeAge;
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
@@ -441,6 +441,20 @@ const OnboardingWizard = () => {
                 <p className="text-xs text-destructive">{geocodeError}</p>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                // Skip address entirely — no save, no scan
+                setSelectedMatch(null);
+                setAddressInput("");
+                setScanSummary(null);
+                setStep(2);
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors self-center"
+            >
+              Skip for now — I'll add my address later
+            </button>
           </div>
         );
 
