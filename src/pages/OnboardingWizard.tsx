@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, Check, Sparkles, PartyPopper,
   Car, CircleDot, ThermometerSun, Fan, AirVent, Heater,
   Fuel, PlugZap, Droplet, Truck, Store, Users,
+  Search, MapPin, Loader2, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
@@ -16,6 +17,32 @@ import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
 import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
 const TOTAL_STEPS = 8;
+
+const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
+const RENTCAST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup`;
+
+interface AddressMatch {
+  matchedAddress: string;
+  coordinates: { x: number; y: number };
+  county?: string | null;
+  countyFips?: string | null;
+  state?: string | null;
+  stateFips?: string | null;
+}
+
+/** Parse "123 Main St, City, ST 12345" into pieces. */
+function parseMatchedAddress(matched: string): { street: string; city: string; state: string; zip: string } {
+  const parts = matched.split(",").map(s => s.trim()).filter(Boolean);
+  // Expected: ["123 MAIN ST", "CITY", "ST", "12345"] OR ["...", "CITY", "ST 12345"]
+  let street = parts[0] || "";
+  let city = parts[1] || "";
+  let state = "";
+  let zip = "";
+  const tail = parts.slice(2).join(" ");
+  const m = tail.match(/\b([A-Z]{2})\b\s*(\d{5}(?:-\d{4})?)?/);
+  if (m) { state = m[1]; zip = m[2] || ""; }
+  return { street, city, state, zip };
+}
 
 interface WizardData {
   homeType: string;
@@ -100,6 +127,129 @@ const OnboardingWizard = () => {
   const navigate = useNavigate();
   const { user, profile, properties, activeProperty, refreshProperties } = useAuth();
 
+  // ── Step 1: address capture state ──
+  const [addressInput, setAddressInput] = useState("");
+  const [suggestions, setSuggestions] = useState<AddressMatch[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<AddressMatch | null>(null);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // If the user already has a property with an address, skip Step 1.
+  useEffect(() => {
+    if (step === 1 && properties.length > 0 && properties[0].address) {
+      setStep(2);
+    }
+  }, [step, properties]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const fetchSuggestions = async (q: string) => {
+    if (q.trim().length < 4) { setSuggestions([]); return; }
+    setSearching(true);
+    setGeocodeError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      const matches: AddressMatch[] = json?.matches || [];
+      setSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+      if (matches.length === 0) {
+        setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+      }
+    } catch {
+      setSuggestions([]);
+      setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddressChange = (v: string) => {
+    setAddressInput(v);
+    setSelectedMatch(null);
+    setGeocodeError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(v), 400);
+  };
+
+  const selectAddress = (m: AddressMatch) => {
+    setSelectedMatch(m);
+    setAddressInput(m.matchedAddress);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setGeocodeError(null);
+  };
+
+  /** Save the address to properties and kick off background scan. */
+  const saveAddressAndContinue = async () => {
+    if (!user || !selectedMatch) return;
+    setSavingAddress(true);
+    try {
+      const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
+      const insertRow = {
+        user_id: user.id,
+        address: selectedMatch.matchedAddress,
+        label: "Primary Residence",
+        is_active: true,
+        city: city || null,
+        state: selectedMatch.state || state || null,
+        zip: zip || null,
+        county: selectedMatch.county || null,
+        county_fips: selectedMatch.countyFips || null,
+      };
+      const { error } = await supabase.from("properties").insert(insertRow as any);
+      if (error) throw error;
+      await refreshProperties();
+
+      // Fire background scan (RentCast). Result cached in state for final step.
+      void (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return;
+          const json = await res.json();
+          const found: string[] = [];
+          if (json?.found) found.push("Property records");
+          if (selectedMatch.countyFips) {
+            found.push("FEMA disaster history");
+            found.push("NOAA storm records");
+            found.push("USDA drought monitor");
+          }
+          if (selectedMatch.coordinates) found.push("EPA environmental data");
+          setScanSummary({ sources: found.length, details: found });
+        } catch {
+          // Silent — scan is best-effort
+        }
+      })();
+
+      setStep(2);
+    } catch (e) {
+      toast.error("Could not save your address. Please try again.");
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
   const update = useCallback(<K extends keyof WizardData>(key: K, value: WizardData[K]) => {
     setData(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -108,6 +258,7 @@ const OnboardingWizard = () => {
   const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
+    if (step === 1) return !!selectedMatch && !savingAddress;
     if (step === 2) return !!data.homeType && !!data.homeAge;
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
