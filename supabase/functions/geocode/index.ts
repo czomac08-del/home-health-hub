@@ -95,22 +95,34 @@ Deno.serve(async (req) => {
   }
 
   // ---- JWT enforcement (security hardening) ----
-  const __auth = req.headers.get("Authorization") || req.headers.get("authorization");
-  if (!__auth || !__auth.toLowerCase().startsWith("bearer ")) {
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   try {
-    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: __auth } } },
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) throw new Error("Missing Supabase environment");
+
+    const supabase = (await import("https://esm.sh/@supabase/supabase-js@2.75.1")).createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { global: { headers: { Authorization: authHeader } } },
     );
-    const __t = __auth.replace(/^Bearer\s+/i, "");
-    const { data: __c, error: __e } = await __sb.auth.getClaims(__t);
-    if (__e || !__c?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    let verifiedUserId: string | undefined;
+    if (typeof supabase.auth.getClaims === "function") {
+      const { data } = await supabase.auth.getClaims(token);
+      verifiedUserId = data?.claims?.sub;
     }
-  } catch (_jwtErr) {
+    if (!verifiedUserId) {
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data?.user?.id) throw new Error("Invalid token user");
+      verifiedUserId = data.user.id;
+    }
+  } catch (jwtErr) {
+    console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   // ---- end JWT enforcement ----
