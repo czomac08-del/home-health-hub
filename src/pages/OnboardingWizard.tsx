@@ -362,7 +362,6 @@ const OnboardingWizard = () => {
     setStep(s => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep(s => Math.max(s - 1, 1));
-  const skip = () => navigate("/dashboard");
 
   const todos = getTodos();
   const [checkedTodos, setCheckedTodos] = useState<Set<number>>(new Set());
