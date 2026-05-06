@@ -161,20 +161,12 @@ const OnboardingWizard = () => {
     setSearching(true);
     setGeocodeError(null);
     try {
-      const { data: json, error } = await supabase.functions.invoke("geocode", {
-        method: "GET",
-        headers: { "x-address": q },
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("not authenticated");
+      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      // Edge function reads from query string — fall back to direct fetch with session token
-      let payload: any = json;
-      if (error || !payload) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error("not authenticated");
-        const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        payload = await res.json();
-      }
+      const payload = await res.json();
       const matches: AddressMatch[] = payload?.matches || [];
       setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
