@@ -3,6 +3,8 @@ import { MapPin, Shield, Check, Archive, Home, Tractor, Key, Search, BarChart3, 
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
+import EmailSignupForm from "@/components/EmailSignupForm";
+import EmailSignupSlideIn from "@/components/EmailSignupSlideIn";
 
 // SoftwareApplication schema for the homepage.
 const landingJsonLd = {
@@ -253,6 +255,20 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Email capture — Home Health Pulse */}
+      <section className="bg-secondary/40 py-16 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-heading font-black text-foreground mb-3">
+            Get your free monthly Home Health Pulse
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">
+            One email per month. Your home's maintenance reminders, risk alerts, and record updates —
+            personalized to your address and region. No spam. Unsubscribe anytime.
+          </p>
+          <EmailSignupForm source="homepage" />
+        </div>
+      </section>
+
       {/* SECTION 5 — Final CTA */}
       <section className="bg-primary text-primary-foreground py-20 px-6">
         <div className="max-w-3xl mx-auto text-center">
@@ -290,12 +306,22 @@ const LandingPage = () => {
             <span>·</span>
             <button onClick={() => navigate("/feedback")} className="hover:text-foreground transition-colors">Feedback</button>
           </div>
+          <div className="pt-2">
+            <p className="text-[10px] font-heading font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">Compare</p>
+            <button
+              onClick={() => navigate("/centriq-alternative")}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              Centriq Alternative
+            </button>
+          </div>
           <p className="text-[11px] text-muted-foreground/80 max-w-2xl mx-auto leading-relaxed">
             ComingHomeIQ is not a licensed real estate broker, lender, or insurance provider. Data is sourced from public government records and is provided for informational purposes only.
           </p>
           <p className="text-xs text-muted-foreground">© 2026 ComingHomeIQ LLC. All rights reserved.</p>
         </div>
       </footer>
+      <EmailSignupSlideIn />
     </div>
   );
 };
