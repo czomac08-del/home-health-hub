@@ -95,12 +95,113 @@ Deno.serve(async (req) => {
   }
 
   // ---- JWT enforcement (security hardening) ----
-  const __auth = req.headers.get("Authorization") || req.headers.get("authorization");
-  if (!__auth || !__auth.toLowerCase().startsWith("bearer ")) {
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   try {
-    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) throw new Error("Missing Supabase environment");
+
+    const supabase = (await import("https://esm.sh/@supabase/supabase-js@2.75.1")).createClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    const claimsResult = typeof supabase.auth.getClaims === "function"
+      ? await supabase.auth.getClaims(token)
+      : null;
+    if (claimsResult) {
+      const { data, error } = claimsResult;
+      if (error || !data?.claims?.sub) throw new Error("Invalid token claims");
+    } else {
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data?.user?.id) throw new Error("Invalid token user");
+    }
+  } catch (jwtErr) {
+    console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  // ---- end JWT enforcement ----
+
+
+
+  // ---- Input: address comes ONLY from the `?address=` query string ----
+  const url = new URL(req.url);
+  const rawAddress = url.searchParams.get("address");
+
+  if (rawAddress === null) {
+    return new Response(
+      JSON.stringify({
+        error: "Missing required query parameter: 'address'. Example: /geocode?address=123+Main+St",
+        matches: [],
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const address = rawAddress.trim();
+  if (address.length === 0) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' cannot be empty.", matches: [] }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (address.length < 4) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' must be at least 4 characters.", matches: [] }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (address.length > 250) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' must be 250 characters or fewer.", matches: [] }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  try {
+    // Fallback chain: Census Bureau → Nominatim
+    let result = await censusBureauGeocode(address);
+    let source = "census";
+
+    if (!result) {
+      console.log("Census geocoder returned no match, falling back to Nominatim");
+      result = await nominatimGeocode(address);
+      source = "nominatim";
+    }
+
+    if (!result) {
+      return new Response(
+        JSON.stringify({
+          matches: [],
+          note: "Could not geocode this address. Please verify the address format and try again.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        matches: [result],
+        source,
+        countyFips: result.countyFips || null,
+        county: result.county || null,
+        state: result.state || null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    console.error("Geocoding error:", e);
+    return new Response(
+      JSON.stringify({ error: "Geocoding failed", matches: [] }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: __auth } } },
