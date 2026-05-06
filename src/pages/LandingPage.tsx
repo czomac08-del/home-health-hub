@@ -1,12 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart, AlertTriangle, FileWarning, Award, ExternalLink } from "lucide-react";
+import { MapPin, Shield, Check, Archive, FileText, Home, Tractor, Key, Search, BarChart3, FileSearch, CloudRain, Wrench, FileCheck, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
-import { useState } from "react";
-import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
-import FeatureDetailModal, { type FeatureKey } from "@/components/FeatureDetailModal";
-import SavingsCalculator from "@/components/SavingsCalculator";
 
 // SoftwareApplication schema for the homepage.
 const landingJsonLd = {
@@ -23,20 +19,6 @@ const landingJsonLd = {
   },
 };
 
-const tiers = [
-  { name: "Free", price: "$0", features: ["1 property", "Basic health score", "DIY guides", "System tracking"], cta: "Get Started Free" },
-  { name: "Pro", price: "$9.99/mo", features: ["Unlimited properties", "AI recommendations", "Full service history", "Priority support", "Transfer passport"], cta: "Start Pro Trial", highlight: true },
-  { name: "Business", price: "$29.99/mo", features: ["Everything in Pro", "Realtor tools", "Inspection reports", "Client management", "White label reports"], cta: "Contact Sales" },
-];
-
-const roles = [
-  { key: "homeowner", icon: Home, title: "Homeowners", desc: "Track every system, schedule maintenance, and build a complete history that adds value when you sell.", accent: "border-t-4 border-t-primary" },
-  { key: "realtor", icon: Briefcase, title: "Realtors", desc: "Differentiate listings with verified home IQ data. Generate professional Buyer Reports instantly.", accent: "border-t-4 border-t-secondary" },
-  { key: "inspector", icon: ClipboardList, title: "Home Inspectors", desc: "Access pre-populated data, streamline inspections, and deliver comprehensive reports faster.", accent: "border-t-4 border-t-blue-brain" },
-  { key: "contractor", icon: Wrench, title: "Pro Contractors", desc: "Arrive prepared with full system history, model numbers, and service records for every job.", accent: "border-t-4 border-t-success" },
-  { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate ComingHomeIQs for sale.", accent: "border-t-4 border-t-warning" },
-];
-
 const trustSources = [
   "FEMA Flood Data",
   "NOAA Storm Records",
@@ -45,38 +27,47 @@ const trustSources = [
   "Census Bureau",
 ];
 
-const industryStats = [
+const howItWorks = [
   {
-    stat: "$5,000–$10,000",
-    description: "more on average for homes with documented maintenance history",
-    source: "National Association of Realtors",
-    icon: TrendingUp,
+    step: "1",
+    icon: MapPin,
+    title: "Enter your address",
+    desc: "We instantly pull your home's public records — flood zone, permit history, storm events, environmental data — from federal and state government sources.",
   },
   {
-    stat: "1 in 3",
-    description: "homeowners discover unpermitted work they didn't know about",
-    source: "NAHB",
-    icon: AlertTriangle,
+    step: "2",
+    icon: Search,
+    title: "See what we know",
+    desc: "Your Home IQ Score shows you exactly where your home stands. Verified data gets a badge. Gaps get a clear explanation and a path to fill them.",
   },
   {
-    stat: "$3,000+",
-    description: "average emergency home repair cost — documented maintenance reduces surprises",
-    source: "HomeAdvisor / Angi",
-    icon: FileWarning,
+    step: "3",
+    icon: Archive,
+    title: "Build your home's permanent file",
+    desc: "Add your systems, warranties, and documents. Your record stays with the property forever — through sales, renovations, and ownership changes.",
   },
-  {
-    stat: "$1,200",
-    description: "average warranty claim — most go unclaimed because homeowners lose paperwork",
-    source: "Consumer Reports",
-    icon: Award,
-  },
+];
+
+const audiences = [
+  { icon: Home, emoji: "🏠", title: "Homeowners", desc: "Track every system, warranty, and record in one place. Know your home before something goes wrong." },
+  { icon: Tractor, emoji: "🌾", title: "Rural Landowners", desc: "Well water, septic, acreage, agricultural records — finally a platform built for properties that aren't in the suburbs." },
+  { icon: Key, emoji: "🔑", title: "Realtors", desc: "Give buyers a complete home file at closing. Listings with documentation sell faster." },
+  { icon: Search, emoji: "🔍", title: "Home Inspectors", desc: "Deliver a live digital home file instead of a PDF. Differentiate your inspection from every competitor." },
+  { icon: BarChart3, emoji: "📊", title: "Investors", desc: "Full permit history, flip analysis, and ROI tracking before you make an offer." },
+];
+
+const insideFeatures = [
+  { icon: FileSearch, title: "Permit History & Public Records", desc: "Real government data from all 50 states. Know what was built, when, and whether it was ever closed." },
+  { icon: CloudRain, title: "Flood Zone & Disaster History", desc: "Live FEMA flood zone data, NOAA storm records, USDA drought monitoring. Know your real risk before it becomes a claim." },
+  { icon: Wrench, title: "Warranty & Appliance Tracking", desc: "Every system, every appliance, every expiration date. Get alerted before warranties run out." },
+  { icon: Shield, title: "Insurance Vault + AI Gap Analyzer", desc: "Upload your policy and find coverage gaps before disaster strikes — not after." },
+  { icon: FileCheck, title: "Home Passport Buyer Report", desc: "A $9.99 shareable report that gives buyers everything they need to know about a home's history." },
+  { icon: Archive, title: "Permanent Archive", desc: "Your home's record never disappears. It survives renovations, sales, and ownership changes." },
 ];
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureKey | null>(null);
 
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
