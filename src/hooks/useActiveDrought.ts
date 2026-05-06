@@ -33,8 +33,20 @@ export function useActiveDrought(address: string | null | undefined): ActiveDrou
     (async () => {
       try {
         // Only call when authenticated — function requires a JWT.
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
+        // Read token directly from storage to avoid contending with the auth lock.
+        const projectRef = "cwfauypkmwqzhfqpdeiw";
+        const raw = typeof window !== "undefined"
+          ? window.localStorage.getItem(`sb-${projectRef}-auth-token`)
+          : null;
+        let hasToken = false;
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            const expiresAt = parsed?.expires_at ?? 0;
+            hasToken = !!parsed?.access_token && expiresAt * 1000 > Date.now();
+          } catch { hasToken = false; }
+        }
+        if (!hasToken) {
           if (!cancelled) {
             setState({ level: "None", description: "No drought", fipsCode: null, isActive: false, loading: false });
           }
