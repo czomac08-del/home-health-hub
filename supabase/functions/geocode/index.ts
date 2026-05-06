@@ -117,12 +117,36 @@ Deno.serve(async (req) => {
 
 
 
+  // ---- Input: address comes ONLY from the `?address=` query string ----
   const url = new URL(req.url);
-  const address = url.searchParams.get("address");
+  const rawAddress = url.searchParams.get("address");
 
-  if (!address) {
+  if (rawAddress === null) {
     return new Response(
-      JSON.stringify({ error: "address param required", matches: [] }),
+      JSON.stringify({
+        error: "Missing required query parameter: 'address'. Example: /geocode?address=123+Main+St",
+        matches: [],
+      }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const address = rawAddress.trim();
+  if (address.length === 0) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' cannot be empty.", matches: [] }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (address.length < 4) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' must be at least 4 characters.", matches: [] }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  if (address.length > 250) {
+    return new Response(
+      JSON.stringify({ error: "Query parameter 'address' must be 250 characters or fewer.", matches: [] }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
