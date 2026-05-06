@@ -111,15 +111,15 @@ Deno.serve(async (req) => {
     );
     const token = authHeader.replace(/^Bearer\s+/i, "");
 
-    const claimsResult = typeof supabase.auth.getClaims === "function"
-      ? await supabase.auth.getClaims(token)
-      : null;
-    if (claimsResult) {
-      const { data, error } = claimsResult;
-      if (error || !data?.claims?.sub) throw new Error("Invalid token claims");
-    } else {
+    let verifiedUserId: string | undefined;
+    if (typeof supabase.auth.getClaims === "function") {
+      const { data } = await supabase.auth.getClaims(token);
+      verifiedUserId = data?.claims?.sub;
+    }
+    if (!verifiedUserId) {
       const { data, error } = await supabase.auth.getUser(token);
       if (error || !data?.user?.id) throw new Error("Invalid token user");
+      verifiedUserId = data.user.id;
     }
   } catch (jwtErr) {
     console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
