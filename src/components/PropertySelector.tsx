@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Home, ChevronDown, Check, Plus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Home, ChevronDown, Check, Plus, X } from "lucide-react";
 import { useActiveProperty } from "@/hooks/useActiveProperty";
+import AddPropertyForm from "@/components/AddPropertyForm";
 
 interface Props {
   /** Compact pill style (header) vs full-width banner style. */
@@ -15,8 +15,8 @@ interface Props {
  */
 const PropertySelector = ({ variant = "pill", className = "" }: Props) => {
   const { activeProperty, properties, setActiveProperty } = useActiveProperty();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +27,6 @@ const PropertySelector = ({ variant = "pill", className = "" }: Props) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const hasMultiple = properties.length > 1;
   const label = activeProperty?.label || "My Home";
   const address = activeProperty?.address || "No property added";
 
@@ -40,10 +39,10 @@ const PropertySelector = ({ variant = "pill", className = "" }: Props) => {
     <div ref={ref} className={`relative ${className}`}>
       <button
         type="button"
-        onClick={() => hasMultiple && setOpen((o) => !o)}
+        onClick={() => setOpen((o) => !o)}
         className={triggerClass}
-        aria-haspopup={hasMultiple ? "listbox" : undefined}
-        aria-expanded={hasMultiple ? open : undefined}
+        aria-haspopup="listbox"
+        aria-expanded={open}
       >
         <Home className="h-3.5 w-3.5 text-primary shrink-0" />
         {variant === "banner" ? (
@@ -57,16 +56,19 @@ const PropertySelector = ({ variant = "pill", className = "" }: Props) => {
             <span className="text-muted-foreground text-xs hidden xl:inline truncate min-w-0">— {address}</span>
           </>
         )}
-        {hasMultiple && <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />}
+        <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
       </button>
 
-      {open && hasMultiple && (
+      {open && (
         <div
           role="listbox"
           className={`absolute z-50 mt-1 rounded-xl border border-border bg-card shadow-lg py-1 min-w-[260px] ${
             variant === "banner" ? "left-0 right-0" : "left-1/2 -translate-x-1/2"
           }`}
         >
+          {properties.length === 0 && (
+            <p className="px-4 py-3 text-xs text-muted-foreground">No properties yet.</p>
+          )}
           {properties.map((p) => {
             const active = p.id === activeProperty?.id;
             return (
@@ -101,12 +103,42 @@ const PropertySelector = ({ variant = "pill", className = "" }: Props) => {
             <button
               onClick={() => {
                 setOpen(false);
-                navigate("/onboarding");
+                setAddOpen(true);
               }}
               className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2 text-primary hover:bg-muted font-medium"
             >
-              <Plus className="h-4 w-4" /> Add Property
+              <Plus className="h-4 w-4" /> Add a Property
             </button>
+          </div>
+        </div>
+      )}
+
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-background/70 backdrop-blur-sm flex justify-end animate-fade-in"
+          onClick={() => setAddOpen(false)}
+        >
+          <div
+            className="w-full max-w-md h-full bg-card border-l border-border shadow-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card z-10">
+              <h2 className="font-heading font-bold text-lg text-foreground">Add a Property</h2>
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-6">
+              <AddPropertyForm
+                onSaved={() => setAddOpen(false)}
+                submitLabel="Add Property"
+              />
+            </div>
           </div>
         </div>
       )}
