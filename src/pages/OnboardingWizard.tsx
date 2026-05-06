@@ -278,7 +278,13 @@ const OnboardingWizard = () => {
 
   /* ── save to DB ── */
   const saveOnboarding = async () => {
-    if (!user || !activeProperty) return;
+    if (!user) return;
+    // If the user skipped address entry, nothing to attach systems to —
+    // just send them to the dashboard, which will show the empty-state CTA.
+    if (!activeProperty) {
+      navigate("/dashboard");
+      return;
+    }
     setSaving(true);
     try {
       const propId = activeProperty.id;
