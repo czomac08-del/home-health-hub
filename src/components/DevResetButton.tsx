@@ -19,6 +19,7 @@ import {
 const DEV_EMAIL = "czomac08@gmail.com";
 
 // Order matters: child rows first, parents last.
+// Tables without a user_id column (record_sources, drought_cache) are skipped — they're global reference tables.
 const DELETE_STEPS: Array<{ table: string; column?: string }> = [
   { table: "system_photos" },
   { table: "system_documents" },
@@ -27,7 +28,6 @@ const DELETE_STEPS: Array<{ table: string; column?: string }> = [
   { table: "verification_events" },
   { table: "property_timeline_events" },
   { table: "property_records", column: "uploaded_by_user_id" },
-  // record_sources is a global reference table — skip (no user_id column)
   { table: "inspections" },
   { table: "insurance_claims" },
   { table: "insurance_documents" },
@@ -52,24 +52,35 @@ const DevResetButton = () => {
     if (!user) return;
     setResetting(true);
 
+    const failed: string[] = [];
+
     for (const step of DELETE_STEPS) {
       const col = step.column ?? "user_id";
       const { error } = await supabase.from(step.table as never).delete().eq(col, user.id);
       if (error) {
-        toast.error(`Failed deleting ${step.table}: ${error.message}`);
-        setResetting(false);
-        return;
+        console.error(`[DevReset] Failed deleting ${step.table}:`, error.message);
+        failed.push(step.table);
       }
     }
 
-    // Reset profile fields that exist on the profiles table.
-    // (onboarding_complete / home_iq_score columns don't exist — skipping.)
-    // Nothing to null on profiles per current schema, so we skip that update.
-
+    // Reset profile-level fields. Note: profiles table currently has no
+    // onboarding_complete / address / home_iq_score columns in this schema,
+    // so there's nothing to null out on profiles itself. Onboarding restart
+    // is driven by the absence of properties.
     await refreshProperties();
-    toast.success("Account wiped. Restarting onboarding…");
-    setResetting(false);
-    navigate("/onboarding");
+
+    if (failed.length === 0) {
+      toast.success("Reset complete. Starting fresh.");
+    } else {
+      toast.error(
+        `Reset complete with errors: ${failed.join(", ")}. Check foreign key constraints on these tables.`,
+      );
+    }
+
+    setTimeout(() => {
+      setResetting(false);
+      navigate("/onboarding");
+    }, 1500);
   };
 
   return (
@@ -85,10 +96,11 @@ const DevResetButton = () => {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reset all property data?</AlertDialogTitle>
+          <AlertDialogTitle>Reset Test Account</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete all property data, systems, records, and onboarding progress for your account.
-            This cannot be undone.
+            This will permanently delete all property data, systems, records, warranties, insurance,
+            documents, and onboarding progress for your account. Your login, subscription, and user
+            role will not be affected. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
