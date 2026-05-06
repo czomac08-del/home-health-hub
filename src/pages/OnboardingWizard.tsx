@@ -677,15 +677,13 @@ const OnboardingWizard = () => {
       {step < TOTAL_STEPS && (
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
-            <>
-              <button onClick={next}
-                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
-                Let's Get Started
-              </button>
-              <button onClick={skip} className="text-sm text-muted-foreground hover:text-foreground transition-colors text-center">
-                Skip setup — I'll do this later
-              </button>
-            </>
+            <button
+              onClick={saveAddressAndContinue}
+              disabled={!selectedMatch || savingAddress}
+              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
+            </button>
           ) : (
             <div className="flex gap-3">
               <button onClick={back}
