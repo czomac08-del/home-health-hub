@@ -287,10 +287,17 @@ serve(async (req) => {
       // Gemini requires PDFs/non-image binaries as base64 data URLs.
       // Fetch the document and convert to a data URL with the correct MIME type.
       let imageUrl = documentUrl;
+      let mimeType = "application/pdf";
+      let base64Data = "";
       try {
         const fileRes = await fetch(documentUrl);
         if (!fileRes.ok) throw new Error(`Failed to fetch document: ${fileRes.status}`);
         const contentType = fileRes.headers.get("content-type") || "application/pdf";
+        mimeType = contentType.split(";")[0].trim() || "application/pdf";
+        // If URL ends with .pdf but server returned generic type, force PDF
+        if (mimeType === "application/octet-stream" && /\.pdf(\?|$)/i.test(documentUrl)) {
+          mimeType = "application/pdf";
+        }
         const buf = new Uint8Array(await fileRes.arrayBuffer());
         // Base64-encode in chunks to avoid call stack overflow on large files
         let binary = "";
@@ -298,8 +305,8 @@ serve(async (req) => {
         for (let i = 0; i < buf.length; i += chunk) {
           binary += String.fromCharCode(...buf.subarray(i, i + chunk));
         }
-        const base64 = btoa(binary);
-        imageUrl = `data:${contentType};base64,${base64}`;
+        base64Data = btoa(binary);
+        imageUrl = `data:${mimeType};base64,${base64Data}`;
       } catch (fetchErr) {
         console.error("Document fetch/encode failed:", fetchErr);
         return new Response(JSON.stringify({ error: "Could not fetch document for AI processing" }), {
@@ -307,12 +314,24 @@ serve(async (req) => {
         });
       }
 
+      const isPdf = mimeType === "application/pdf";
       messages.push({
         role: "user",
-        content: [
-          { type: "text", text: EXTRACTION_PROMPTS[promptKey] },
-          { type: "image_url", image_url: { url: imageUrl } },
-        ],
+        content: isPdf
+          ? [
+              { type: "text", text: EXTRACTION_PROMPTS[promptKey] },
+              {
+                type: "file",
+                file: {
+                  filename: "document.pdf",
+                  file_data: imageUrl,
+                },
+              },
+            ]
+          : [
+              { type: "text", text: EXTRACTION_PROMPTS[promptKey] },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
       });
     }
 
