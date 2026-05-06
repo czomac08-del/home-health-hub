@@ -258,7 +258,7 @@ const OnboardingWizard = () => {
   const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
-    if (step === 1) return !!selectedMatch && !savingAddress;
+    if (step === 1) return !savingAddress; // address is optional
     if (step === 2) return !!data.homeType && !!data.homeAge;
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
@@ -278,7 +278,13 @@ const OnboardingWizard = () => {
 
   /* ── save to DB ── */
   const saveOnboarding = async () => {
-    if (!user || !activeProperty) return;
+    if (!user) return;
+    // If the user skipped address entry, nothing to attach systems to —
+    // just send them to the dashboard, which will show the empty-state CTA.
+    if (!activeProperty) {
+      navigate("/dashboard");
+      return;
+    }
     setSaving(true);
     try {
       const propId = activeProperty.id;
@@ -441,6 +447,20 @@ const OnboardingWizard = () => {
                 <p className="text-xs text-destructive">{geocodeError}</p>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                // Skip address entirely — no save, no scan
+                setSelectedMatch(null);
+                setAddressInput("");
+                setScanSummary(null);
+                setStep(2);
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors self-center"
+            >
+              Skip for now — I'll add my address later
+            </button>
           </div>
         );
 
@@ -693,8 +713,15 @@ const OnboardingWizard = () => {
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
             <button
-              onClick={saveAddressAndContinue}
-              disabled={!selectedMatch || savingAddress}
+              onClick={() => {
+                if (selectedMatch) {
+                  void saveAddressAndContinue();
+                } else {
+                  // No address selected — advance without saving or scanning
+                  setStep(2);
+                }
+              }}
+              disabled={savingAddress}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}

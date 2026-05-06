@@ -2662,6 +2662,7 @@ export type Database = {
           is_active: boolean
           label: string
           profile_id: string | null
+          property_type: string | null
           square_footage: string | null
           state: string | null
           updated_at: string
@@ -2681,6 +2682,7 @@ export type Database = {
           is_active?: boolean
           label?: string
           profile_id?: string | null
+          property_type?: string | null
           square_footage?: string | null
           state?: string | null
           updated_at?: string
@@ -2700,6 +2702,7 @@ export type Database = {
           is_active?: boolean
           label?: string
           profile_id?: string | null
+          property_type?: string | null
           square_footage?: string | null
           state?: string | null
           updated_at?: string
