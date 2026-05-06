@@ -166,25 +166,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   ) {
     return <Navigate to="/legal-onboarding" replace />;
   }
-  // Homeowners without a property must finish address capture before any app screen.
-  const exemptFromOnboarding = ["/onboarding", "/legal-onboarding", "/scanning", "/welcome", "/profile"];
-  if (
-    profile?.role === "homeowner" &&
-    properties.length === 0 &&
-    !exemptFromOnboarding.includes(location.pathname)
-  ) {
-    return <Navigate to="/onboarding" replace />;
-  }
+  // Address is now optional — users without a property go to the dashboard,
+  // which handles its own empty state with an inline "Add My Home" prompt.
   return <>{children}</>;
 };
 
 const RoleRedirect = () => {
-  const { profile, properties } = useAuth();
+  const { profile } = useAuth();
   const location = useLocation();
   const role = profile?.role || "homeowner";
   const params = new URLSearchParams(location.search);
   const isCheckoutReturn = params.get("checkout") === "success";
-  if (role === "homeowner" && properties.length === 0 && !isCheckoutReturn) return <Navigate to="/onboarding" replace />;
+  // Onboarding is shown only on first signup (handled at signup flow), never
+  // forced again on login regardless of whether the user has an address.
+  void isCheckoutReturn;
   const dest: Record<string, string> = {
     homeowner: "/dashboard",
     realtor: "/realtor",
