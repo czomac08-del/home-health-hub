@@ -370,24 +370,78 @@ const OnboardingWizard = () => {
   /* ─────────── render steps ─────────── */
   const renderStep = () => {
     switch (step) {
-      /* STEP 1 — Welcome */
+      /* STEP 1 — Welcome + Address capture */
       case 1:
         return (
-          <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
-            <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Home className="h-8 w-8 text-primary" />
+          <div className="flex flex-col gap-6 animate-fade-in">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <Home className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+              </p>
+              <h1 className="text-2xl font-bold text-foreground">First, let's find your home.</h1>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Enter your property address and we'll pull everything we know about it from public records.
+              </p>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Welcome to ComingHomeIQ{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-sm">
-              Let's set up your home in about 5 minutes. We'll guide you through every step.
-            </p>
-            <div className="flex gap-2 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-2 w-8 rounded-full bg-muted" />
-              ))}
+
+            <div className="w-full relative" ref={wrapperRef}>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+              {searching && (
+                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin z-10" />
+              )}
+              {selectedMatch && !searching && (
+                <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10" />
+              )}
+              <input
+                type="text"
+                value={addressInput}
+                onChange={(e) => handleAddressChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Start typing your address..."
+                className="w-full rounded-xl border border-border bg-card py-4 pl-12 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                autoComplete="off"
+              />
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => selectAddress(s)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-0"
+                    >
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground">{s.matchedAddress}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {selectedMatch && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs text-foreground">
+                  <p className="font-semibold text-primary">Address verified</p>
+                  {selectedMatch.county && (
+                    <p className="text-muted-foreground mt-0.5">
+                      {selectedMatch.county}{selectedMatch.state ? `, ${selectedMatch.state}` : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {geocodeError && !selectedMatch && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive">{geocodeError}</p>
+              </div>
+            )}
           </div>
         );
 
