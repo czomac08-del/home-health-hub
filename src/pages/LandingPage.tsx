@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { MapPin, Shield, Check, Archive, FileText, Home, Tractor, Key, Search, BarChart3, FileSearch, CloudRain, Wrench, FileCheck, Heart } from "lucide-react";
+import { MapPin, Shield, Check, Archive, Home, Tractor, Key, Search, BarChart3, FileSearch, CloudRain, Wrench, FileCheck, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
