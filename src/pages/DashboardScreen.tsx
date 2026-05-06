@@ -3,7 +3,7 @@ import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
 import CertificationCard from "@/components/CertificationCard";
-import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench, ClipboardList } from "lucide-react";
+import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench, ClipboardList, HousePlus } from "lucide-react";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import UploadPromptCard from "@/components/UploadPromptCard";
 import PrivacyBadge from "@/components/PrivacyBadge";
 import AddPropertyForm from "@/components/AddPropertyForm";
-import { HomePlus } from "@/components/icons/HomePlus";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
 import HomeStoryTimeline from "@/components/HomeStoryTimeline";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
@@ -211,7 +210,7 @@ const DashboardScreen = () => {
           <div className="flex flex-col items-center justify-center py-16">
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 flex flex-col items-center text-center gap-4 shadow-sm">
               <div className="h-16 w-16 rounded-2xl bg-primary/15 flex items-center justify-center">
-                <HomePlus className="h-8 w-8 text-primary" />
+                <HousePlus className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-2xl font-heading font-bold text-foreground">Add your home to get started</h2>
               <p className="text-sm text-muted-foreground">
