@@ -341,7 +341,35 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      // 400-class: bad input (e.g. empty PDF, unreadable file). Surface a
+      // user-friendly message and DO NOT throw — that would 500 the call
+      // and blank-screen the client.
+      let providerMsg = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        const raw = parsed?.error?.metadata?.raw;
+        if (raw) {
+          const inner = JSON.parse(raw);
+          providerMsg = inner?.error?.message || "";
+        }
+        providerMsg = providerMsg || parsed?.error?.message || "";
+      } catch { /* ignore parse errors */ }
+      const friendly = response.status >= 400 && response.status < 500
+        ? (providerMsg
+            ? `We couldn't read this document: ${providerMsg}. Try a different file or re-scan it.`
+            : "We couldn't read this document. Try a different file or re-scan it.")
+        : "AI service is temporarily unavailable. Please try again.";
+      return new Response(JSON.stringify({
+        error: friendly,
+        fallback: response.status >= 500,
+        extracted: {},
+        confidence: "low",
+      }), {
+        // Keep client status non-2xx for 4xx (it's a real client problem),
+        // but wrap server errors as 200+fallback so the UI doesn't crash.
+        status: response.status >= 500 ? 200 : 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const aiResponse = await response.json();
