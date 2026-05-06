@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import UploadPromptCard from "@/components/UploadPromptCard";
 import PrivacyBadge from "@/components/PrivacyBadge";
+import AddPropertyForm from "@/components/AddPropertyForm";
+import { HomePlus } from "@/components/icons/HomePlus";
 import UtilityContactsCard from "@/components/UtilityContactsCard";
 import HomeStoryTimeline from "@/components/HomeStoryTimeline";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
@@ -150,6 +152,8 @@ const DashboardScreen = () => {
 
   const userName = profile?.full_name?.split(" ")[0] || "there";
   const address = activeProperty?.address || "No property added";
+  const hasNoProperty = properties.length === 0;
+  const [showAddInline, setShowAddInline] = useState(false);
 
   return (
     <div className="min-h-screen pb-24 lg:pb-8">
@@ -201,6 +205,35 @@ const DashboardScreen = () => {
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
         <InspectionNotificationBanner variant="homeowner" />
         <RecentUploadBanner />
+
+        {hasNoProperty ? (
+          /* Empty state — no property yet */
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 flex flex-col items-center text-center gap-4 shadow-sm">
+              <div className="h-16 w-16 rounded-2xl bg-primary/15 flex items-center justify-center">
+                <HomePlus className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-heading font-bold text-foreground">Add your home to get started</h2>
+              <p className="text-sm text-muted-foreground">
+                Enter your address and we'll pull your home's permit history, flood zone, warranties,
+                and maintenance records from public records.
+              </p>
+              {!showAddInline ? (
+                <button
+                  onClick={() => setShowAddInline(true)}
+                  className="w-full rounded-xl bg-primary py-3 px-6 font-semibold text-primary-foreground hover:opacity-90 transition-opacity mt-2"
+                >
+                  Add My Home
+                </button>
+              ) : (
+                <div className="w-full text-left mt-2">
+                  <AddPropertyForm onSaved={() => setShowAddInline(false)} submitLabel="Add My Home" />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="mb-4">
           <DroughtAlertBanner />
         </div>
@@ -340,6 +373,8 @@ const DashboardScreen = () => {
             <PendingRewardsCard />
           </div>
         </div>
+        </>
+        )}
       </div>
       <HomeAIChat />
     </div>
