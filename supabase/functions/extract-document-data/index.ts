@@ -227,15 +227,24 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   try {
-    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.45.0")).createClient(
+    const __sb = (await import("https://esm.sh/@supabase/supabase-js@2.75.1")).createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: __auth } } },
     );
     const __t = __auth.replace(/^Bearer\s+/i, "");
-    const { data: __c, error: __e } = await __sb.auth.getClaims(__t);
-    if (__e || !__c?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Try getClaims first (fast, JWT-only). Fall back to getUser if the
+    // signing key isn't available locally (ES256 tokens, etc.).
+    let __sub: string | null = null;
+    try {
+      const { data: __c } = await __sb.auth.getClaims(__t);
+      __sub = __c?.claims?.sub ?? null;
+    } catch { /* fall through to getUser */ }
+    if (!__sub) {
+      const { data: __u, error: __ue } = await __sb.auth.getUser(__t);
+      if (__ue || !__u?.user?.id) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
   } catch (_jwtErr) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
