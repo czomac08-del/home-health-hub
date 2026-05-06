@@ -2652,6 +2652,9 @@ export type Database = {
       properties: {
         Row: {
           address: string
+          city: string | null
+          county: string | null
+          county_fips: string | null
           created_at: string
           data_status: Database["public"]["Enums"]["data_status"]
           health_score: number | null
@@ -2660,12 +2663,17 @@ export type Database = {
           label: string
           profile_id: string | null
           square_footage: string | null
+          state: string | null
           updated_at: string
           user_id: string
           year_built: string | null
+          zip: string | null
         }
         Insert: {
           address: string
+          city?: string | null
+          county?: string | null
+          county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
           health_score?: number | null
@@ -2674,12 +2682,17 @@ export type Database = {
           label?: string
           profile_id?: string | null
           square_footage?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
           year_built?: string | null
+          zip?: string | null
         }
         Update: {
           address?: string
+          city?: string | null
+          county?: string | null
+          county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
           health_score?: number | null
@@ -2688,9 +2701,11 @@ export type Database = {
           label?: string
           profile_id?: string | null
           square_footage?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
           year_built?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
