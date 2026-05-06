@@ -391,8 +391,35 @@ serve(async (req) => {
       });
     }
 
-    const aiResponse = await response.json();
+    const rawText = await response.text();
+    let aiResponse: any = {};
+    try {
+      aiResponse = rawText ? JSON.parse(rawText) : {};
+    } catch (parseErr) {
+      console.error("AI gateway returned non-JSON body:", rawText?.slice(0, 500));
+      return new Response(JSON.stringify({
+        error: "We couldn't read this document. Try a different file or re-scan it.",
+        fallback: true,
+        extracted: {},
+        confidence: "low",
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const content = aiResponse.choices?.[0]?.message?.content || "";
+    if (!content || !content.trim()) {
+      console.error("AI gateway returned empty content. Full response:", JSON.stringify(aiResponse).slice(0, 500));
+      return new Response(JSON.stringify({
+        error: "We couldn't extract data from this document. Try a different file or re-scan it.",
+        fallback: true,
+        extracted: {},
+        confidence: "low",
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     // Parse JSON from response
     let result: ExtractionResult;
