@@ -642,6 +642,22 @@ const OnboardingWizard = () => {
               <span className="text-foreground font-medium">{activeProperty?.address || "your address"}</span> is set up and ready.
             </p>
 
+            {scanSummary && scanSummary.sources > 0 && (
+              <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left">
+                <p className="text-sm font-semibold text-primary mb-2">
+                  We found your home in {scanSummary.sources} public source{scanSummary.sources === 1 ? "" : "s"}.
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Here's what we know so far:</p>
+                <ul className="space-y-1">
+                  {scanSummary.details.map((d, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs text-foreground">
+                      <Check className="h-3 w-3 text-primary shrink-0" /> {d}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button onClick={() => navigate("/dashboard")}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
               View My Dashboard
