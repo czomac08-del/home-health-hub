@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart, Database, MapPin, Globe, DollarSign, AlertTriangle, FileWarning, Award, ExternalLink } from "lucide-react";
+import { Home, Shield, Check, Search, Briefcase, ClipboardList, Wrench, Zap, Users, FileText, TrendingUp, Heart, AlertTriangle, FileWarning, Award, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import SEO from "@/components/SEO";
@@ -8,43 +8,19 @@ import RoleDetailModal, { type RoleKey } from "@/components/RoleDetailModal";
 import FeatureDetailModal, { type FeatureKey } from "@/components/FeatureDetailModal";
 import SavingsCalculator from "@/components/SavingsCalculator";
 
-// Combined SoftwareApplication + Organization schema for the homepage.
+// SoftwareApplication schema for the homepage.
 const landingJsonLd = {
   "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "ComingHomeIQ",
-      "description": "The most complete home intelligence platform. Track every system, appliance, permit, and inspection record — all in one place.",
-      "url": "https://cominghomeiq.com",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "name": "Homeowner Pro",
-        "price": "9.99",
-        "priceCurrency": "USD",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "price": "9.99",
-          "priceCurrency": "USD",
-          "unitText": "MONTH",
-        },
-      },
-    },
-    {
-      "@type": "Organization",
-      "name": "ComingHomeIQ",
-      "url": "https://cominghomeiq.com",
-      "logo": "https://cominghomeiq.com/og-image.png",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "email": "support@cominghomeiq.com",
-        "availableLanguage": ["English"],
-      },
-    },
-  ],
+  "@type": "SoftwareApplication",
+  "name": "ComingHomeIQ",
+  "description": "The Carfax for Your Home — complete property intelligence for homeowners",
+  "applicationCategory": "HomeAndGarden",
+  "operatingSystem": "Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+  },
 };
 
 const tiers = [
@@ -61,11 +37,12 @@ const roles = [
   { key: "investor", icon: TrendingUp, title: "Real Estate Investors", desc: "Track flips, manage renovation budgets, calculate ROI, and generate ComingHomeIQs for sale.", accent: "border-t-4 border-t-warning" },
 ];
 
-const platformStats = [
-  { value: "16", label: "Home System Categories Tracked", icon: Database },
-  { value: "50", label: "States Covered with Records Intelligence", icon: MapPin },
-  { value: "9+", label: "Live Government Data Sources Connected", icon: Globe },
-  { value: "$0", label: "To Discover Your Home's Public Records", icon: DollarSign },
+const trustSources = [
+  "FEMA Flood Data",
+  "NOAA Storm Records",
+  "EPA Environmental",
+  "USDA Drought Monitor",
+  "Census Bureau",
 ];
 
 const industryStats = [
@@ -108,8 +85,8 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="ComingHomeIQ | The Carfax for Your Home"
-        description="The most complete home intelligence platform. Track every system, appliance, permit, and inspection record — all in one place."
+        title="ComingHomeIQ — The Carfax for Your Home"
+        description="Know everything about your home — permits, flood zone, warranties, maintenance records, and real risk scores. Free for homeowners."
         path="/"
         jsonLd={landingJsonLd}
       />
@@ -139,24 +116,63 @@ const LandingPage = () => {
       <section className="relative max-w-5xl mx-auto px-6 pt-16 lg:pt-24 pb-12 lg:pb-16 text-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="relative">
-          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
-            <Zap className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">The CarFax for Your Home</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-foreground leading-tight mb-4">
-            Your Home's Complete<br /><span className="text-primary">IQ</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-black text-foreground leading-tight mb-5 max-w-4xl mx-auto">
+            You have a Carfax for your car. <span className="text-primary">Why not your home?</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            The Carfax for homes — track every system, verify every record, and transfer everything when you sell.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10">
+            ComingHomeIQ pulls your home's permit history, flood zone, appliance records, and maintenance history — everything in one place, forever.
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <button onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-[hsl(24_91%_60%)] hover:-translate-y-[2px] transition-all duration-200 glow-orange-strong text-sm">
-              Scan My Home
-            </button>
-            <button onClick={() => navigate("/pricing")} className="bg-secondary text-secondary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-[hsl(224_73%_40%)] hover:-translate-y-[2px] transition-all duration-200 text-sm">
-              View Pricing
-            </button>
+
+          {/* Three question cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto mb-8 text-left">
+            {[
+              "If your home flooded tonight, could you prove to your insurance company exactly what you own?",
+              "If a contractor told you your HVAC is 18 years old, would you know if that was true?",
+              "When you bought your home, did you know about every permit ever pulled on it?",
+            ].map((q, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border-l-4 border-l-primary bg-secondary text-secondary-foreground p-5 shadow-md"
+              >
+                <p className="text-sm md:text-base font-heading font-bold leading-snug">{q}</p>
+              </div>
+            ))}
           </div>
+
+          <p className="text-base md:text-lg text-foreground font-heading font-bold max-w-2xl mx-auto mb-8">
+            Most homeowners answer no to all three.{" "}
+            <span className="text-primary">ComingHomeIQ changes that.</span>
+          </p>
+
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={() => navigate("/auth")}
+              className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-heading font-extrabold hover:bg-[hsl(24_91%_60%)] hover:-translate-y-[2px] transition-all duration-200 glow-orange-strong text-sm"
+            >
+              Check My Home — It's Free
+            </button>
+            <p className="text-xs text-muted-foreground">
+              No credit card. No sales calls. Independent — not owned by an insurance company.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust bar */}
+      <section className="max-w-4xl mx-auto px-6 pb-12">
+        <p className="text-xs text-muted-foreground text-center mb-3 uppercase tracking-wider">
+          Powered by real government data
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-xs text-muted-foreground">
+          {trustSources.map((src, i) => (
+            <span key={src} className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-primary" />
+                {src}
+              </span>
+              {i < trustSources.length - 1 && <span className="text-border">|</span>}
+            </span>
+          ))}
         </div>
       </section>
 
@@ -183,20 +199,6 @@ const LandingPage = () => {
       {/* Savings calculator — primary ROI conversion tool */}
       <section className="max-w-3xl mx-auto px-6 pb-16">
         <SavingsCalculator />
-      </section>
-
-      {/* Platform Stats — real, verifiable numbers */}
-      <section className="max-w-4xl mx-auto px-6 pb-16">
-        <h2 className="text-lg font-heading font-bold text-foreground text-center mb-6">What's Built and Ready</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {platformStats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-border bg-card p-5 text-center">
-              <s.icon className="h-5 w-5 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-heading font-black text-primary">{s.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{s.label}</p>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* Industry Stats — sourced, honest */}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Code2, Mail, ArrowRight, Zap, Shield, Database, Webhook } from "lucide-react";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 const ApiDocsPage = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +14,11 @@ const ApiDocsPage = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="ComingHomeIQ API — Verified Home Data for Developers"
+        description="Integrate verified home data into your platform. Property health scores, system records, maintenance history, and inspection reports via REST API."
+        path="/api-docs"
+      />
       <div className="max-w-3xl mx-auto px-6 py-16 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
           <Code2 className="h-3.5 w-3.5 text-primary" />
