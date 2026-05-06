@@ -707,8 +707,15 @@ const OnboardingWizard = () => {
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
             <button
-              onClick={saveAddressAndContinue}
-              disabled={!selectedMatch || savingAddress}
+              onClick={() => {
+                if (selectedMatch) {
+                  void saveAddressAndContinue();
+                } else {
+                  // No address selected — advance without saving or scanning
+                  setStep(2);
+                }
+              }}
+              disabled={savingAddress}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
