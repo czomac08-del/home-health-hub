@@ -32,6 +32,14 @@ export function useActiveDrought(address: string | null | undefined): ActiveDrou
     let cancelled = false;
     (async () => {
       try {
+        // Only call when authenticated — function requires a JWT.
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          if (!cancelled) {
+            setState({ level: "None", description: "No drought", fipsCode: null, isActive: false, loading: false });
+          }
+          return;
+        }
         const { data, error } = await supabase.functions.invoke("drought-status", {
           body: { address },
         });
