@@ -162,12 +162,12 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      if (!session?.access_token) throw new Error("not authenticated");
       const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      const json = await res.json();
-      const matches: AddressMatch[] = json?.matches || [];
+      const payload = await res.json();
+      const matches: AddressMatch[] = payload?.matches || [];
       setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
       if (matches.length === 0) {
@@ -222,9 +222,9 @@ const OnboardingWizard = () => {
       void (async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          if (!session?.access_token) return;
           const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${session.access_token}` },
           });
           if (!res.ok) return;
           const json = await res.json();
