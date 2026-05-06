@@ -161,13 +161,21 @@ const OnboardingWizard = () => {
     setSearching(true);
     setGeocodeError(null);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const { data: json, error } = await supabase.functions.invoke("geocode", {
+        method: "GET",
+        headers: { "x-address": q },
       });
-      const json = await res.json();
-      const matches: AddressMatch[] = json?.matches || [];
+      // Edge function reads from query string — fall back to direct fetch with session token
+      let payload: any = json;
+      if (error || !payload) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error("not authenticated");
+        const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        payload = await res.json();
+      }
+      const matches: AddressMatch[] = payload?.matches || [];
       setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
       if (matches.length === 0) {
@@ -222,9 +230,9 @@ const OnboardingWizard = () => {
       void (async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          if (!session?.access_token) return;
           const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${session.access_token}` },
           });
           if (!res.ok) return;
           const json = await res.json();
