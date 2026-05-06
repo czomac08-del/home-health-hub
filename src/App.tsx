@@ -115,7 +115,7 @@ const uploadFabRoutes = [
 ];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile, properties } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
   const [ackState, setAckState] = useState<"loading" | "ok" | "stale">("loading");
   const location = useLocation();
@@ -165,6 +165,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     location.pathname !== "/legal-onboarding"
   ) {
     return <Navigate to="/legal-onboarding" replace />;
+  }
+  // Homeowners without a property must finish address capture before any app screen.
+  const exemptFromOnboarding = ["/onboarding", "/legal-onboarding", "/scanning", "/welcome", "/profile"];
+  if (
+    profile?.role === "homeowner" &&
+    properties.length === 0 &&
+    !exemptFromOnboarding.includes(location.pathname)
+  ) {
+    return <Navigate to="/onboarding" replace />;
   }
   return <>{children}</>;
 };

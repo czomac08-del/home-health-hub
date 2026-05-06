@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, Check, Sparkles, PartyPopper,
   Car, CircleDot, ThermometerSun, Fan, AirVent, Heater,
   Fuel, PlugZap, Droplet, Truck, Store, Users,
+  Search, MapPin, Loader2, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
@@ -16,6 +17,32 @@ import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
 import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
 const TOTAL_STEPS = 8;
+
+const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
+const RENTCAST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup`;
+
+interface AddressMatch {
+  matchedAddress: string;
+  coordinates: { x: number; y: number };
+  county?: string | null;
+  countyFips?: string | null;
+  state?: string | null;
+  stateFips?: string | null;
+}
+
+/** Parse "123 Main St, City, ST 12345" into pieces. */
+function parseMatchedAddress(matched: string): { street: string; city: string; state: string; zip: string } {
+  const parts = matched.split(",").map(s => s.trim()).filter(Boolean);
+  // Expected: ["123 MAIN ST", "CITY", "ST", "12345"] OR ["...", "CITY", "ST 12345"]
+  let street = parts[0] || "";
+  let city = parts[1] || "";
+  let state = "";
+  let zip = "";
+  const tail = parts.slice(2).join(" ");
+  const m = tail.match(/\b([A-Z]{2})\b\s*(\d{5}(?:-\d{4})?)?/);
+  if (m) { state = m[1]; zip = m[2] || ""; }
+  return { street, city, state, zip };
+}
 
 interface WizardData {
   homeType: string;
@@ -100,6 +127,129 @@ const OnboardingWizard = () => {
   const navigate = useNavigate();
   const { user, profile, properties, activeProperty, refreshProperties } = useAuth();
 
+  // ── Step 1: address capture state ──
+  const [addressInput, setAddressInput] = useState("");
+  const [suggestions, setSuggestions] = useState<AddressMatch[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<AddressMatch | null>(null);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // If the user already has a property with an address, skip Step 1.
+  useEffect(() => {
+    if (step === 1 && properties.length > 0 && properties[0].address) {
+      setStep(2);
+    }
+  }, [step, properties]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const fetchSuggestions = async (q: string) => {
+    if (q.trim().length < 4) { setSuggestions([]); return; }
+    setSearching(true);
+    setGeocodeError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      const matches: AddressMatch[] = json?.matches || [];
+      setSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+      if (matches.length === 0) {
+        setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+      }
+    } catch {
+      setSuggestions([]);
+      setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAddressChange = (v: string) => {
+    setAddressInput(v);
+    setSelectedMatch(null);
+    setGeocodeError(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(v), 400);
+  };
+
+  const selectAddress = (m: AddressMatch) => {
+    setSelectedMatch(m);
+    setAddressInput(m.matchedAddress);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setGeocodeError(null);
+  };
+
+  /** Save the address to properties and kick off background scan. */
+  const saveAddressAndContinue = async () => {
+    if (!user || !selectedMatch) return;
+    setSavingAddress(true);
+    try {
+      const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
+      const insertRow = {
+        user_id: user.id,
+        address: selectedMatch.matchedAddress,
+        label: "Primary Residence",
+        is_active: true,
+        city: city || null,
+        state: selectedMatch.state || state || null,
+        zip: zip || null,
+        county: selectedMatch.county || null,
+        county_fips: selectedMatch.countyFips || null,
+      };
+      const { error } = await supabase.from("properties").insert(insertRow as any);
+      if (error) throw error;
+      await refreshProperties();
+
+      // Fire background scan (RentCast). Result cached in state for final step.
+      void (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return;
+          const json = await res.json();
+          const found: string[] = [];
+          if (json?.found) found.push("Property records");
+          if (selectedMatch.countyFips) {
+            found.push("FEMA disaster history");
+            found.push("NOAA storm records");
+            found.push("USDA drought monitor");
+          }
+          if (selectedMatch.coordinates) found.push("EPA environmental data");
+          setScanSummary({ sources: found.length, details: found });
+        } catch {
+          // Silent — scan is best-effort
+        }
+      })();
+
+      setStep(2);
+    } catch (e) {
+      toast.error("Could not save your address. Please try again.");
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
   const update = useCallback(<K extends keyof WizardData>(key: K, value: WizardData[K]) => {
     setData(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -108,6 +258,7 @@ const OnboardingWizard = () => {
   const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
 
   const canNext = (): boolean => {
+    if (step === 1) return !!selectedMatch && !savingAddress;
     if (step === 2) return !!data.homeType && !!data.homeAge;
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
@@ -211,7 +362,6 @@ const OnboardingWizard = () => {
     setStep(s => Math.min(s + 1, TOTAL_STEPS));
   };
   const back = () => setStep(s => Math.max(s - 1, 1));
-  const skip = () => navigate("/dashboard");
 
   const todos = getTodos();
   const [checkedTodos, setCheckedTodos] = useState<Set<number>>(new Set());
@@ -219,24 +369,78 @@ const OnboardingWizard = () => {
   /* ─────────── render steps ─────────── */
   const renderStep = () => {
     switch (step) {
-      /* STEP 1 — Welcome */
+      /* STEP 1 — Welcome + Address capture */
       case 1:
         return (
-          <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
-            <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Home className="h-8 w-8 text-primary" />
+          <div className="flex flex-col gap-6 animate-fade-in">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <Home className="h-7 w-7 text-primary" />
+              </div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+              </p>
+              <h1 className="text-2xl font-bold text-foreground">First, let's find your home.</h1>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Enter your property address and we'll pull everything we know about it from public records.
+              </p>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Welcome to ComingHomeIQ{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}!
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-sm">
-              Let's set up your home in about 5 minutes. We'll guide you through every step.
-            </p>
-            <div className="flex gap-2 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-2 w-8 rounded-full bg-muted" />
-              ))}
+
+            <div className="w-full relative" ref={wrapperRef}>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground z-10" />
+              {searching && (
+                <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin z-10" />
+              )}
+              {selectedMatch && !searching && (
+                <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10" />
+              )}
+              <input
+                type="text"
+                value={addressInput}
+                onChange={(e) => handleAddressChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Start typing your address..."
+                className="w-full rounded-xl border border-border bg-card py-4 pl-12 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                autoComplete="off"
+              />
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => selectAddress(s)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-0"
+                    >
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground">{s.matchedAddress}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {selectedMatch && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs text-foreground">
+                  <p className="font-semibold text-primary">Address verified</p>
+                  {selectedMatch.county && (
+                    <p className="text-muted-foreground mt-0.5">
+                      {selectedMatch.county}{selectedMatch.state ? `, ${selectedMatch.state}` : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {geocodeError && !selectedMatch && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive">{geocodeError}</p>
+              </div>
+            )}
           </div>
         );
 
@@ -437,6 +641,22 @@ const OnboardingWizard = () => {
               <span className="text-foreground font-medium">{activeProperty?.address || "your address"}</span> is set up and ready.
             </p>
 
+            {scanSummary && scanSummary.sources > 0 && (
+              <div className="w-full rounded-xl border border-primary/30 bg-primary/5 p-4 text-left">
+                <p className="text-sm font-semibold text-primary mb-2">
+                  We found your home in {scanSummary.sources} public source{scanSummary.sources === 1 ? "" : "s"}.
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Here's what we know so far:</p>
+                <ul className="space-y-1">
+                  {scanSummary.details.map((d, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs text-foreground">
+                      <Check className="h-3 w-3 text-primary shrink-0" /> {d}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <button onClick={() => navigate("/dashboard")}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
               View My Dashboard
@@ -472,15 +692,13 @@ const OnboardingWizard = () => {
       {step < TOTAL_STEPS && (
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
-            <>
-              <button onClick={next}
-                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
-                Let's Get Started
-              </button>
-              <button onClick={skip} className="text-sm text-muted-foreground hover:text-foreground transition-colors text-center">
-                Skip setup — I'll do this later
-              </button>
-            </>
+            <button
+              onClick={saveAddressAndContinue}
+              disabled={!selectedMatch || savingAddress}
+              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
+            </button>
           ) : (
             <div className="flex gap-3">
               <button onClick={back}
