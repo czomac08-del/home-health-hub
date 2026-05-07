@@ -3,6 +3,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function isKnownBearerToken(authHeader: string): Promise<boolean> {
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const knownTokens = [
+    Deno.env.get("SUPABASE_ANON_KEY"),
+    Deno.env.get("SUPABASE_PUBLISHABLE_KEY"),
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  ].filter(Boolean);
+
+  if (knownTokens.includes(token)) return true;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !supabaseAnonKey) return false;
+
+  const supabase = (await import("https://esm.sh/@supabase/supabase-js@2.75.1")).createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+
+  if (typeof supabase.auth.getClaims === "function") {
+    const { data } = await supabase.auth.getClaims(token);
+    if (data?.claims?.sub) return true;
+  }
+
+  const { data, error } = await supabase.auth.getUser(token);
+  return !error && Boolean(data?.user?.id);
+}
+
 const STATE_FIPS_TO_ABBR: Record<string, string> = {
   "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO",
   "09": "CT", "10": "DE", "11": "DC", "12": "FL", "13": "GA", "15": "HI",
@@ -94,38 +123,22 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // ---- JWT enforcement (security hardening) ----
+  // ---- Optional auth validation ----
+  // Public address lookup is used before login and during onboarding. If a
+  // bearer token is supplied, accept known app/backend tokens or a real user JWT.
   const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
-  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!supabaseUrl || !supabaseAnonKey) throw new Error("Missing Supabase environment");
-
-    const supabase = (await import("https://esm.sh/@supabase/supabase-js@2.75.1")).createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-
-    let verifiedUserId: string | undefined;
-    if (typeof supabase.auth.getClaims === "function") {
-      const { data } = await supabase.auth.getClaims(token);
-      verifiedUserId = data?.claims?.sub;
+  if (authHeader) {
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (!verifiedUserId) {
-      const { data, error } = await supabase.auth.getUser(token);
-      if (error || !data?.user?.id) throw new Error("Invalid token user");
-      verifiedUserId = data.user.id;
+    try {
+      if (!(await isKnownBearerToken(authHeader))) throw new Error("Invalid bearer token");
+    } catch (jwtErr) {
+      console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-  } catch (jwtErr) {
-    console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-  // ---- end JWT enforcement ----
+  // ---- end optional auth validation ----
 
 
 
