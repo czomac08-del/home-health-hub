@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
+import HomeAIChat from "@/components/HomeAIChat";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import ClosedDealLogger from "@/components/ClosedDealLogger";
@@ -1027,6 +1028,7 @@ const InvestorDashboard = () => {
         <ComplianceDisclaimer variant="financial" />
         <ComplianceDisclaimer variant="real-estate" />
       </div>
+      <HomeAIChat />
     </div>
   );
 };
