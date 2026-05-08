@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +22,7 @@ import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import SaveButtonMessage from "@/components/SaveButtonMessage";
 import RefreshButton from "@/components/RefreshButton";
 import SystemApplicabilityGate from "@/components/SystemApplicabilityGate";
+import SystemInstanceSwitcher, { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
 import type { RefreshScope } from "@/hooks/useDataRefresh";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
@@ -57,10 +58,16 @@ const AiBadge = () => (
 
 const SystemConfigScreen = () => {
   const { name } = useParams<{ name: string }>();
+  const [searchParams] = useSearchParams();
+  const instanceParam = searchParams.get("instance");
   const navigate = useNavigate();
   const displayName = decodeURIComponent(name || "");
   const { user, activeProperty } = useAuth();
   const aiData = useMemo(() => getAiData(displayName), [displayName]);
+  const supportsMultiInstance = MULTI_INSTANCE_SYSTEM_NAMES.has(displayName);
+  const [instanceName, setInstanceName] = useState<string>("");
+  const [instanceZoneId, setInstanceZoneId] = useState<string | null>(null);
+  const [switcherKey, setSwitcherKey] = useState(0);
 
   // Track which fields were filled by AI and confirmed
   const [aiFilledKeys, setAiFilledKeys] = useState<Set<string>>(new Set());
@@ -401,23 +408,39 @@ const SystemConfigScreen = () => {
   });
 
   const saveSystemDetails = async (overrideSpecs: Record<string, string | boolean | string[]> = {}) => {
-    const payload = buildSystemPayload(overrideSpecs);
+    const basePayload = buildSystemPayload(overrideSpecs);
+    const payload: any = {
+      ...basePayload,
+      instance_name: instanceName || basePayload.system_name,
+      zone_id: instanceZoneId,
+    };
     console.info("[SystemConfig] system_details write payload", { table: "system_details", property_id: payload.property_id, system_name: payload.system_name, payload });
 
-    const { data: existing, error: lookupErr } = await supabase
-      .from("system_details")
-      .select("id, property_id, user_id, system_name")
-      .eq("property_id", activeProperty!.id)
-      .eq("system_name", displayName)
-      .maybeSingle();
-    console.info("[SystemConfig] system_details lookup response", { queried_property_id: activeProperty!.id, data: existing, error: lookupErr });
-    if (lookupErr) throw lookupErr;
+    let existing: { id: string } | null = null;
+    if (systemDetailId) {
+      existing = { id: systemDetailId };
+    } else if (instanceParam) {
+      existing = { id: instanceParam };
+    } else {
+      const { data, error: lookupErr } = await supabase
+        .from("system_details")
+        .select("id")
+        .eq("property_id", activeProperty!.id)
+        .eq("system_name", displayName)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      console.info("[SystemConfig] system_details lookup response", { queried_property_id: activeProperty!.id, data, error: lookupErr });
+      if (lookupErr) throw lookupErr;
+      existing = data ? { id: data.id } : null;
+    }
 
     if (existing) {
       const response = await supabase.from("system_details").update(payload).eq("id", existing.id).select("id, property_id, user_id, system_name").single();
       console.info("[SystemConfig] system_details update response", response);
       if (response.error) throw response.error;
       setSystemDetailId(response.data.id);
+      setSwitcherKey((k) => k + 1);
       return response.data.id;
     }
 
@@ -425,6 +448,7 @@ const SystemConfigScreen = () => {
     console.info("[SystemConfig] system_details insert response", response);
     if (response.error) throw response.error;
     setSystemDetailId(response.data.id);
+    setSwitcherKey((k) => k + 1);
     return response.data.id;
   };
 
@@ -489,14 +513,29 @@ const SystemConfigScreen = () => {
   useEffect(() => {
     if (!user || !activeProperty) return;
     const load = async () => {
-      const { data } = await supabase
-        .from("system_details")
-        .select("*")
-        .eq("property_id", activeProperty.id)
-        .eq("system_name", displayName)
-        .maybeSingle();
+      let data: any = null;
+      if (instanceParam) {
+        const res = await supabase
+          .from("system_details")
+          .select("*")
+          .eq("id", instanceParam)
+          .maybeSingle();
+        data = res.data;
+      } else {
+        const res = await supabase
+          .from("system_details")
+          .select("*")
+          .eq("property_id", activeProperty.id)
+          .eq("system_name", displayName)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        data = res.data;
+      }
       if (!data) return;
       setSystemDetailId(data.id);
+      setInstanceName((data as any).instance_name || displayName);
+      setInstanceZoneId((data as any).zone_id || null);
       if (data.brand) setBrand(data.brand);
       if (data.model) setModel(data.model);
       if (data.serial_number) setSerial(data.serial_number);
@@ -545,7 +584,7 @@ const SystemConfigScreen = () => {
     };
     load();
     if (usesApplicabilityGate) setGateLoaded(true);
-  }, [user, activeProperty, displayName]);
+  }, [user, activeProperty, displayName, instanceParam]);
 
   // Mark the gate as loaded even if there's no existing row (so the prompt can render).
   useEffect(() => {
@@ -599,10 +638,23 @@ const SystemConfigScreen = () => {
       </button>
 
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          {supportsMultiInstance && instanceName && instanceName !== displayName
+            ? `${displayName} — ${instanceName}`
+            : displayName}
+        </h1>
         <RefreshButton scope={(displayName.toLowerCase().includes("well") ? "well" : displayName.toLowerCase().includes("septic") || displayName.toLowerCase().includes("sewer") ? "septic" : displayName.toLowerCase().includes("hvac") ? "hvac" : displayName.toLowerCase().includes("roof") ? "roof" : displayName.toLowerCase().includes("electrical") ? "electrical" : displayName.toLowerCase().includes("plumbing") ? "plumbing" : displayName.toLowerCase().includes("water heater") ? "water_heater" : "full") as RefreshScope} variant="compact" />
       </div>
       <p className="text-xs text-muted-foreground mb-4">Add details about this system to your passport.</p>
+
+      {activeProperty && supportsMultiInstance && (
+        <SystemInstanceSwitcher
+          propertyId={activeProperty.id}
+          systemName={displayName}
+          activeInstanceId={systemDetailId || instanceParam}
+          reloadKey={switcherKey}
+        />
+      )}
 
       {/* Progress Bar — always visible */}
       <div className="mb-4">
