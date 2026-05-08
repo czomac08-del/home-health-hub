@@ -110,6 +110,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Update email_preferences.last_seen_at at most once per hour to power the
+  // re-engagement detector. Idempotent — safe to call on every session refresh.
+  const touchLastSeen = async (userId: string) => {
+    try {
+      const lsKey = `last_seen_touched_${userId}`;
+      const last = Number(localStorage.getItem(lsKey) || 0);
+      if (Date.now() - last < 60 * 60 * 1000) return;
+      localStorage.setItem(lsKey, String(Date.now()));
+      // @ts-expect-error - email_preferences not yet in generated types
+      await supabase.from("email_preferences").update({ last_seen_at: new Date().toISOString() }).eq("user_id", userId);
+    } catch {}
+  };
+
   useEffect(() => {
     // 1. Get the initial session — this determines loading state
     supabase.auth.getSession().then(({ data: { session: s } }) => {
