@@ -358,11 +358,13 @@ const DocumentVaultScreen = () => {
 function DocCard({
   doc,
   onAddToProfile,
+  onReviewWarranty,
   onDelete,
   onReanalyzed,
 }: {
   doc: UnifiedDocument;
   onAddToProfile: (id: string) => void;
+  onReviewWarranty?: (id: string) => void;
   onDelete?: (d: UnifiedDocument) => void;
   onReanalyzed?: () => void;
 }) {
@@ -467,7 +469,17 @@ function DocCard({
           </button>
         )}
         <button
-          onClick={() => navigate(reviewRoute(doc))}
+          onClick={() => {
+            if (
+              doc.category === "warranty" &&
+              doc.source_table === "property_records" &&
+              onReviewWarranty
+            ) {
+              onReviewWarranty(doc.id);
+              return;
+            }
+            navigate(reviewRoute(doc));
+          }}
           className="text-[11px] font-medium text-primary-foreground bg-primary hover:opacity-90 px-2.5 py-1 rounded-md"
         >
           Review {doc.category === "inspection" ? "Findings" : ""}
