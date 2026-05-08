@@ -323,7 +323,12 @@ const DocumentVaultScreen = () => {
       )}
       <WarrantyReviewModal
         open={!!warrantyReviewDocId}
-        onOpenChange={(v) => { if (!v) setWarrantyReviewDocId(null); }}
+        onOpenChange={(v) => {
+          if (!v) {
+            setWarrantyReviewDocId(null);
+            void reload();
+          }
+        }}
         recordId={warrantyReviewDocId}
       />
 
