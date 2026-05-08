@@ -1,0 +1,1 @@
+ALTER VIEW public.ai_inferred_unconfirmed SET (security_invoker = true);
