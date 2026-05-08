@@ -361,11 +361,6 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
             <button onClick={() => {
               setHouseholdConfirmed(true);
               onHouseholdFactorsChange?.(householdFactors);
-              const rec = getRecommendation(householdFactors);
-              const filterType = rec.merv >= 13 ? "HEPA" : "Pleated";
-              const changeFrequency = rec.days <= 45 ? "Monthly" : rec.days <= 90 ? "Every 3 Months" : "Every 6 Months";
-              onRecommendationChange?.({ filterType, changeFrequency });
-              onSetupComplete?.();
             }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
