@@ -17,6 +17,9 @@ import RefreshButton from "@/components/RefreshButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import InspectionAlertBanner from "@/components/InspectionAlertBanner";
+import InspectionIssuesList from "@/components/InspectionIssuesList";
+import InspectionHistorySection from "@/components/InspectionHistorySection";
+import InspectionProgressCard from "@/components/InspectionProgressCard";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -63,6 +66,13 @@ const PropertyDetailScreen = () => {
 
       {/* Inspection Alert Banner — top of page, persistent until findings resolved */}
       {propertyId && <InspectionAlertBanner propertyId={propertyId} />}
+
+      {/* Inspection Progress summary */}
+      {propertyId && (
+        <div className="mb-6">
+          <InspectionProgressCard propertyId={propertyId} />
+        </div>
+      )}
 
       {/* Property Header */}
       <div className="rounded-xl border border-border bg-card p-5 mb-6">
@@ -113,6 +123,21 @@ const PropertyDetailScreen = () => {
       <div className="mb-6">
         <PermanentArchive propertyId={propertyId} />
       </div>
+
+      {/* Inspection History */}
+      {propertyId && (
+        <div className="mb-6">
+          <InspectionHistorySection propertyId={propertyId} />
+        </div>
+      )}
+
+      {/* Inspection Issues — all findings, severity-grouped with resolution flow */}
+      {propertyId && (
+        <div id="issues" className="mb-6 scroll-mt-20">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Inspection Issues</h2>
+          <InspectionIssuesList propertyId={propertyId} hideWhenEmpty />
+        </div>
+      )}
 
       {/* Beyond Public Records — only show entries we actually have a verified
           status for. Previously we hardcoded "Searching..." rows that were
