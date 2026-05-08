@@ -512,6 +512,8 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           <AffiliateNote />
         </div>
       )}
+        </>
+      )}
     </div>
   );
 };
