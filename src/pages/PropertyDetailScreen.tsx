@@ -114,16 +114,19 @@ const PropertyDetailScreen = () => {
         <PermanentArchive propertyId={propertyId} />
       </div>
 
-      {/* Beyond Public Records */}
-      <div className="mb-6">
-        <BeyondPublicRecords
-          comparisons={[
-            { label: "Build year", publicStatus: "County records", chiqStatus: yearBuilt || "Not yet found", isCorrected: !!yearBuilt },
-            { label: "Well record", publicStatus: null, chiqStatus: "Searching..." },
-            { label: "Septic permit", publicStatus: null, chiqStatus: "Searching..." },
-          ]}
-        />
-      </div>
+      {/* Beyond Public Records — only show entries we actually have a verified
+          status for. Previously we hardcoded "Searching..." rows that were
+          never actually being fetched, producing a contradictory
+          "Not found" + "Searching..." display. */}
+      {yearBuilt && (
+        <div className="mb-6">
+          <BeyondPublicRecords
+            comparisons={[
+              { label: "Build year", publicStatus: "County records", chiqStatus: yearBuilt, isCorrected: true },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Missing Records Intelligence */}
       <div className="mb-6">
