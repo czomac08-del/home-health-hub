@@ -417,6 +417,16 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
     setDone(true);
     if (added > 0) {
       toast.success(`${added} item${added !== 1 ? "s" : ""} added to your profile`);
+      // Mark the source document as imported so the vault button flips to
+      // "Added to Profile" and stays that way across refreshes.
+      try {
+        await supabase
+          .from("property_records")
+          .update({ ai_verified: true })
+          .eq("id", recordId);
+      } catch (e) {
+        console.warn("Failed to mark record as added to profile", e);
+      }
       // Notify the dashboard / IQ ring to recompute immediately — no page refresh needed.
       try {
         window.dispatchEvent(new CustomEvent("system-details-updated"));
