@@ -904,13 +904,29 @@ const SystemConfigScreen = () => {
         open={showAiPicker}
         onClose={() => setShowAiPicker(false)}
         onPhotoSelected={async (file, preview) => {
-          if (!user) return;
+          if (!user || !activeProperty) return;
           const path = `${user.id}/${Date.now()}-${file.name}`;
           const { error } = await supabase.storage.from("system-photos").upload(path, file);
           if (error) { toast.error("Photo upload failed"); return; }
           const { data: signedData } = await supabase.storage.from("system-photos").createSignedUrl(path, 3600);
           if (!signedData?.signedUrl) { toast.error("Failed to get photo URL"); return; }
-          setPhotos((prev) => [...prev, { url: signedData.signedUrl, label: photoLabel, storagePath: path }]);
+          try {
+            const detailId = systemDetailId || await saveSystemDetails();
+            const { data: photoRow, error: photoErr } = await supabase.from("system_photos").insert({
+              system_detail_id: detailId,
+              user_id: user.id,
+              storage_path: path,
+              label: photoLabel,
+              url: signedData.signedUrl,
+            }).select("id, url, label, storage_path, ai_analyzed").single();
+            if (photoErr) throw photoErr;
+            const nextPhoto = { id: photoRow.id, url: photoRow.url, label: photoRow.label, storagePath: photoRow.storage_path, ai_analyzed: !!photoRow.ai_analyzed };
+            setPhotos((prev) => [...prev, nextPhoto]);
+            void analyzeUploadedPhoto({ id: photoRow.id, systemDetailId: detailId, url: photoRow.url, storagePath: photoRow.storage_path, label: photoRow.label, bucket: "system-photos", systemName: displayName });
+          } catch (e) {
+            console.error("[SystemConfig] photo metadata save failed", e);
+            toast.error("Photo uploaded, but couldn't save it to this system.");
+          }
         }}
         onScanComplete={handleScanResult}
         showReceiptMode
