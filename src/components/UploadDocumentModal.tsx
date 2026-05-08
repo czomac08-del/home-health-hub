@@ -9,6 +9,7 @@ import InspectionFindingsReview, { type InspectionReportData } from "./Inspectio
 import FreeToReviewBanner from "./FreeToReviewBanner";
 import { recordRecentUpload } from "./RecentUploadBanner";
 import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
+import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
