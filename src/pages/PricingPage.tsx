@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Briefcase, ClipboardList, Wrench, TrendingUp, Check, Shield, Lock, RefreshCw, Heart, ChevronDown, ChevronUp, FileText, Zap } from "lucide-react";
+import { Home, Briefcase, ClipboardList, Wrench, TrendingUp, Check, ChevronDown, ChevronUp, FileText, RefreshCw, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,91 +10,144 @@ import SEO from "@/components/SEO";
 const plans = [
   {
     id: "homeowner_basic",
-    name: "Homeowner Basic",
+    name: "Free",
+    bestFor: "Getting started",
+    tagline: "See what's in your home's public record. Free forever.",
     role: "homeowner",
     icon: Home,
     monthly: 0,
     annual: 0,
-    features: ["1 property", "Core system tracking", "Basic DIY guides", "Document storage up to 1GB", "Manual data entry only"],
-    cta: "Get Started Free",
+    features: [
+      "Home IQ Score",
+      "Government data pull (FEMA, NOAA, EPA)",
+      "Permit history lookup",
+      "Up to 3 systems tracked",
+      "Basic document vault",
+    ],
+    cta: "Start Free — No Credit Card",
     isFree: true,
   },
   {
     id: "homeowner_pro",
     name: "Homeowner Pro",
+    bestFor: "Active homeowners",
+    tagline: "Everything you need to manage, protect, and document your home completely.",
     role: "homeowner",
     icon: Home,
     monthly: 9.99,
     annual: 95,
-    features: ["Everything in Basic", "Unlimited properties", "AI maintenance assistant", "Smart filter reminders with Amazon links", "Home IQ score tracking", "Full maintenance history", "Priority support"],
-    cta: "Start Free Trial",
+    features: [
+      "Everything in Free",
+      "Unlimited systems and appliances",
+      "Full warranty vault and AI claim assistant",
+      "Insurance vault + AI coverage gap analyzer",
+      "Complete What's Still Missing with all action buttons",
+      "AI research mode for every record gap",
+      "Monthly Home Health Pulse email",
+      "Home Health Certification badge",
+      "Home Passport generation",
+    ],
+    cta: "Start 14-Day Free Trial",
     highlight: true,
   },
   {
     id: "homeowner_premium",
     name: "Homeowner Premium",
+    bestFor: "Power users and rural landowners",
+    tagline: "The complete platform for homeowners who want full control and the deepest documentation available.",
     role: "homeowner",
     icon: Home,
     monthly: 19.99,
     annual: 191,
-    features: ["Everything in Pro", "Home handover & transfer tools", "Contractor marketplace access", "Emergency fund tracker", "Unlimited document storage", "Weekly health summary email"],
-    cta: "Start Free Trial",
+    features: [
+      "Everything in Pro",
+      "Priority data refresh",
+      "Unlimited property archive",
+      "Advanced well water and septic tracking",
+      "Full civic data platform access",
+      "Multi-property portfolio (up to 5)",
+    ],
+    cta: "Start 14-Day Free Trial",
   },
   {
     id: "realtor_pro",
     name: "Realtor Pro",
+    tagline: "Give every client a complete home file. Listings with documentation sell faster.",
     role: "realtor",
     icon: Briefcase,
     monthly: 49,
     annual: 470,
-    features: ["Unlimited listings", "Buyer report generation", "Passport request system", "Open house mode", "CMA tool", "Comparable homes data", "Client portal", "DocuSign integration"],
-    cta: "Start Free Trial",
+    features: [
+      "Listing manager",
+      "Digital disclosure",
+      "Client portal",
+      "CMA tools",
+    ],
+    cta: "Start 14-Day Free Trial",
   },
   {
     id: "inspector_pro",
     name: "Inspector Pro",
+    tagline: "Deliver a live digital home file instead of a 60-page PDF. Differentiate your inspection from every competitor.",
     role: "inspector",
     icon: ClipboardList,
     monthly: 29,
     annual: 278,
-    features: ["Unlimited inspections", "Pre-inspection intel", "Digital checklist (150+ items)", "Professional PDF reports", "Spectora sync", "Verified inspector badge"],
-    cta: "Start Free Trial",
+    features: [
+      "State checklists",
+      "PDF report builder",
+      "Pre-inspection intel",
+      "Referral tracking",
+    ],
+    cta: "Start 14-Day Free Trial",
   },
   {
     id: "contractor_pro",
     name: "Contractor Pro",
+    tagline: "Document every job with GPS-stamped photos and professional invoices. Build the record that protects you and your clients.",
     role: "contractor",
     icon: Wrench,
     monthly: 39,
     annual: 374,
-    features: ["Unlimited clients", "Job management", "Estimate & invoice builder", "Lead generation", "CompanyCam sync", "QuickBooks integration", "Verified pro badge"],
-    cta: "Start Free Trial",
+    features: [
+      "Estimate and invoice builder",
+      "GPS-stamped photo documentation",
+      "Job history",
+    ],
+    cta: "Start 14-Day Free Trial",
   },
   {
     id: "investor_pro",
     name: "Investor Pro",
+    tagline: "Full permit history, flip analysis, and ROI tracking before you make an offer.",
     role: "investor",
     icon: TrendingUp,
     monthly: 79,
     annual: 758,
-    features: ["Unlimited flip projects", "Complete flip analyzer", "Renovation budget tracker", "Contractor management", "Auto ComingHomeIQ on sale", "PropStream integration"],
-    cta: "Start Free Trial",
+    features: [
+      "5-step flip analyzer",
+      "ROI tables",
+      "Budget tracker",
+      "Portfolio view",
+    ],
+    cta: "Start 14-Day Free Trial",
   },
 ];
 
 const faqs = [
-  { q: "Can I switch plans anytime?", a: "Yes — upgrade or downgrade anytime. Your new rate starts immediately." },
-  { q: "What happens to my data if I cancel?", a: "Your data is saved for 90 days after cancellation and can be exported anytime." },
-  { q: "Can I share my report with my realtor for free?", a: "Yes — sharing your ComingHomeIQ report with professionals is always free." },
-  { q: "Do contractors need to pay to view homeowner profiles?", a: "Contractors need a Pro account to access client system history." },
-  { q: "Is there a money-back guarantee?", a: "Yes — 30 days, no questions asked." },
+  { q: "Is my home's data private?", a: "Yes. Your home file is private by default. You control exactly what is shared and with whom. We never sell your property data." },
+  { q: "What happens to my data if I cancel?", a: "Your records stay in our permanent archive associated with your property address — because they belong to the home, not just your account. You can export everything before canceling." },
+  { q: "Do you work for rural properties?", a: "Yes. ComingHomeIQ was built by a rural NC homeowner specifically because no other platform worked for properties with wells, septic systems, and addresses outside commercial databases." },
+  { q: "Are you owned by an insurance or warranty company?", a: "No. ComingHomeIQ is an independent platform. We have no financial relationship with any company that profits from your home's problems." },
+  { q: "What government data do you pull?", a: "FEMA flood zones and disaster declarations, NOAA storm event history, EPA environmental facility proximity, USDA drought monitoring, and Census Bureau geocoding — all live, all free on every plan." },
 ];
 
-const trustBadges = [
-  { icon: Shield, label: "30-Day Money-Back Guarantee" },
-  { icon: Lock, label: "Bank-Level Encryption" },
-  { icon: Heart, label: "Your Data Is Always Yours" },
-  { icon: RefreshCw, label: "Cancel Anytime" },
+const trustChips = [
+  "FEMA Flood Data",
+  "NOAA Storm Records",
+  "EPA Environmental",
+  "USDA Drought Monitor",
+  "Census Bureau",
 ];
 
 const roleAccents: Record<string, string> = {
@@ -157,8 +210,8 @@ const PricingPage = () => {
   return (
     <div className="min-h-screen pb-20">
       <SEO
-        title="Pricing | ComingHomeIQ"
-        description="Homeowner, Realtor, Inspector, Contractor, and Investor plans. Start free."
+        title="Pricing — Independent Home Intelligence | ComingHomeIQ"
+        description="The only independent home intelligence platform built for homeowners. Powered by real government data. Free to start, no credit card."
         path="/pricing"
       />
       {/* Nav */}
@@ -178,9 +231,25 @@ const PricingPage = () => {
       </nav>
 
       {/* Header */}
-      <div className="text-center px-6 pt-8 pb-10">
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-foreground mb-3">Simple, Transparent Pricing</h1>
-        <p className="text-muted-foreground max-w-xl mx-auto">Choose the plan that fits your needs. All paid plans include a 14-day free trial.</p>
+      <div className="text-center px-6 pt-8 pb-10 max-w-4xl mx-auto">
+        <h1 className="text-3xl md:text-5xl font-heading font-black text-foreground mb-4 leading-tight">
+          Know your home. Protect what matters most.
+        </h1>
+        <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+          ComingHomeIQ is the only independent home intelligence platform built for homeowners — not insurance companies, not warranty sellers, not real estate brokerages.
+        </p>
+
+        {/* Trust bar */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs md:text-sm text-foreground/80">
+          {trustChips.map((c, i) => (
+            <span key={c} className="flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5 text-success" />
+              <span className="font-medium">{c}</span>
+              {i < trustChips.length - 1 && <span className="hidden md:inline text-border ml-3">|</span>}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 italic">Powered by real government data — free for every plan</p>
 
         {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-1 mt-8 bg-muted rounded-full p-1 w-fit mx-auto">
@@ -200,6 +269,69 @@ const PricingPage = () => {
         </div>
       </div>
 
+      {/* One-Time Products Banner */}
+      <div className="max-w-6xl mx-auto px-6 mb-10">
+        <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-6 md:p-8">
+          <div className="text-center mb-5">
+            <p className="text-[10px] font-heading font-black uppercase tracking-wider text-primary mb-1">One-Time Purchases</p>
+            <h2 className="text-xl md:text-2xl font-heading font-black text-foreground">No subscription required</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Home Passport Buyer Report */}
+            <div className="rounded-xl border border-border bg-card p-5 flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-heading font-bold text-foreground text-base">Home Passport Buyer Report</h3>
+              </div>
+              <p className="text-2xl font-heading font-black text-foreground mb-2">$9.99</p>
+              <p className="text-xs text-muted-foreground flex-1 mb-4">
+                Everything a buyer needs to know about a home's history. Permit records, flood zone, verified systems, and maintenance history — in one shareable PDF. Perfect for sellers who want to stand out and buyers who want the full picture.
+              </p>
+              <button
+                onClick={() => handleSubscribe({ id: "one_time_report", monthly: 9.99, annual: 9.99, isFree: false } as any)}
+                disabled={loading === "one_time_report"}
+                className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-heading font-extrabold hover:opacity-90 transition-opacity glow-orange disabled:opacity-50"
+              >
+                {loading === "one_time_report" ? "Loading..." : "Get a Home Passport — $9.99"}
+              </button>
+            </div>
+            {/* Property Refresh Credit */}
+            <div className="rounded-xl border border-border bg-card p-5 flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-9 w-9 rounded-lg bg-blue-brain/15 flex items-center justify-center">
+                  <RefreshCw className="h-4 w-4 text-blue-brain" />
+                </div>
+                <h3 className="font-heading font-bold text-foreground text-base">Property Refresh Credit</h3>
+              </div>
+              <p className="text-2xl font-heading font-black text-foreground mb-2">
+                $5 <span className="text-sm font-normal text-muted-foreground">each · or 5-pack for $19</span>
+              </p>
+              <p className="text-xs text-muted-foreground flex-1 mb-4">
+                Refresh your home's government data on demand. New FEMA records, updated storm history, current drought status.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleSubscribe({ id: "refresh_credit_single", monthly: 5, annual: 5, isFree: false } as any)}
+                  disabled={loading === "refresh_credit_single"}
+                  className="w-full rounded-xl border border-primary text-primary py-2.5 text-xs font-heading font-extrabold hover:bg-primary/10 transition-colors disabled:opacity-50"
+                >
+                  {loading === "refresh_credit_single" ? "..." : "1 Credit · $5"}
+                </button>
+                <button
+                  onClick={() => handleSubscribe({ id: "refresh_credit_5pack", monthly: 19, annual: 19, isFree: false } as any)}
+                  disabled={loading === "refresh_credit_5pack"}
+                  className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-xs font-heading font-extrabold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {loading === "refresh_credit_5pack" ? "..." : "5-Pack · $19"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Homeowner Plans */}
       <div className="max-w-6xl mx-auto px-6 mb-12">
         <h2 className="text-sm font-heading font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
@@ -212,34 +344,31 @@ const PricingPage = () => {
         </div>
       </div>
 
+      {/* Independence Statement */}
+      <div className="bg-navy text-white py-14 px-6 mb-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <ShieldCheck className="h-10 w-10 mx-auto mb-4 text-primary" />
+          <h2 className="text-2xl md:text-3xl font-heading font-black mb-5">Every plan. Every price. No hidden agenda.</h2>
+          <div className="space-y-2 text-base md:text-lg text-white/85 mb-6">
+            <p>We don't get paid when you call a contractor.</p>
+            <p>We don't earn commissions on warranties.</p>
+            <p>We don't sell your data to insurance companies.</p>
+          </div>
+          <p className="text-base md:text-lg text-white/95 font-medium">
+            ComingHomeIQ earns money when homeowners find it valuable. That's the only model that works for you.
+          </p>
+        </div>
+      </div>
+
       {/* Professional Plans */}
       <div className="max-w-6xl mx-auto px-6 mb-12">
         <h2 className="text-sm font-heading font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
           <Briefcase className="h-4 w-4" /> Professional Plans
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {proPlansList.map((plan) => (
             <PlanCard key={plan.id} plan={plan} annual={annual} loading={loading} onSubscribe={handleSubscribe} getPrice={getPrice} getSavings={getSavings} />
           ))}
-        </div>
-      </div>
-
-      {/* One-Time Report */}
-      <div className="max-w-6xl mx-auto px-6 mb-16">
-        <div className="rounded-2xl border-2 border-dashed border-border bg-card p-6 text-center max-w-md mx-auto">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <FileText className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="font-heading font-black text-foreground text-lg mb-1">Pay Per Report</h3>
-          <p className="text-muted-foreground text-sm mb-3">No subscription required</p>
-          <p className="text-3xl font-heading font-black text-foreground mb-1">$9.99</p>
-          <p className="text-sm text-muted-foreground mb-4">per report</p>
-          <button
-            onClick={() => handleSubscribe({ id: "one_time_report", monthly: 9.99, annual: 9.99, isFree: false } as any)}
-            className="w-full rounded-xl border border-primary text-primary py-2.5 text-sm font-heading font-extrabold hover:bg-primary/10 transition-colors"
-          >
-            Buy Single Report
-          </button>
         </div>
       </div>
 
@@ -256,7 +385,7 @@ const PricingPage = () => {
                 <span className="text-sm font-medium text-foreground">{faq.q}</span>
                 {openFaq === i ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
               </button>
-              <div className={`overflow-hidden transition-all duration-300 ${openFaq === i ? "max-h-40 pb-4" : "max-h-0"}`}>
+              <div className={`overflow-hidden transition-all duration-300 ${openFaq === i ? "max-h-96 pb-4" : "max-h-0"}`}>
                 <p className="px-4 text-sm text-muted-foreground">{faq.a}</p>
               </div>
             </div>
@@ -264,15 +393,18 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {/* Trust Badges */}
-      <div className="max-w-4xl mx-auto px-6 mb-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {trustBadges.map((badge, i) => (
-            <div key={i} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-muted border border-border">
-              <badge.icon className="h-6 w-6 text-primary" />
-              <span className="text-xs text-center font-medium text-muted-foreground">{badge.label}</span>
-            </div>
-          ))}
+      {/* Bottom CTA */}
+      <div className="bg-primary text-primary-foreground py-14 px-6 mb-0">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-heading font-black mb-6">
+            Start with what your home's public record already shows. It's free.
+          </h2>
+          <button
+            onClick={() => navigate("/auth")}
+            className="inline-flex items-center justify-center rounded-xl bg-primary-foreground text-primary px-8 py-4 text-base font-heading font-extrabold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Check My Home — No Credit Card
+          </button>
         </div>
       </div>
 
@@ -307,8 +439,16 @@ const PlanCard = ({ plan, annual, loading, onSubscribe, getPrice, getSavings }: 
         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="font-heading font-bold text-foreground text-sm">{plan.name}</h3>
+        <h3 className="font-heading font-bold text-foreground text-base">{plan.name}</h3>
       </div>
+      {(plan as any).bestFor && (
+        <p className="text-[10px] font-heading font-bold uppercase tracking-wider text-muted-foreground mb-1">
+          Best for: {(plan as any).bestFor}
+        </p>
+      )}
+      {(plan as any).tagline && (
+        <p className="text-xs text-foreground/80 mb-3 leading-snug">{(plan as any).tagline}</p>
+      )}
 
       <div className="mb-1">
         <span className="text-3xl font-heading font-black text-foreground transition-all duration-300">{getPrice(plan)}</span>
