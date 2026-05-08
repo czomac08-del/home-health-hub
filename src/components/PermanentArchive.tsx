@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import TrueRecordCard from "./TrueRecordCard";
 import ProvenanceBadge from "./ProvenanceBadge";
-import DisputeDialog from "./DisputeDialog";
+import { DisputeDialog } from "./DisputeDialog";
 import type { ArchiveSourceTag } from "@/lib/archiveProvenance";
 
 interface ArchiveRecord {
