@@ -1823,58 +1823,94 @@ export type Database = {
       }
       inspection_findings: {
         Row: {
+          after_photo_url: string | null
+          before_photo_url: string | null
           category: string | null
+          contractor_name: string | null
           created_at: string
           description: string | null
           finding_key: string
           fix_verification_id: string | null
           id: string
+          in_progress_notes: string | null
           inspection_record_id: string
+          inspector_recommendation: string | null
           is_diy: boolean
           level: number
+          location_in_home: string | null
           page_reference: number | null
           property_id: string
           recommendation: string | null
+          resolution_cost: number | null
+          resolution_notes: string | null
           resolved_at: string | null
+          resolved_by: string | null
+          severity_label: string | null
+          source_document_id: string | null
           status: string
+          system_category: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          after_photo_url?: string | null
+          before_photo_url?: string | null
           category?: string | null
+          contractor_name?: string | null
           created_at?: string
           description?: string | null
           finding_key: string
           fix_verification_id?: string | null
           id?: string
+          in_progress_notes?: string | null
           inspection_record_id: string
+          inspector_recommendation?: string | null
           is_diy?: boolean
           level: number
+          location_in_home?: string | null
           page_reference?: number | null
           property_id: string
           recommendation?: string | null
+          resolution_cost?: number | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          severity_label?: string | null
+          source_document_id?: string | null
           status?: string
+          system_category?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          after_photo_url?: string | null
+          before_photo_url?: string | null
           category?: string | null
+          contractor_name?: string | null
           created_at?: string
           description?: string | null
           finding_key?: string
           fix_verification_id?: string | null
           id?: string
+          in_progress_notes?: string | null
           inspection_record_id?: string
+          inspector_recommendation?: string | null
           is_diy?: boolean
           level?: number
+          location_in_home?: string | null
           page_reference?: number | null
           property_id?: string
           recommendation?: string | null
+          resolution_cost?: number | null
+          resolution_notes?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
+          severity_label?: string | null
+          source_document_id?: string | null
           status?: string
+          system_category?: string | null
           title?: string
           updated_at?: string
           user_id?: string
