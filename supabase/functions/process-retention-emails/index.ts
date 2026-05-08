@@ -151,11 +151,50 @@ async function scheduleMonthlyPulse(supabase: any) {
   const cityByUser = new Map<string, string>()
   for (const p of properties || []) if (p.city && !cityByUser.has(p.user_id)) cityByUser.set(p.user_id, p.city)
 
+  // Open safety/major inspection findings per user — joined via properties.
+  const { data: userProps } = await supabase
+    .from('properties')
+    .select('id, user_id')
+    .in('user_id', userIds)
+  const propIdByUser = new Map<string, string[]>()
+  const userByPropId = new Map<string, string>()
+  for (const p of userProps || []) {
+    if (!p.user_id || !p.id) continue
+    userByPropId.set(p.id, p.user_id)
+    const arr = propIdByUser.get(p.user_id) || []
+    arr.push(p.id)
+    propIdByUser.set(p.user_id, arr)
+  }
+  const openSafetyByUser = new Map<string, { safety: number; major: number }>()
+  const allPropIds = Array.from(userByPropId.keys())
+  if (allPropIds.length > 0) {
+    const { data: openFindings } = await supabase
+      .from('inspection_findings')
+      .select('property_id, level, status')
+      .in('property_id', allPropIds)
+      .in('level', [1, 2])
+      .not('status', 'in', '("resolved","fixed","dismissed","skipped","monitoring")')
+    for (const f of openFindings || []) {
+      const uid = userByPropId.get(f.property_id)
+      if (!uid) continue
+      const cur = openSafetyByUser.get(uid) || { safety: 0, major: 0 }
+      if (f.level === 1) cur.safety += 1
+      else if (f.level === 2) cur.major += 1
+      openSafetyByUser.set(uid, cur)
+    }
+  }
+
   const rows = []
   for (const pref of prefs) {
     const email = emailByUser.get(pref.user_id)
     if (!email) continue
-    const data = pulseDataForMonth(month, cityByUser.get(pref.user_id))
+    const data: Record<string, any> = { ...pulseDataForMonth(month, cityByUser.get(pref.user_id)) }
+    const open = openSafetyByUser.get(pref.user_id)
+    if (open && (open.safety > 0 || open.major > 0)) {
+      data.openSafetyCount = open.safety
+      data.openMajorCount = open.major
+      data.openSafetyLink = '/property'
+    }
     rows.push({
       user_id: pref.user_id,
       email,
