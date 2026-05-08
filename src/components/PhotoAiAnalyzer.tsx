@@ -14,16 +14,26 @@ export interface AnalyzablePhoto {
   label?: string | null;
 }
 
-interface PhotoReviewResult {
+export interface PhotoReviewResult {
   unitType?: string | null;
+  manufacturer?: string | null;
   brand?: string | null;
+  modelName?: string | null;
+  modelNumber?: string | null;
   model?: string | null;
   serial?: string | null;
+  serialNumber?: string | null;
+  manufactureYear?: string | null;
   estimatedAge?: string | null;
+  fuelType?: string | null;
+  capacity?: string | null;
+  size?: string | null;
   condition?: string | null;
+  warningLabels?: string[] | null;
+  recalls?: string[] | null;
   visibleIssues?: string[] | null;
   summary?: string | null;
-  confidence?: Record<string, string> | null;
+  confidence?: Record<string, string | number> | null;
 }
 
 async function imageToBase64(url: string): Promise<string> {
