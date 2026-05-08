@@ -9,6 +9,7 @@ import AddToProfileModal from "@/components/AddToProfileModal";
 import PrintFindingsButton from "@/components/PrintFindingsButton";
 import type { PrintFilter } from "@/components/PrintFindingsReport";
 import { InspectionTrialContextNudge } from "@/components/InspectionPaywall";
+import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 
 interface Props {
   propertyRecordId: string;
@@ -153,6 +154,21 @@ export default function InspectionAnalysisPanel({
         .from("property_records")
         .update({ ai_extracted_data: merged, ai_verified: true })
         .eq("id", propertyRecordId);
+
+      // Push extracted findings into the Systems list so HVAC/Roof/etc.
+      // immediately reflect inspection data (green/flagged dots).
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        if (u?.user?.id && propertyId) {
+          await applyInspectionFindingsToSystems({
+            propertyId,
+            userId: u.user.id,
+            findings: rep.findings as any,
+          });
+        }
+      } catch (sysErr) {
+        console.warn("System fan-out failed (non-fatal):", sysErr);
+      }
 
       setReport(rep);
       setPhase("done");

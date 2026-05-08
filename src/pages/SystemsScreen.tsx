@@ -30,6 +30,7 @@ interface SystemDetailSummary {
   location_in_home: string | null;
   well_type: string | null;
   specs: Record<string, unknown> | null;
+  status?: string | null;
 }
 
 const coreInfrastructure: SystemItem[] = [
@@ -78,7 +79,7 @@ const hasRealSystemData = (item: SystemDetailSummary) => {
   return coreFields.some(hasValue) || (item.specs && Object.values(item.specs).some(hasValue));
 };
 
-const SystemRow = ({ item, documented, onClick }: { item: SystemItem; documented: boolean; onClick: () => void }) => {
+const SystemRow = ({ item, documented, flagged, flaggedDetail, onClick }: { item: SystemItem; documented: boolean; flagged?: boolean; flaggedDetail?: string | null; onClick: () => void }) => {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left">
       <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -86,11 +87,11 @@ const SystemRow = ({ item, documented, onClick }: { item: SystemItem; documented
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${documented ? "bg-health-green" : "bg-muted-foreground/30"}`} />
+          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${flagged ? "bg-warning" : documented ? "bg-health-green" : "bg-muted-foreground/30"}`} />
           <span className={`font-medium text-sm ${documented ? "text-foreground" : "text-muted-foreground"}`}>{item.name}</span>
         </div>
         <p className={`text-xs mt-0.5 ml-[18px] ${documented ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
-          {documented ? item.documentedDetail : item.emptyDetail}
+          {flagged ? (flaggedDetail || "Inspection finding — review details") : documented ? item.documentedDetail : item.emptyDetail}
         </p>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
@@ -101,6 +102,7 @@ const SystemRow = ({ item, documented, onClick }: { item: SystemItem; documented
 const SystemsScreen = () => {
   const [search, setSearch] = useState("");
   const [documentedNames, setDocumentedNames] = useState<Set<string>>(new Set());
+  const [flaggedNames, setFlaggedNames] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
   const { user, activeProperty } = useAuth();
 
@@ -109,21 +111,28 @@ const SystemsScreen = () => {
 
     supabase
       .from("system_details")
-      .select("system_name, brand, model, install_date, purchase_date, last_service, next_service, notes, location_in_home, well_type, specs")
+      .select("system_name, brand, model, install_date, purchase_date, last_service, next_service, notes, location_in_home, well_type, specs, status")
       .eq("property_id", activeProperty.id)
       .eq("user_id", user.id)
       .then(({ data }) => {
         const next = new Set<string>();
+        const flags = new Set<string>();
         (data as SystemDetailSummary[] | null)?.forEach((record) => {
           if (hasRealSystemData(record)) next.add(record.system_name);
+          if (record.status === "needs_attention") flags.add(record.system_name);
         });
         setDocumentedNames(next);
+        setFlaggedNames(flags);
       });
   }, [user, activeProperty]);
 
   const isDocumented = (item: SystemItem) => {
     const possibleNames = [item.name, ...(item.aliases || [])];
     return possibleNames.some((name) => documentedNames.has(name));
+  };
+  const isFlagged = (item: SystemItem) => {
+    const possibleNames = [item.name, ...(item.aliases || [])];
+    return possibleNames.some((name) => flaggedNames.has(name));
   };
 
   const filterItems = (items: SystemItem[]) =>
@@ -165,6 +174,7 @@ const SystemsScreen = () => {
               key={item.name}
               item={item}
               documented={isDocumented(item)}
+              flagged={isFlagged(item)}
               onClick={() => {
                 if (item.route) navigate(item.route);
                 else navigate(`/system-config/${encodeURIComponent(item.name)}`);
@@ -178,7 +188,7 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(appliances).map((item) => (
-            <SystemRow key={item.name} item={item} documented={isDocumented(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
+            <SystemRow key={item.name} item={item} documented={isDocumented(item)} flagged={isFlagged(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
           ))}
         </div>
       </div>
