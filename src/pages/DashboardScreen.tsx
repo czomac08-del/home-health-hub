@@ -23,6 +23,8 @@ import InspectionNotificationBanner from "@/components/InspectionNotificationBan
 import DocumentHub from "@/components/DocumentHub";
 import RecentUploadBanner from "@/components/RecentUploadBanner";
 import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
+import InspectionProgressCard from "@/components/InspectionProgressCard";
+import { iqDeltaForFinding, type FindingStatus } from "@/lib/inspectionScoring";
 
 // assessed = true means user has entered data for this system
 // When assessed is false, health/status are ignored and the card shows "Not Assessed Yet"
@@ -58,6 +60,7 @@ const DashboardScreen = () => {
   const [assessedSystemNames, setAssessedSystemNames] = useState<string[]>([]);
   const [systemDetails, setSystemDetails] = useState<Array<{ system_name: string; brand: string | null; specs: any; data_status: string | null }>>([]);
   const [findingsByCategory, setFindingsByCategory] = useState<Record<string, Record<number, number>>>({});
+  const [findingsIqDelta, setFindingsIqDelta] = useState<number>(0);
 
   useEffect(() => {
     if (!activeProperty?.id) { setRecordCount(0); return; }
@@ -86,26 +89,32 @@ const DashboardScreen = () => {
       // Pull inspection findings to mirror SystemDetailScreen scoring.
       const { data: f } = await supabase
         .from("inspection_findings")
-        .select("level, category")
+        .select("level, category, status")
         .eq("property_id", activeProperty.id);
       if (cancelled) return;
       const map: Record<string, Record<number, number>> = {};
+      let delta = 0;
       for (const row of (f || []) as any[]) {
         const cat = String(row.category || "").toLowerCase();
-        if (!cat) continue;
         const lv = Number(row.level) || 0;
-        map[cat] = map[cat] || {};
-        map[cat][lv] = (map[cat][lv] || 0) + 1;
+        if (cat) {
+          map[cat] = map[cat] || {};
+          map[cat][lv] = (map[cat][lv] || 0) + 1;
+        }
+        delta += iqDeltaForFinding(lv, (row.status || "open") as FindingStatus);
       }
       setFindingsByCategory(map);
+      setFindingsIqDelta(delta);
     };
     void load();
     // Refresh whenever AddToProfileModal (or anywhere else) tells us system data changed.
     const onUpdated = () => { void load(); };
     window.addEventListener("system-details-updated", onUpdated);
+    window.addEventListener("inspection-findings-updated", onUpdated);
     return () => {
       cancelled = true;
       window.removeEventListener("system-details-updated", onUpdated);
+      window.removeEventListener("inspection-findings-updated", onUpdated);
     };
   }, [activeProperty?.id]);
 
@@ -142,6 +151,11 @@ const DashboardScreen = () => {
   // Only systems with zero data — assessed systems disappear from "Not Yet Documented".
   const notDocumented = systems.filter((s) => !s.assessed);
   const currentHealthScore = activeProperty?.health_score || null;
+  // Resolved/in-progress inspection findings boost the displayed Home IQ Score
+  // immediately (capped at 100). The base score is unchanged in the DB.
+  const adjustedHealthScore = (assessedCount > 0 && typeof currentHealthScore === "number")
+    ? Math.max(0, Math.min(100, Math.round(currentHealthScore + findingsIqDelta)))
+    : currentHealthScore;
   // Profile completeness based on how many systems are documented
   const assessedCount = systems.filter((s) => s.assessed).length;
   const profileCompleteness = Math.round((assessedCount / systems.length) * 100);
@@ -242,8 +256,8 @@ const DashboardScreen = () => {
             <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Your Home IQ Score</h2>
             <HealthRing
               percentage={
-                assessedCount > 0 && typeof activeProperty?.health_score === "number"
-                  ? activeProperty.health_score
+                assessedCount > 0 && typeof adjustedHealthScore === "number"
+                  ? adjustedHealthScore
                   : null
               }
               size={180}
@@ -312,10 +326,17 @@ const DashboardScreen = () => {
 
         {/* Certification Card — pass the real score (0 when none). Never fabricate 78. */}
         <CertificationCard
-          healthScore={assessedCount > 0 && typeof currentHealthScore === "number" ? currentHealthScore : 0}
+          healthScore={assessedCount > 0 && typeof adjustedHealthScore === "number" ? adjustedHealthScore : 0}
           profileCompleteness={profileCompleteness}
           systems={systems.filter(s => s.assessed).map((s) => ({ name: s.name, health: s.health || 0 }))}
         />
+
+        {/* Inspection Progress — shown only when findings exist for active property */}
+        {activeProperty?.id && (
+          <div className="mb-6">
+            <InspectionProgressCard propertyId={activeProperty.id} />
+          </div>
+        )}
 
         {/* Needs Attention — only for assessed systems with real issues */}
         {needsAttention.length > 0 && (
