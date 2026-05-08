@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
 import { summarizeChimneyState } from "@/components/ChimneyFireplaceConfig";
+import { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
 
 type SystemStatus = "documented" | "unconfigured";
 
@@ -20,7 +21,9 @@ interface SystemItem {
 }
 
 interface SystemDetailSummary {
+  id: string;
   system_name: string;
+  instance_name: string | null;
   brand: string | null;
   model: string | null;
   install_date: string | null;
@@ -109,6 +112,7 @@ const SystemsScreen = () => {
   const [flaggedNames, setFlaggedNames] = useState<Set<string>>(new Set());
   const [notApplicableNames, setNotApplicableNames] = useState<Set<string>>(new Set());
   const [systemSummaries, setSystemSummaries] = useState<Record<string, string>>({});
+  const [multiInstances, setMultiInstances] = useState<Record<string, { id: string; label: string; documented: boolean }[]>>({});
   const navigate = useNavigate();
   const { user, activeProperty } = useAuth();
 
@@ -117,7 +121,7 @@ const SystemsScreen = () => {
 
     supabase
       .from("system_details")
-      .select("system_name, brand, model, install_date, purchase_date, last_service, next_service, notes, location_in_home, well_type, specs, status")
+      .select("id, system_name, instance_name, brand, model, install_date, purchase_date, last_service, next_service, notes, location_in_home, well_type, specs, status")
       .eq("property_id", activeProperty.id)
       .eq("user_id", user.id)
       .then(({ data }) => {
@@ -125,8 +129,10 @@ const SystemsScreen = () => {
         const flags = new Set<string>();
         const inactive = new Set<string>();
         const summaries: Record<string, string> = {};
+        const grouped: Record<string, { id: string; label: string; documented: boolean }[]> = {};
         (data as SystemDetailSummary[] | null)?.forEach((record) => {
-          if (hasRealSystemData(record)) next.add(record.system_name);
+          const documented = hasRealSystemData(record);
+          if (documented) next.add(record.system_name);
           if (record.status === "needs_attention") flags.add(record.system_name);
           const specs = (record.specs as Record<string, any> | null) || null;
           if (specs) {
@@ -141,11 +147,20 @@ const SystemsScreen = () => {
               if (summary) summaries[record.system_name] = summary;
             }
           }
+          if (MULTI_INSTANCE_SYSTEM_NAMES.has(record.system_name)) {
+            const arr = grouped[record.system_name] || (grouped[record.system_name] = []);
+            arr.push({
+              id: record.id,
+              label: record.instance_name || record.system_name,
+              documented,
+            });
+          }
         });
         setDocumentedNames(next);
         setFlaggedNames(flags);
         setNotApplicableNames(inactive);
         setSystemSummaries(summaries);
+        setMultiInstances(grouped);
       });
   }, [user, activeProperty]);
 
@@ -158,7 +173,14 @@ const SystemsScreen = () => {
     return possibleNames.some((name) => flaggedNames.has(name));
   };
   const isNotApplicable = (item: SystemItem) => notApplicableNames.has(item.name);
-  const summaryFor = (item: SystemItem): string | undefined => systemSummaries[item.name];
+  const summaryFor = (item: SystemItem): string | undefined => {
+    const insts = multiInstances[item.name];
+    if (insts && insts.length >= 2) {
+      return `${insts.length} systems — ${insts.map((i) => i.label).join(" · ")}`;
+    }
+    return systemSummaries[item.name];
+  };
+  const instancesFor = (item: SystemItem) => multiInstances[item.name] || [];
 
   const filterItems = (items: SystemItem[]) =>
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
@@ -194,20 +216,40 @@ const SystemsScreen = () => {
       <div className="mb-6">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Core Infrastructure</h2>
         <div className="rounded-xl border border-border bg-card px-4">
-          {filterItems(coreInfrastructure).map((item) => (
-            <SystemRow
-              key={item.name}
-              item={item}
-              documented={isDocumented(item)}
-              flagged={isFlagged(item)}
-              notApplicable={isNotApplicable(item)}
-              summary={summaryFor(item)}
-              onClick={() => {
-                if (item.route) navigate(item.route);
-                else navigate(`/system-config/${encodeURIComponent(item.name)}`);
-              }}
-            />
-          ))}
+          {filterItems(coreInfrastructure).map((item) => {
+            const insts = instancesFor(item);
+            return (
+              <div key={item.name}>
+                <SystemRow
+                  item={item}
+                  documented={isDocumented(item) && (insts.length === 0 || insts.every((i) => i.documented))}
+                  flagged={isFlagged(item)}
+                  notApplicable={isNotApplicable(item)}
+                  summary={summaryFor(item)}
+                  onClick={() => {
+                    if (item.route) navigate(item.route);
+                    else navigate(`/system-config/${encodeURIComponent(item.name)}`);
+                  }}
+                />
+                {insts.length >= 2 && (
+                  <div className="ml-[52px] mb-3 -mt-1 flex flex-wrap gap-2">
+                    {insts.map((i) => (
+                      <button
+                        key={i.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/system-config/${encodeURIComponent(item.name)}?instance=${i.id}`);
+                        }}
+                        className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary transition-colors"
+                      >
+                        {i.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
