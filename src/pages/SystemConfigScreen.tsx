@@ -24,6 +24,23 @@ import type { RefreshScope } from "@/hooks/useDataRefresh";
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
 
+// Defined at module scope so the component identity stays stable between
+// renders. Defining it inside SystemConfigScreen caused inputs nested inside
+// to remount on every keystroke, dropping focus.
+const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
+  isOpen: boolean; title: string; onToggle: () => void; children: React.ReactNode;
+}) => (
+  <div className="mb-4 overflow-hidden">
+    <button onClick={onToggle} className="w-full flex items-center justify-between py-2 mb-2">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
+      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
+    </button>
+    <div className={`transition-all duration-300 ease-out ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
+      {children}
+    </div>
+  </div>
+);
+
 interface PhotoItem { url: string; label: string; storagePath?: string; }
 interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
 
