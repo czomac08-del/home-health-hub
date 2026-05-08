@@ -91,6 +91,7 @@ const SystemConfigScreen = () => {
 
   // Specs
   const [specs, setSpecs] = useState<Record<string, string | boolean | string[]>>({});
+  const [sourceTags, setSourceTags] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
@@ -136,6 +137,25 @@ const SystemConfigScreen = () => {
 
   const setSpec = (key: string, value: string | boolean | string[]) => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const isEmptyValue = (value: unknown) => value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
+  const getConfidence = (result: PhotoReviewResult, keys: string[]) => {
+    const confidence = result.confidence || {};
+    for (const key of keys) {
+      const value = confidence[key];
+      if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
+  };
+  const isHighConfidence = (result: PhotoReviewResult, keys: string[]) => {
+    const confidence = getConfidence(result, keys);
+    if (typeof confidence === "number") return confidence >= 0.8;
+    return confidence?.toString().toLowerCase() === "high";
+  };
+  const stringifyList = (items?: string[] | null) => Array.isArray(items) ? items.filter(Boolean).join(", ") : "";
+  const upsertSuggestion = (suggestion: AiSuggestion) => {
+    setAiSuggestions((prev) => prev.some((s) => s.key === suggestion.key) ? prev : [...prev, suggestion]);
   };
 
   // Reload saved photos (used after AI analysis to refresh ai_analyzed flag).
