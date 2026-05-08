@@ -12,6 +12,7 @@ import {
   Trash2,
   Wand2,
   Loader2,
+  Check,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -306,7 +307,13 @@ const DocumentVaultScreen = () => {
       {importDocId && (
         <AddToProfileModal
           open={!!importDocId}
-          onOpenChange={(v) => !v && setImportDocId(null)}
+          onOpenChange={(v) => {
+            if (!v) {
+              setImportDocId(null);
+              // Refresh so the card flips to "Added to Profile" immediately.
+              void reload();
+            }
+          }}
           recordId={importDocId}
         />
       )}
@@ -352,7 +359,9 @@ function DocCard({
 }) {
   const navigate = useNavigate();
   const Icon = fileIcon(doc.fileType);
-  const canImport = doc.source_table === "property_records" && doc.hasExtractedData;
+  const alreadyAdded = !!doc.addedToProfile;
+  const canImport =
+    doc.source_table === "property_records" && doc.hasExtractedData && !alreadyAdded;
   const canReanalyze =
     doc.source_table === "property_records" &&
     !!doc.storagePath &&
@@ -461,6 +470,14 @@ function DocCard({
           >
             <Sparkles className="h-3 w-3" /> Add to Profile
           </button>
+        )}
+        {doc.source_table === "property_records" && doc.hasExtractedData && alreadyAdded && (
+          <span
+            aria-label="Already added to profile"
+            className="text-[11px] font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-md inline-flex items-center gap-1 cursor-default select-none"
+          >
+            <Check className="h-3 w-3" /> Added to Profile
+          </span>
         )}
         {canReanalyze && (
           <button
