@@ -151,13 +151,13 @@ const DashboardScreen = () => {
   // Only systems with zero data — assessed systems disappear from "Not Yet Documented".
   const notDocumented = systems.filter((s) => !s.assessed);
   const currentHealthScore = activeProperty?.health_score || null;
+  // Profile completeness based on how many systems are documented
+  const assessedCount = systems.filter((s) => s.assessed).length;
   // Resolved/in-progress inspection findings boost the displayed Home IQ Score
   // immediately (capped at 100). The base score is unchanged in the DB.
   const adjustedHealthScore = (assessedCount > 0 && typeof currentHealthScore === "number")
     ? Math.max(0, Math.min(100, Math.round(currentHealthScore + findingsIqDelta)))
     : currentHealthScore;
-  // Profile completeness based on how many systems are documented
-  const assessedCount = systems.filter((s) => s.assessed).length;
   const profileCompleteness = Math.round((assessedCount / systems.length) * 100);
   const documentedLabel = assessedCount > 0
     ? `You've documented ${assessedCount} system${assessedCount !== 1 ? "s" : ""} — that's ${assessedCount} thing${assessedCount !== 1 ? "s" : ""} future you will thank you for.`
