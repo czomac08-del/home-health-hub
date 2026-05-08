@@ -570,12 +570,12 @@ const SystemConfigScreen = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-2">
                   {photos.map((p, i) => (
                     <div key={p.id || i} className="rounded-lg border border-border bg-card/50 overflow-hidden">
-                      <div className="relative w-full aspect-square">
-                        <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-                        <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                          <X className="h-3 w-3 text-foreground" />
-                        </button>
-                      </div>
+                       <div className="relative w-full aspect-square">
+                         <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                         <button onClick={() => deletePhoto(p, i)} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
+                           <X className="h-3 w-3 text-foreground" />
+                         </button>
+                       </div>
                       <div className="p-2 space-y-1.5">
                         <p className="text-[10px] text-muted-foreground truncate">{p.label}</p>
                         {p.id ? (
