@@ -268,6 +268,7 @@ const AppContent = () => {
             <Route path="/property" element={<ProtectedRoute><PropertyDetailScreen /></ProtectedRoute>} />
             <Route path="/handover" element={<ProtectedRoute><HandoverWizardScreen /></ProtectedRoute>} />
             <Route path="/claim" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
+            <Route path="/claim/:propertyId" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
             <Route path="/inspector" element={<ProtectedRoute><InspectorDashboard /></ProtectedRoute>} />
             <Route path="/contractor" element={<ProtectedRoute><ContractorDashboard /></ProtectedRoute>} />
