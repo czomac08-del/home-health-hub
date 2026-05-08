@@ -528,6 +528,15 @@ const SystemConfigScreen = () => {
 
           {/* ── Photos ── */}
           <CollapsibleSectionView isOpen={expandedSections.has("photos")} title="Photos" onToggle={() => toggleSection("photos")}>
+            {systemDetailId && photos.some((p) => p.id && !p.ai_analyzed) && !brand && !model && !serial && (
+              <UnanalyzedPhotosBanner
+                unanalyzedCount={photos.filter((p) => p.id && !p.ai_analyzed).length}
+                onAnalyze={() => {
+                  // Scroll to the batch button; user clicks it from there.
+                  document.getElementById("batch-analyze-btn")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              />
+            )}
             <div className="mb-2">
               <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)}
                 className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
@@ -542,17 +551,45 @@ const SystemConfigScreen = () => {
               </button>
             </div>
             {photos.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {photos.map((p, i) => (
-                  <div key={i} className="relative shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-border">
-                    <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-                    <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5">
-                      <X className="h-3 w-3 text-foreground" />
-                    </button>
-                    <span className="absolute bottom-0 inset-x-0 bg-background/80 text-[9px] text-center text-foreground truncate px-1">{p.label}</span>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-2">
+                  {photos.map((p, i) => (
+                    <div key={p.id || i} className="rounded-lg border border-border bg-card/50 overflow-hidden">
+                      <div className="relative w-full aspect-square">
+                        <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                        <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
+                          <X className="h-3 w-3 text-foreground" />
+                        </button>
+                      </div>
+                      <div className="p-2 space-y-1.5">
+                        <p className="text-[10px] text-muted-foreground truncate">{p.label}</p>
+                        {p.id ? (
+                          p.ai_analyzed ? (
+                            <AiReviewedBadge />
+                          ) : (
+                            <AnalyzePhotoButton
+                              photo={{ id: p.id, systemDetailId: systemDetailId!, url: p.url, storagePath: p.storagePath, label: p.label, bucket: "system-photos", systemName: displayName } as AnalyzablePhoto}
+                              onAnalyzed={reloadPhotos}
+                            />
+                          )
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground italic">Save first to enable AI review</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {systemDetailId && (
+                  <div id="batch-analyze-btn">
+                    <BatchAnalyzeButton
+                      photos={photos
+                        .filter((p) => p.id && !p.ai_analyzed)
+                        .map((p) => ({ id: p.id!, systemDetailId: systemDetailId, url: p.url, storagePath: p.storagePath, label: p.label, bucket: "system-photos", systemName: displayName } as AnalyzablePhoto))}
+                      onAllDone={reloadPhotos}
+                    />
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </CollapsibleSectionView>
 
