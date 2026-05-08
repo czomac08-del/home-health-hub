@@ -208,6 +208,10 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
     return parts.join(", ");
   }, [recommendation]);
 
+  // Once setup is complete, the editable Filter Size lives in the Specifications section below.
+  // Render nothing here to avoid duplicate displays.
+  if (setupComplete) return null;
+
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2 mb-2">
@@ -219,31 +223,6 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           <p className="text-[10px] text-muted-foreground">Smart filter recommendations for your home</p>
         </div>
       </div>
-
-      {setupComplete && (
-        <div className="rounded-xl border border-border bg-card p-4 animate-fade-in">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Saved filter size</p>
-              <p className="text-base font-bold text-foreground mt-0.5">{localFilterSize}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Edit type, change frequency, and other details in the Specifications section below.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setSetupComplete(false);
-                setSizeSubmitted(false);
-                setKnowsSize("yes");
-                setHouseholdConfirmed(true); // skip household re-ask on edit
-                setChangeFreq("auto");
-              }}
-              className="text-[11px] text-primary hover:underline whitespace-nowrap"
-            >
-              Change filter size
-            </button>
-          </div>
-        </div>
-      )}
 
       {!setupComplete && (
         <>
