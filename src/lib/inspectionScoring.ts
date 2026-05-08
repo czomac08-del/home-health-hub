@@ -1,6 +1,13 @@
 import type { InspectionFinding } from "@/components/InspectionFindingsReview";
 
-export type FindingStatus = "open" | "fixed" | "skipped";
+export type FindingStatus =
+  | "open"
+  | "fixed"
+  | "skipped"
+  | "in_progress"
+  | "resolved"
+  | "dismissed"
+  | "monitoring";
 
 export interface ScoredFindings {
   l1Open: number;
@@ -53,4 +60,24 @@ export function isDiy(f: { level: number; title: string; description?: string | 
   if (f.level === 1) return false;
   const t = `${f.title} ${f.description ?? ""}`.toLowerCase();
   return DIY_KEYWORDS.some((k) => t.includes(k));
+}
+
+/**
+ * Per-finding contribution to the Home IQ Score based on severity + status.
+ * Resolved Safety +3, Major +2, Minor +1; In-progress earns 50% partial credit;
+ * Dismissed/Monitoring/skipped contribute 0.
+ */
+export function iqDeltaForFinding(level: number, status: FindingStatus): number {
+  const base = level === 1 ? 3 : level === 2 ? 2 : level === 3 ? 1 : 0;
+  if (status === "resolved" || status === "fixed") return base;
+  if (status === "in_progress") return base * 0.5;
+  return 0;
+}
+
+export function isResolvedStatus(s: FindingStatus): boolean {
+  return s === "resolved" || s === "fixed";
+}
+
+export function isInactiveStatus(s: FindingStatus): boolean {
+  return s === "dismissed" || s === "skipped" || s === "monitoring";
 }
