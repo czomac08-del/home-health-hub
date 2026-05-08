@@ -170,6 +170,20 @@ export default function UploadDocumentModal({
         .update({ ai_verified: true, ai_extracted_data: merged })
         .eq("id", recordId);
 
+      // Fan extracted findings out to the Systems list so HVAC/Roof/etc. flip
+      // from grey "Not yet documented" to documented (or flagged) immediately.
+      if (docType === "inspection_report" && activeProperty?.id && user?.id && inspectionReport?.findings?.length) {
+        try {
+          await applyInspectionFindingsToSystems({
+            propertyId: activeProperty.id,
+            userId: user.id,
+            findings: inspectionReport.findings as any,
+          });
+        } catch (sysErr) {
+          console.warn("System fan-out failed (non-fatal):", sysErr);
+        }
+      }
+
       // Fan out cross-role notifications when an inspection report is confirmed
       if (docType === "inspection_report" && activeProperty?.id) {
         try {
