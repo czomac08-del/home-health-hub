@@ -14,6 +14,7 @@ interface WarrantyRow {
   coverage_end: string | null;
   system_detail_id: string | null;
   is_transferable: boolean | null;
+  document_path: string | null;
 }
 
 interface SystemRow {
@@ -23,7 +24,9 @@ interface SystemRow {
 }
 
 function getStatus(endDate: string | null) {
-  if (!endDate) return { label: "Unknown", color: "text-muted-foreground", days: -1 };
+  // No expiry on file → assume Active. Most warranties without an extracted end
+  // date are still in coverage; we mark Expired only when we know it has passed.
+  if (!endDate) return { label: "Active", color: "text-emerald-500", days: -1 };
   const diff = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000);
   if (diff <= 0) return { label: "Expired", color: "text-destructive", days: diff };
   if (diff <= 90) return { label: "Expiring Soon", color: "text-[hsl(var(--health-amber))]", days: diff };
@@ -130,8 +133,12 @@ const WarrantyDashboard = () => {
                     {s.label === "Active" && <ShieldCheck className="h-4 w-4 text-emerald-500" />}
                     {s.label === "Expiring Soon" && <ShieldAlert className="h-4 w-4 text-[hsl(var(--health-amber))]" />}
                     {s.label === "Expired" && <ShieldX className="h-4 w-4 text-destructive" />}
-                    {s.label === "Unknown" && <Shield className="h-4 w-4 text-muted-foreground" />}
-                    <span className="text-sm font-semibold text-foreground">{sys?.system_name || "Untitled warranty"}</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {sys?.system_name ||
+                        w.provider_name ||
+                        (w.document_path ? w.document_path.split("/").pop()?.replace(/\.[^.]+$/, "") : null) ||
+                        "Warranty"}
+                    </span>
                   </div>
                   <span className={`text-[10px] font-bold ${s.color}`}>{s.label}</span>
                 </div>

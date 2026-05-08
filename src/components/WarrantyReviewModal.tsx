@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Wand2, ExternalLink, Check, ShieldCheck } from "lucide-react";
+import { Loader2, Wand2, ExternalLink, Check, ShieldCheck, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -136,11 +136,17 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
           coverageEnd = d.toISOString().slice(0, 10);
         }
       }
+      const filenameLabel = record.file_name?.replace(/\.[^.]+$/, "") || null;
+      const providerLabel =
+        warranty.provider_name ||
+        warranty.product_name ||
+        filenameLabel ||
+        "Warranty";
       const insertPayload: any = {
         user_id: user.id,
         property_id: record.property_id || activeProperty?.id,
         warranty_type: (warranty.warranty_type as string) || "manufacturer",
-        provider_name: warranty.provider_name || warranty.product_name || record.file_name?.replace(/\.[^.]+$/, "") || null,
+        provider_name: providerLabel,
         coverage_start: warranty.coverage_start || null,
         coverage_end: coverageEnd,
         claim_phone: warranty.claim_phone || null,
@@ -202,10 +208,24 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
         ) : !hasDetails ? (
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              We don't have structured warranty details for this document yet. Run AI analysis to
-              extract coverage info, or open the PDF to read it directly.
+              We don't have structured warranty details for this document yet. You can still add it
+              to your Warranties dashboard using the filename, run AI analysis to extract coverage,
+              or open the PDF to read it directly.
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {synced ? (
+                <Button disabled variant="secondary" className="flex-1">
+                  <Check className="h-4 w-4 mr-2" /> Added to Warranties
+                </Button>
+              ) : (
+                <Button onClick={syncToWarranties} disabled={syncing} className="flex-1">
+                  {syncing ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding…</>
+                  ) : (
+                    <><ShieldCheck className="h-4 w-4 mr-2" /> Add to Warranties</>
+                  )}
+                </Button>
+              )}
               <Button onClick={reExtract} disabled={extracting} className="flex-1">
                 {extracting ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…</>
