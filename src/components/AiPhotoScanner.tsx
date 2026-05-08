@@ -1,9 +1,8 @@
-import { useState, useRef, useCallback } from "react";
-import { useEffect } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Camera, X, Sparkles, ScanLine, QrCode, Package, Loader2, FileText, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeImageFile, fileToDataUrl, ImageTooLargeError } from "@/lib/imageUpload";
+import { normalizeImageFile, fileToDataUrl } from "@/lib/imageUpload";
 import { toast } from "sonner";
 
 export type ScanMode = "label_scan" | "barcode" | "full_unit" | "receipt";
