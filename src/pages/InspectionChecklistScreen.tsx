@@ -225,6 +225,7 @@ export default function InspectionChecklistScreen({ mode }: Props) {
                 mode={mode}
                 onToggle={() => toggle(f)}
                 onFindContractor={() => setContractorFor(f)}
+                onViewInReport={openReportAt}
               />
             ))}
           </ul>
@@ -245,6 +246,7 @@ export default function InspectionChecklistScreen({ mode }: Props) {
                     mode={mode}
                     onToggle={() => toggle(f)}
                     onFindContractor={() => setContractorFor(f)}
+                    onViewInReport={openReportAt}
                   />
                 ))}
               </ul>
