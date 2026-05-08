@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight, Check, Star, QrCode, Mail, FileText, Download, T
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { generatePassportPdf } from "@/utils/passportPdf";
+import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = ["What's Staying", "Scrub Info", "Rate Systems", "Welcome Note", "Generate", "Transfer"];
 
@@ -388,7 +390,26 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
               <p className="text-[10px] text-muted-foreground">Download a complete report to hand over</p>
             </div>
           </div>
-          <button onClick={() => { toast.success("PDF downloaded!"); setTransferDone(true); }} className="w-full rounded-lg bg-secondary py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2">
+          <button onClick={async () => {
+            try {
+              const { data: codeRow } = await supabase
+                .from("referral_codes")
+                .select("code")
+                .maybeSingle();
+              await generatePassportPdf({
+                propertyId: activeProperty?.id || "unknown",
+                address: activeProperty?.address || "Your Home",
+                yearBuilt: (activeProperty as any)?.year_built ?? null,
+                healthScore: (activeProperty as any)?.health_score ?? null,
+                systems: [],
+                referralCode: codeRow?.code ?? null,
+              });
+              toast.success("PDF downloaded!");
+              setTransferDone(true);
+            } catch (e: any) {
+              toast.error(e?.message || "Could not generate PDF");
+            }
+          }} className="w-full rounded-lg bg-secondary py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2">
             <Download className="h-4 w-4" /> Download PDF
           </button>
         </div>

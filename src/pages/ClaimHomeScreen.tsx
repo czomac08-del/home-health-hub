@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Home, Check, Shield, Star, ArrowRight, Upload, FileText } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Home, Check, ArrowRight, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ const includedSystems = [
 
 const ClaimHomeScreen = () => {
   const navigate = useNavigate();
+  const { propertyId } = useParams();
   const { activeProperty, user } = useAuth();
   const [claimed, setClaimed] = useState(false);
   const [newAppliances, setNewAppliances] = useState<string[]>([]);
@@ -205,8 +206,10 @@ const ClaimHomeScreen = () => {
         <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-4">
           <Home className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground mb-1">Claim Your Home</h1>
-        <p className="text-sm text-muted-foreground">A ComingHomeIQ profile has been prepared for you</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Your new home's complete record is ready for you.</h1>
+        <p className="text-sm text-muted-foreground">
+          The seller built this file using ComingHomeIQ. Claim it and everything stays with you — permits, warranties, maintenance history, government records — permanently.
+        </p>
       </div>
 
       <div className="rounded-xl border border-primary/30 bg-card p-5 mb-6">
@@ -215,16 +218,14 @@ const ClaimHomeScreen = () => {
           <p className="text-xs text-muted-foreground mb-3">Built {activeProperty.year_built}</p>
         )}
 
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-1.5">
-            <Shield className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">78%</span>
-            <span className="text-xs text-muted-foreground">Health Score</span>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="rounded-lg bg-secondary/40 p-3">
+            <p className="text-2xl font-bold text-foreground">{includedSystems.length}</p>
+            <p className="text-[11px] text-muted-foreground">Systems documented</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Star className="h-4 w-4 text-primary fill-primary" />
-            <span className="text-sm font-semibold text-foreground">4.2</span>
-            <span className="text-xs text-muted-foreground">Seller Rating</span>
+          <div className="rounded-lg bg-secondary/40 p-3">
+            <p className="text-2xl font-bold text-foreground">5</p>
+            <p className="text-[11px] text-muted-foreground">Gov't sources (FEMA, NOAA, EPA, USDA, Census)</p>
           </div>
         </div>
 
@@ -248,10 +249,18 @@ const ClaimHomeScreen = () => {
       </div>
 
       {!verifyOpen ? (
-        <button onClick={() => setVerifyOpen(true)}
-          className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
-          <Check className="h-5 w-5" /> Claim This Home
-        </button>
+        <>
+          <button onClick={() => setVerifyOpen(true)}
+            className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
+            <Check className="h-5 w-5" /> Claim This Home File — Free
+          </button>
+          <p className="text-[11px] text-muted-foreground text-center mt-3">
+            No credit card. Takes 2 minutes. Your home's record belongs to you.
+          </p>
+          {propertyId && (
+            <p className="text-[10px] text-muted-foreground/70 text-center mt-2">Property reference: {propertyId.slice(0, 8)}…</p>
+          )}
+        </>
       ) : (
         <div className="rounded-xl border border-primary/30 bg-card p-5 space-y-4">
           <div>

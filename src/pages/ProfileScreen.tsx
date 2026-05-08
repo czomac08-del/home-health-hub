@@ -13,6 +13,7 @@ import DataPermanenceBanner from "@/components/DataPermanenceBanner";
 import CommunityImpactSection from "@/components/CommunityImpactSection";
 import DevResetButton from "@/components/DevResetButton";
 import AccountSecuritySection from "@/components/AccountSecuritySection";
+import ReferralDashboard from "@/components/ReferralDashboard";
 
 const proFeatures = [
   { icon: <Sparkles className="h-4 w-4 text-primary" />, label: "AI-powered maintenance predictions" },
@@ -184,6 +185,11 @@ const ProfileScreen = () => {
             </div>
           </div>
         </div>
+      </Section>
+
+      {/* Referrals */}
+      <Section title="Referrals">
+        <ReferralDashboard />
       </Section>
 
       {/* Maintenance History */}
