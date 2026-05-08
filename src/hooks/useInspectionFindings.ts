@@ -15,6 +15,18 @@ export interface DbFinding {
   status: FindingStatus;
   fix_verification_id: string | null;
   resolved_at: string | null;
+  severity_label?: string | null;
+  system_category?: string | null;
+  location_in_home?: string | null;
+  inspector_recommendation?: string | null;
+  source_document_id?: string | null;
+  resolved_by?: string | null;
+  resolution_notes?: string | null;
+  resolution_cost?: number | null;
+  contractor_name?: string | null;
+  before_photo_url?: string | null;
+  after_photo_url?: string | null;
+  in_progress_notes?: string | null;
 }
 
 /**
@@ -57,12 +69,18 @@ export function useInspectionFindings(args: {
             user_id: userId!,
             property_id: propertyId,
             inspection_record_id: inspectionRecordId,
+            source_document_id: inspectionRecordId,
             finding_key: key,
             level: f.level,
             category: f.category ?? null,
+            system_category: f.category ?? null,
+            severity_label:
+              f.level === 1 ? "Safety" : f.level === 2 ? "Major" : f.level === 3 ? "Minor" : "Informational",
             title: f.title,
             description: f.description ?? null,
-            recommendation: null,
+            location_in_home: (f as any).location ?? null,
+            inspector_recommendation: (f as any).recommendation ?? null,
+            recommendation: (f as any).recommendation ?? null,
             is_diy: isDiy({ level: f.level, title: f.title, description: f.description }),
             status: "open" as FindingStatus,
           }));
@@ -73,7 +91,7 @@ export function useInspectionFindings(args: {
 
       const { data: all } = await supabase
         .from("inspection_findings")
-        .select("id, finding_key, level, category, title, description, recommendation, is_diy, status, fix_verification_id, resolved_at")
+        .select("id, finding_key, level, category, title, description, recommendation, is_diy, status, fix_verification_id, resolved_at, severity_label, system_category, location_in_home, inspector_recommendation, source_document_id, resolved_by, resolution_notes, resolution_cost, contractor_name, before_photo_url, after_photo_url, in_progress_notes")
         .eq("inspection_record_id", inspectionRecordId)
         .order("level", { ascending: true });
 
