@@ -475,12 +475,29 @@ function DocCard({
         )}
         <button
           onClick={() => {
-            if (
-              doc.category === "warranty" &&
-              doc.source_table === "property_records" &&
-              onReviewWarranty
-            ) {
-              onReviewWarranty(doc.id);
+            // Warranty docs sourced from property_records have AI-extracted
+            // detail — open the dedicated review modal. Warranty docs already
+            // synced to the warranties table just need their PDF.
+            if (doc.category === "warranty") {
+              if (doc.source_table === "property_records" && onReviewWarranty) {
+                onReviewWarranty(doc.id);
+                return;
+              }
+              if (doc.url) {
+                window.open(doc.url, "_blank");
+                return;
+              }
+              if (doc.storagePath) {
+                supabase.storage
+                  .from(doc.bucket)
+                  .createSignedUrl(doc.storagePath, 60 * 60)
+                  .then(({ data }) => {
+                    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                    else toast.error("Could not open warranty document.");
+                  });
+                return;
+              }
+              toast.error("No warranty document file available.");
               return;
             }
             navigate(reviewRoute(doc));
