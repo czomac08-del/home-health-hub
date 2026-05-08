@@ -208,6 +208,10 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
     return parts.join(", ");
   }, [recommendation]);
 
+  // Once setup is complete, the editable Filter Size lives in the Specifications section below.
+  // Render nothing here to avoid duplicate displays.
+  if (setupComplete) return null;
+
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2 mb-2">
