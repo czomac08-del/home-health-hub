@@ -13,6 +13,7 @@ import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from 
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
+import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhotosBanner, type AnalyzablePhoto } from "@/components/PhotoAiAnalyzer";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import ChimneyIntelligence from "@/components/ChimneyIntelligence";
@@ -41,7 +42,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
   </div>
 );
 
-interface PhotoItem { url: string; label: string; storagePath?: string; }
+interface PhotoItem { url: string; label: string; storagePath?: string; id?: string; ai_analyzed?: boolean; }
 interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
 
 // Small teal badge
