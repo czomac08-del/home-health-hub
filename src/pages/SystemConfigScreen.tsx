@@ -74,6 +74,7 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [aiPhotoBanner, setAiPhotoBanner] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [analyzingPhotoIds, setAnalyzingPhotoIds] = useState<Set<string>>(new Set());
@@ -499,7 +500,8 @@ const SystemConfigScreen = () => {
       toast.success("Filter setup saved");
     } else {
       toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
-      navigate("/systems");
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
     }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
@@ -1014,7 +1016,7 @@ const SystemConfigScreen = () => {
               disabled={saving}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Save className="h-5 w-5" /> {saving ? "Saving…" : "Save to Passport"}
+              <Save className="h-5 w-5" /> {saving ? "Saving…" : justSaved ? "✓ Saved" : "Save to Passport"}
             </button>
             <SaveButtonMessage />
             <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
