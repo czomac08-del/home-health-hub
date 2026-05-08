@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Wand2, ExternalLink, Check, ShieldCheck, FileText } from "lucide-react";
 import { toast } from "sonner";
 import InspectionPdfViewer from "@/components/InspectionPdfViewer";
+import WarrantyAIChat from "@/components/WarrantyAIChat";
 
 interface Props {
   open: boolean;
@@ -22,6 +23,23 @@ interface Props {
     url?: string | null;
     storagePath?: string | null;
     bucket?: string | null;
+  } | null;
+  /**
+   * Optional pre-extracted warranty row (from the `warranties` table) used
+   * when opening the modal as a "warranty detail" view from the dashboard.
+   * Renders PDF + structured details + AI chat in a unified two-column layout.
+   */
+  warrantyRow?: {
+    id?: string;
+    warranty_type?: string | null;
+    provider_name?: string | null;
+    coverage_start?: string | null;
+    coverage_end?: string | null;
+    claim_phone?: string | null;
+    claim_website?: string | null;
+    claim_notes?: string | null;
+    is_transferable?: boolean | null;
+    system_name?: string | null;
   } | null;
 }
 
@@ -69,7 +87,7 @@ function looksLikeWarranty(w: WarrantyExtraction): boolean {
   );
 }
 
-export default function WarrantyReviewModal({ open, onOpenChange, recordId, directDoc }: Props) {
+export default function WarrantyReviewModal({ open, onOpenChange, recordId, directDoc, warrantyRow }: Props) {
   const { user, activeProperty } = useAuth();
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -233,21 +251,41 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
 
   const hasDetails = looksLikeWarranty(warranty);
   const isDirectMode = !recordId && !!directDoc;
+  const isWarrantyDetailMode = isDirectMode && !!warrantyRow;
   const titleLabel =
     record?.file_name ||
     directDoc?.fileName ||
     "Warranty";
 
+  // Build context strings for the inline AI chat in detail mode.
+  const detailWarrantyContext = useMemo(() => {
+    if (!warrantyRow) return "";
+    const lines: string[] = [];
+    if (warrantyRow.system_name) lines.push(`Item: ${warrantyRow.system_name}`);
+    if (warrantyRow.provider_name) lines.push(`Provider: ${warrantyRow.provider_name}`);
+    if (warrantyRow.warranty_type) lines.push(`Type: ${warrantyRow.warranty_type.replace(/_/g, " ")}`);
+    if (warrantyRow.coverage_start) lines.push(`Coverage start: ${warrantyRow.coverage_start}`);
+    if (warrantyRow.coverage_end) lines.push(`Coverage end: ${warrantyRow.coverage_end}`);
+    if (warrantyRow.claim_phone) lines.push(`Claim phone: ${warrantyRow.claim_phone}`);
+    if (warrantyRow.claim_website) lines.push(`Claim website: ${warrantyRow.claim_website}`);
+    if (warrantyRow.claim_notes) lines.push(`Coverage summary: ${warrantyRow.claim_notes}`);
+    if (warrantyRow.is_transferable != null)
+      lines.push(`Transferable: ${warrantyRow.is_transferable ? "Yes" : "No"}`);
+    return lines.join("\n");
+  }, [warrantyRow]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isDirectMode || (!loading && !hasDetails) ? "max-w-4xl h-[85vh] flex flex-col" : "max-w-lg"}>
+      <DialogContent className={isWarrantyDetailMode ? "max-w-6xl h-[90vh] flex flex-col" : (isDirectMode || (!loading && !hasDetails) ? "max-w-4xl h-[85vh] flex flex-col" : "max-w-lg")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            {titleLabel}
+            {warrantyRow?.system_name || warrantyRow?.provider_name || titleLabel}
           </DialogTitle>
           <DialogDescription>
-            {isDirectMode
+            {isWarrantyDetailMode
+              ? "Your warranty document, extracted details, and an AI assistant for this specific warranty."
+              : isDirectMode
               ? "Viewing your warranty document."
               : hasDetails
                 ? "Extracted warranty details. Sync to your Warranties dashboard to track expiration."
@@ -258,6 +296,51 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         {loading ? (
           <div className="py-8 flex justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : isWarrantyDetailMode ? (
+          <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 -mx-6 -mb-6 border-t border-border">
+            <div className="min-h-0 border-r border-border">
+              <InspectionPdfViewer fileUrl={signedUrl} />
+            </div>
+            <div className="min-h-0 overflow-y-auto p-4 space-y-4">
+              <div className="space-y-2 text-sm">
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Warranty Details</h3>
+                <DetailRow label="Provider" value={warrantyRow?.provider_name} />
+                <DetailRow
+                  label="Type"
+                  value={warrantyRow?.warranty_type ? warrantyRow.warranty_type.replace(/_/g, " ") : null}
+                  capitalize
+                />
+                <DetailRow label="Coverage start" value={warrantyRow?.coverage_start} />
+                <DetailRow label="Coverage end" value={warrantyRow?.coverage_end} />
+                <DetailRow label="Claim phone" value={warrantyRow?.claim_phone} />
+                <DetailRow label="Claim website" value={warrantyRow?.claim_website} />
+                <DetailRow label="Coverage summary" value={warrantyRow?.claim_notes} multiline />
+                <DetailRow
+                  label="Transferable"
+                  value={
+                    warrantyRow?.is_transferable == null
+                      ? null
+                      : warrantyRow.is_transferable
+                        ? "Yes"
+                        : "No"
+                  }
+                />
+                {!detailWarrantyContext && (
+                  <p className="text-xs text-muted-foreground italic">
+                    No structured details extracted. The AI assistant below will use general warranty knowledge.
+                  </p>
+                )}
+              </div>
+              <WarrantyAIChat
+                warrantyContext={detailWarrantyContext}
+                systemContext={warrantyRow?.system_name ? `System: ${warrantyRow.system_name}` : ""}
+                systemInfo={{
+                  system_name: warrantyRow?.system_name || warrantyRow?.warranty_type || "warranty",
+                  brand: warrantyRow?.provider_name || null,
+                }}
+              />
+            </div>
           </div>
         ) : isDirectMode ? (
           <div className="flex-1 min-h-0 -mx-6 -mb-6 border-t border-border">

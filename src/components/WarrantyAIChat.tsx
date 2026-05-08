@@ -9,7 +9,7 @@ interface Message {
   content: string;
 }
 
-const CHIPS = [
+const DEFAULT_CHIPS = [
   "What is covered under my warranty?",
   "How do I file a warranty claim?",
   "Is labor included or just parts?",
@@ -18,18 +18,22 @@ const CHIPS = [
   "Can I transfer this warranty if I sell my home?",
 ];
 
-export default function WarrantyAIChat({ warrantyContext, systemContext, systemInfo }: {
+export default function WarrantyAIChat({ warrantyContext, systemContext, systemInfo, chips, openingMessage }: {
   warrantyContext: string;
   systemContext: string;
   systemInfo?: { system_name: string; brand?: string | null } | null;
+  chips?: string[];
+  openingMessage?: string;
 }) {
   const brand = systemInfo?.brand || "your";
   const name = systemInfo?.system_name || "appliance";
   const hasWarranty = warrantyContext.trim().length > 0;
 
-  const opening = hasWarranty
+  const opening = openingMessage ?? (hasWarranty
     ? `I have read your ${brand} ${name} warranty information. ${warrantyContext.includes("Active") ? "Your warranty is currently active." : "Some warranties may be expired."} What would you like to know?`
-    : `I do not have your warranty document on file. Upload it and I can answer specific questions about your coverage. In the meantime, here is general information about typical warranties for this type of ${name}.`;
+    : `I do not have your warranty document on file. Upload it and I can answer specific questions about your coverage. In the meantime, here is general information about typical warranties for this type of ${name}.`);
+
+  const activeChips = chips ?? DEFAULT_CHIPS;
 
   const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: opening }]);
   const [input, setInput] = useState("");
@@ -108,9 +112,9 @@ export default function WarrantyAIChat({ warrantyContext, systemContext, systemI
         <div ref={bottomRef} />
       </div>
       {/* Chips */}
-      {messages.length <= 2 && (
+      {messages.length <= 2 && activeChips.length > 0 && (
         <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-          {CHIPS.map(c => (
+          {activeChips.map(c => (
             <button key={c} onClick={() => send(c)} className="text-[11px] bg-primary/10 text-primary px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors">
               {c}
             </button>
