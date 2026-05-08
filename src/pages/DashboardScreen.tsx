@@ -3,7 +3,7 @@ import { HealthRing } from "@/components/HealthRing";
 import SystemCard from "@/components/SystemCard";
 import HomeAIChat from "@/components/HomeAIChat";
 import CertificationCard from "@/components/CertificationCard";
-import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, Droplets, Wind, Wrench, ClipboardList, HousePlus } from "lucide-react";
+import { Home, User, ChevronDown, AlertTriangle, Sun, ChevronRight, ClipboardList, HousePlus } from "lucide-react";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
