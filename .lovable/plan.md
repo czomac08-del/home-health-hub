@@ -1,70 +1,74 @@
-## Pre-Launch FTUX + Security Hardening
+## Goal
 
-12 items spanning FTUX polish and security. I'll group into atomic, low-risk slices and call out items I'll **defer** (with reason) so we don't ship half-finished critical paths.
+Turn inspection upload into a full data pipeline: extract → confirm → save specs to systems, save findings to a tracked issues table, surface them on dashboard/property pages with resolve/in-progress workflow, IQ Score impact, monthly Pulse hook, and a per-property inspection history timeline.
 
----
+## Part 1 — Extraction & Confirmation
 
-### Part 1 — First-Time User Experience
+**Edge function `extract-document-data` (second pass)**
+After Gemini returns the inspection_report payload, run a second structured-output call (gemini-3-flash) that maps the same report into:
+- `system_specs[]` — typed object per system (hvac, water_heater, electrical_panel, roof, plumbing, foundation, windows, well, septic) with fields per spec, `confidence_level`, `verbatim_quote`, `page_reference`.
+- `findings[]` — `{ finding_text, severity (safety|major|minor|informational), system_category, location_in_home, inspector_recommendation, page_reference }`.
 
-**1. "What We Know" / "What To Find Next" toggle** — `MissingRecordsIntelligence.tsx`. Add a 2-tab toggle above the gap list. Default = "What We Know" (queries `permanent_archive` with `source_tag IN (GOVERNMENT_API, DOCUMENT_EXTRACTED, OWNER_PROVIDED, PROFESSIONAL_SUBMITTED)` ordered by confidence). "What To Find Next" reframes header to "Your Next 5 Actions", filters gaps to safety-critical first then highest-findability score, with a "Show all N gaps" expander. Safety-critical rows always render in both views.
+Return both arrays in the response (alongside existing `inspectionReport`). Do not write systems server-side — confirmation happens client-side. Findings are written immediately to the new `inspection_findings_v2` table on confirmation submit (single transaction, idempotent on `(property_record_id, finding_text_hash)`).
 
-**2. First Win Screen** — new `src/pages/FirstWinScreen.tsx` at route `/first-win`. After the last onboarding step, redirect there before `/dashboard`. Picks one CTA based on what the scan returned (FEMA flood zone found → "See your flood zone"; else → "Add your HVAC system"; else → "View N verified records"). Single button. Dismissed via new `profiles.first_win_dismissed_at` column.
+> Note: We already have a `useInspectionFindings` hook + `inspection_findings` table for the legacy review flow. Extend that table rather than create a new one — add columns instead of duplicating.
 
-**3. Scanning result always non-empty** — `ScanningScreen.tsx`. Branch on the response: RentCast hit → "We found your property…"; RentCast fallback → "Found in N government sources…"; total miss → "We couldn't find public records yet — here's how to add what you know." Never route to a blank dashboard.
+**Confirmation UI** — `InspectionExtractionConfirm.tsx`
+Modal opened automatically after extraction in `InspectionAnalysisPanel`. Shows checklist of extracted system specs grouped by system, with field/value/AI-confidence badge, all checked by default. Submit calls a server function (or direct upserts via `supabase.from('system_details')`) that:
+- Skips fields where existing row has `source_tag IN ('GOVERNMENT_API','OWNER_CONFIRMED')` and value differs (shows "kept your value" pill).
+- Inserts new spec rows tagged `DOCUMENT_EXTRACTED` with `confidence_level` and `source_document_id`.
+- Always inserts findings into `inspection_findings`.
 
-**4. IQ Score trajectory** — `DashboardScreen.tsx`. For users with `account_age_days < 30`, render a small bar under the ring: "Today: X" → "After top 5 actions: ~Y" where Y = current + (sum of impact weights of top 5 gaps capped at 95).
+## Part 2 — Issue Resolution Tracking
 
----
+**Migration** — extend `inspection_findings`:
+- `severity_label` text (Safety/Major/Minor/Informational, mirrors enum from extraction)
+- `system_category` text
+- `location_in_home` text
+- `inspector_recommendation` text
+- `status` text default `open` (open|in_progress|resolved|dismissed|monitoring) — replaces existing `FindingStatus` if it doesn't already cover these
+- `resolved_at` timestamptz
+- `resolved_by` text
+- `resolution_notes` text
+- `resolution_cost` numeric
+- `contractor_name` text
+- `before_photo_url`, `after_photo_url` text
+- `source_document_id` uuid
 
-### Part 2 — Security Hardening
+RLS: keep existing user-scoped policies.
 
-**5. Property claim verification** — `ClaimHomeScreen.tsx`. Two-step gate: (a) typed full address must exact-match (case-insensitive, whitespace-collapsed) the property's `formatted_address`; (b) one of: last-4 of zip + county OR a doc upload that gets OCR'd via existing `verify-claim-document` edge function which already checks address match and does not persist. Every attempt → `verification_events` with action `claim_attempt` + IP from edge function.
+**`InspectionIssuesList.tsx`** — grouped-by-severity list with severity icons, checkbox + "Mark in progress" button. Resolution dialog `ResolveFindingDialog.tsx` with fields per spec, photo upload to `system-photos` bucket. Sets status, timestamps, details. After-state: green card with resolved date + resolver.
 
-**6. Archive immutability** — `permanent_archive` already has `enforce_archive_provenance_immutable` trigger covering `submitted_by_user_id`, `submitted_at`, `submitted_ip`, `legal_acknowledgment_text`, `provenance_locked`. Verify and extend trigger to also block `acknowledgment_timestamp` changes once set. No new migration needed beyond a small trigger update.
+## Part 3 — Progress Tracking
 
-**7. Report URL security**
-- Audit `shared_reports.id` — already `uuid PRIMARY KEY DEFAULT gen_random_uuid()` per existing `get_shared_report` function. ✅ no migration needed for ID format.
-- Add expiry UI to share dialog (7d / 30d / Never, default 30d) — find existing share component and wire `expires_at`.
-- 404 page for expired links — update report viewer to check `get_shared_report` returning empty → friendly "expired" state.
+**`InspectionProgressCard.tsx`** — dashboard + property page widget. Pulls counts of open vs resolved per latest inspection. Color rule: red (any open safety), orange (open major only), green (all resolved). Clicking links to issues list.
 
-**8. Edge function JWT auth** — Add the same `getClaims()` guard already present in `insurance-chat` to: `fema-disasters`, `noaa-storms`, `epa-echo`, `drought-status`, `ai-scan`, `rentcast-lookup`, `extract-document-data`, `generate-insurance-report`, `warranty-chat`, `manual-finder`, `youtube-search`. **Excluded**: `geocode` (intentionally permissive for public address lookups per recent fix — flag to user, do not change). Returning 401 before any external API call.
+**Home IQ Score** — update `src/lib/inspectionScoring.ts` (or wherever score aggregator lives) to add: Safety +3, Major +2, Minor +1, In Progress +0.5, Dismissed/NA neutral. Wire into existing score computation.
 
-**9. Storage bucket RLS** — Audit each bucket:
-- `system-photos`: add per-photo privacy enforcement via `photo_privacy_setting` join-based policy.
-- `system-documents`, `insurance-documents`, `warranty-documents`, `property-records`, `inspector-media`, `fix-verification`: ensure path-based owner-only SELECT/INSERT/DELETE policies and no public flag. Migration tightens any missing policies. Confirm none are `public = true`.
+**Monthly Pulse email** — extend `pulse-monthly.tsx` template + `process-retention-emails` to compute open-safety count + months since inspection per user, and inject a conditional section with a deep link.
 
-**10. Auth rate limiting** — **DEFER per project policy** (instructions explicitly say "Do not add rate limiting"). Will note this back to user, recommend Supabase Auth built-in attempt limits + workspace-level email-on-anomaly via separate notify function, but not implement custom counters.
+## Part 4 — Inspection History Timeline
 
-**11. Records-request letter — ownership check** — find the letter generator (likely in `record-research-chat` or a button in `RecordsRequestCard`). Add server-side check: input `property_id` must belong to `auth.uid()` in `properties` table; otherwise return 403 with the exact error string requested.
+`InspectionHistorySection.tsx` on `PropertyDetailScreen.tsx`: lists all inspection-type rows from `property_records` newest first with date, inspector name (from `ai_extracted_data.inspector_name`), total findings, resolved/open count, link to issues list filtered by that document.
 
-**12. Address-keyed refresh cooldown** — `free-data-refresh` / `gated-data-pull` edge functions. Migration: add `refresh_logs.address_hash` (text, indexed) + `county_fips`. Cooldown query: `WHERE address_hash = $1 AND created_at > now() - interval '24 hours'`. If hit, return cached payload regardless of user_id. New rows write the hash on every refresh.
+## Files
 
----
+New:
+- `src/components/InspectionExtractionConfirm.tsx`
+- `src/components/InspectionIssuesList.tsx`
+- `src/components/ResolveFindingDialog.tsx`
+- `src/components/InspectionProgressCard.tsx`
+- `src/components/InspectionHistorySection.tsx`
+- `supabase/migrations/<ts>_inspection_resolution_tracking.sql`
 
-### Files Touched (summary)
+Edited:
+- `supabase/functions/extract-document-data/index.ts` (second-pass mapper)
+- `src/components/InspectionAnalysisPanel.tsx` (open confirmation modal)
+- `src/lib/inspectionScoring.ts` (score deltas)
+- `src/pages/DashboardScreen.tsx` (progress card)
+- `src/pages/PropertyDetailScreen.tsx` (issues list + history timeline)
+- `supabase/functions/_shared/transactional-email-templates/pulse-monthly.tsx` + `process-retention-emails/index.ts` (open-safety section)
 
-```text
-NEW
-  src/pages/FirstWinScreen.tsx
-  src/components/RecordsKnownView.tsx        (View A renderer)
-  supabase/migrations/<ts>_security_hardening.sql
+## Open question
 
-EDITED
-  src/components/MissingRecordsIntelligence.tsx
-  src/pages/ScanningScreen.tsx
-  src/pages/DashboardScreen.tsx
-  src/pages/ClaimHomeScreen.tsx
-  src/pages/OnboardingWizard.tsx              (route to /first-win)
-  src/App.tsx                                  (register /first-win)
-  src/components/{share-report-component}.tsx  (expiry selector, find at impl time)
-  supabase/functions/{fema-disasters,noaa-storms,epa-echo,drought-status,
-    ai-scan,rentcast-lookup,extract-document-data,generate-insurance-report,
-    warranty-chat,manual-finder,youtube-search}/index.ts   (JWT guard)
-  supabase/functions/{free-data-refresh,gated-data-pull}/index.ts  (address-key cooldown)
-  supabase/functions/record-research-chat/index.ts         (ownership gate)
-```
-
-### Items I will defer + flag (not silently skipped)
-- **#10 Auth rate limiting** — project policy says do not implement; will recommend enabling Supabase's built-in protections instead.
-- **#9** — if any bucket has unusual policies or third-party integrations relying on path patterns, I'll surface findings before tightening.
-- **#7** — only the share-link expiry UI; the existing `shared_reports` schema already meets the UUID/expiry/revoke requirements.
+This touches the Home IQ Score formula and monthly Pulse content. Both have other inputs already. I'll add additive deltas and a conditional section without changing existing logic — flag if you want me to rebalance the score instead.
