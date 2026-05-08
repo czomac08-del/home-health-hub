@@ -124,18 +124,19 @@ Deno.serve(async (req) => {
   }
 
   // ---- Optional auth validation ----
-  // Public address lookup is used before login and during onboarding. If a
-  // bearer token is supplied, accept known app/backend tokens or a real user JWT.
+  // Public address lookup is used before login and during onboarding. Because
+  // this endpoint only returns public geocoding data, invalid/stale bearer
+  // tokens should not block the lookup or cause a blank-screen 401.
   const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
   if (authHeader) {
-    if (!authHeader.toLowerCase().startsWith("bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    try {
-      if (!(await isKnownBearerToken(authHeader))) throw new Error("Invalid bearer token");
-    } catch (jwtErr) {
-      console.warn("Geocode auth validation failed:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (authHeader.toLowerCase().startsWith("bearer ")) {
+      try {
+        await isKnownBearerToken(authHeader);
+      } catch (jwtErr) {
+        console.warn("Ignoring geocode auth validation failure:", jwtErr instanceof Error ? jwtErr.message : jwtErr);
+      }
+    } else {
+      console.warn("Ignoring non-bearer geocode Authorization header");
     }
   }
   // ---- end optional auth validation ----
