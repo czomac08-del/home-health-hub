@@ -761,7 +761,7 @@ const SystemConfigScreen = () => {
           {/* ═══ SAVE BUTTONS ═══ */}
           <div className="space-y-3 mt-6">
             <button
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={saving}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
