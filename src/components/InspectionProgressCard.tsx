@@ -56,7 +56,7 @@ export default function InspectionProgressCard({ propertyId }: Props) {
       onClick={() =>
         navigate(
           data.recordId
-            ? `/inspection-review/${data.recordId}/viewer`
+            ? `/inspection/${data.recordId}/progress`
             : "/property#issues",
         )
       }
