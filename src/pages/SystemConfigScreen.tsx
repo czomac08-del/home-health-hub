@@ -74,6 +74,7 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [aiPhotoBanner, setAiPhotoBanner] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
   const [analyzingPhotoIds, setAnalyzingPhotoIds] = useState<Set<string>>(new Set());
@@ -499,7 +500,8 @@ const SystemConfigScreen = () => {
       toast.success("Filter setup saved");
     } else {
       toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
-      navigate("/systems");
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
     }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
