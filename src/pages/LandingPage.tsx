@@ -98,6 +98,8 @@ const LandingPage = () => {
             </button>
           ) : (
             <>
+              <button onClick={() => navigate("/blog")} className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">Blog</button>
+              <button onClick={() => navigate("/pricing")} className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</button>
               <button onClick={() => navigate("/auth")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</button>
               <button onClick={() => navigate("/auth")} className="text-sm font-heading font-extrabold bg-primary text-primary-foreground px-4 py-2 rounded-xl hover:opacity-90 transition-opacity glow-orange">Get Started</button>
             </>
@@ -297,23 +299,29 @@ const LandingPage = () => {
             <Home className="h-3.5 w-3.5" />
             Equal Housing Opportunity
           </div>
-          <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground flex-wrap">
-            <button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms</button>
-            <span>·</span>
-            <button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">Privacy</button>
-            <span>·</span>
-            <button onClick={() => navigate("/api-docs")} className="hover:text-foreground transition-colors">API Docs</button>
-            <span>·</span>
-            <button onClick={() => navigate("/feedback")} className="hover:text-foreground transition-colors">Feedback</button>
-          </div>
-          <div className="pt-2">
-            <p className="text-[10px] font-heading font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">Compare</p>
-            <button
-              onClick={() => navigate("/centriq-alternative")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
-            >
-              Centriq Alternative
-            </button>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-left max-w-2xl mx-auto">
+            <div>
+              <p className="text-[10px] font-heading font-black uppercase tracking-wider text-muted-foreground/70 mb-2">Resources</p>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li><button onClick={() => navigate("/blog")} className="hover:text-foreground transition-colors">Blog</button></li>
+                <li><button onClick={() => navigate("/api-docs")} className="hover:text-foreground transition-colors">API Docs</button></li>
+                <li><button onClick={() => navigate("/feedback")} className="hover:text-foreground transition-colors">Feedback</button></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10px] font-heading font-black uppercase tracking-wider text-muted-foreground/70 mb-2">Product</p>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li><button onClick={() => navigate("/pricing")} className="hover:text-foreground transition-colors">Pricing</button></li>
+                <li><button onClick={() => navigate("/centriq-alternative")} className="hover:text-foreground transition-colors">Centriq Alternative</button></li>
+              </ul>
+            </div>
+            <div className="col-span-2 md:col-span-1">
+              <p className="text-[10px] font-heading font-black uppercase tracking-wider text-muted-foreground/70 mb-2">Legal</p>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li><button onClick={() => navigate("/terms")} className="hover:text-foreground transition-colors">Terms</button></li>
+                <li><button onClick={() => navigate("/privacy")} className="hover:text-foreground transition-colors">Privacy</button></li>
+              </ul>
+            </div>
           </div>
           <p className="text-[11px] text-muted-foreground/80 max-w-2xl mx-auto leading-relaxed">
             ComingHomeIQ is not a licensed real estate broker, lender, or insurance provider. Data is sourced from public government records and is provided for informational purposes only.
