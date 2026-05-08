@@ -367,6 +367,15 @@ const BreakerPanelMapper = () => {
 
   return (
     <div className="space-y-4">
+      {/* Mobile experience notice — the breaker grid is dense and works best on
+          a wider viewport. Hidden on sm+ where the layout fits comfortably. */}
+      <div className="sm:hidden rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-[11px] text-amber-200 leading-snug">
+          For the best experience with the Breaker Panel Mapper, use a desktop browser. You can still add and label breakers here — scroll horizontally on the grid as needed.
+        </p>
+      </div>
+
       {/* ─── Panel Overview ─── */}
       <div className="rounded-xl border border-border bg-card p-4">
         <h3 className="text-foreground font-semibold mb-3 flex items-center gap-2"><Zap className="h-4 w-4 text-primary" /> Panel Overview</h3>
