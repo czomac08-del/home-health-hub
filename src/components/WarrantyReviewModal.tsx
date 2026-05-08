@@ -152,6 +152,11 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
       };
       const { error } = await supabase.from("warranties").insert(insertPayload);
       if (error) throw error;
+      // Flip the vault card to "Added to Profile" too.
+      await supabase
+        .from("property_records")
+        .update({ ai_verified: true })
+        .eq("id", record.id);
       toast.success("Synced to your Warranties");
       setSynced(true);
     } catch (e: any) {
