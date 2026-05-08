@@ -250,7 +250,53 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
       </div>
 
       <div className="space-y-1">
-        {categoryStats.map(({ category, total, missing, safetyCritical, types }) => {
+        {view === "next" && (
+          <div className="space-y-1.5 mb-2">
+            {nextActions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No open gaps remaining — your records are in great shape.
+              </p>
+            ) : (
+              (showAllGaps ? prioritizedGaps : nextActions).map((rt) => {
+                const status = getEffectiveStatus(rt);
+                const shouldPulse = !hasPulsed && rt.safety_critical;
+                return (
+                  <button
+                    key={rt.subcategory}
+                    onClick={() => handleRowClick(rt)}
+                    className={`group w-full flex items-start gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all hover:bg-secondary/40 hover:border-primary/30 bg-amber-500/5 border border-amber-500/10 ${
+                      shouldPulse ? "animate-pulse-once ring-1 ring-destructive/40" : ""
+                    }`}
+                  >
+                    <AlertTriangle className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-amber-300">
+                        {rt.subcategory}
+                        {rt.safety_critical && (
+                          <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-destructive/20 text-destructive">Safety</span>
+                        )}
+                      </p>
+                      <p className="text-muted-foreground/80 mt-0.5 capitalize">
+                        {(CATEGORY_LABELS[rt.category] || rt.category).toLowerCase()}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-0.5 shrink-0" />
+                  </button>
+                );
+              })
+            )}
+            {prioritizedGaps.length > nextActions.length && (
+              <button
+                onClick={() => setShowAllGaps(!showAllGaps)}
+                className="w-full text-center text-xs text-primary hover:underline py-2"
+              >
+                {showAllGaps ? "Show top 5 only" : `Show all ${prioritizedGaps.length} gaps`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {view === "known" && categoryStats.map(({ category, total, missing, safetyCritical, types }) => {
           const isExpanded = expandedCategory === category;
           const gapCount = missing.length;
           const completeness = total > 0 ? Math.round(((total - gapCount) / total) * 100) : 100;
