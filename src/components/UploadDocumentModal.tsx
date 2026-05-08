@@ -43,6 +43,8 @@ export default function UploadDocumentModal({
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState<string>(defaultDocType || "inspection_report");
   const [notes, setNotes] = useState("");
+  const [ackOpen, setAckOpen] = useState(false);
+  const [ackPassed, setAckPassed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [extracted, setExtracted] = useState<Record<string, any>>({});
   const [confidence, setConfidence] = useState<string>("");
