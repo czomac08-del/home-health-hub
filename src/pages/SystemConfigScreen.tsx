@@ -484,6 +484,7 @@ const SystemConfigScreen = () => {
       if (data.service_company) setServiceCompany(data.service_company);
       if (data.service_phone) setServicePhone(data.service_phone);
       if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      if ((data as any).source_tags && typeof (data as any).source_tags === "object") setSourceTags((data as any).source_tags as Record<string, string>);
       // Restore water type from specs if saved
       if (displayName.toLowerCase().includes("water source")) {
         const s = data.specs as Record<string, any>;
@@ -576,6 +577,24 @@ const SystemConfigScreen = () => {
       )}
       {aiData && (
         <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
+      )}
+      {aiPhotoBanner && (
+        <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-start gap-3">
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-sm font-semibold text-primary">We identified some details from your photo — review them below.</p>
+        </div>
+      )}
+      {aiSuggestions.length > 0 && (
+        <div className="mb-4 rounded-xl border border-border bg-card px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-foreground">AI suggestions to review</p>
+          {aiSuggestions.map((s) => (
+            <div key={s.key} className="flex items-center gap-2 text-xs">
+              <span className="flex-1 text-muted-foreground"><strong className="text-foreground">{s.label}:</strong> {s.value}</span>
+              <button type="button" onClick={() => applyAiSuggestion(s)} className="text-primary font-semibold">Accept</button>
+              <button type="button" onClick={() => dismissAiSuggestion(s.key)} className="text-muted-foreground">Dismiss</button>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Records Status & Recovery Guide */}
@@ -673,7 +692,7 @@ const SystemConfigScreen = () => {
             <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
                 {specFields.map((field) => (
-                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
+                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={hasAiSource(`spec:${field.key}`)} />
                 ))}
               </div>
             </CollapsibleSectionView>
