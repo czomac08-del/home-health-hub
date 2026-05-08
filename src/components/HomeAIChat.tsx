@@ -132,6 +132,10 @@ const HomeAIChat = () => {
     if (path.startsWith("/documents")) return "Want me to explain what I found in your documents?";
     if (path.startsWith("/warranties")) return "I can tell you which warranties are about to expire.";
     if (path.startsWith("/insurance")) return "Want me to check your coverage gaps?";
+    if (path.startsWith("/realtor")) return "I can pull a full property report for any of your listings.";
+    if (path.startsWith("/inspector")) return "Want me to help summarize your latest inspection findings?";
+    if (path.startsWith("/contractor")) return "I can help identify equipment from your job site photos.";
+    if (path.startsWith("/investor")) return "Want me to run a quick ROI analysis on a property?";
     return "Hi, I'm IQ. Need help with anything?";
   }, [location.pathname]);
 

@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
 import HomeAIChat from "@/components/HomeAIChat";
+import InspectionProgressCard from "@/components/InspectionProgressCard";
+import { FolderOpen } from "lucide-react";
 import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
@@ -43,7 +45,7 @@ const statusLabel = (s: string) => {
 
 const RealtorDashboard = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, activeProperty } = useAuth();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState<Listing | null>(null);
@@ -330,6 +332,21 @@ const RealtorDashboard = () => {
       <InspectionNotificationBanner variant="realtor" />
       <h1 className="text-xl font-bold text-foreground mb-1">Welcome, {profile?.full_name || "Agent"}</h1>
       <p className="text-xs text-muted-foreground mb-6">{profile?.role === "realtor" ? "Licensed Real Estate Agent" : "Realtor Dashboard"}</p>
+
+      <button
+        onClick={() => navigate("/documents")}
+        className="w-full mb-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
+      >
+        <FolderOpen className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Documents Vault</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">Disclosures, reports, listing files</span>
+      </button>
+
+      {activeProperty?.id && (
+        <div className="mb-4">
+          <InspectionProgressCard propertyId={activeProperty.id} />
+        </div>
+      )}
 
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[

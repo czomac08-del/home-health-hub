@@ -13,7 +13,7 @@ import SEO from "@/components/SEO";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
-  X, FileText, Plug2, Download, BadgeCheck, Image
+  X, FileText, Plug2, Download, BadgeCheck, Image, FolderOpen, Sparkles
 } from "lucide-react";
 
 interface Job {
@@ -61,6 +61,44 @@ const ContractorDashboard = () => {
   const [laborTime, setLaborTime] = useState("");
   const [nextServiceRec, setNextServiceRec] = useState("");
   const [cost, setCost] = useState("");
+
+  // Job-photo AI identification state. Each phase holds an optional data URL.
+  const [phasePhotos, setPhasePhotos] = useState<Record<string, string | null>>({
+    Before: null, During: null, After: null,
+  });
+  const [phaseAnalyzing, setPhaseAnalyzing] = useState<string | null>(null);
+
+  const handlePhasePhoto = (phase: string, file: File | null) => {
+    if (!file) { setPhasePhotos(p => ({ ...p, [phase]: null })); return; }
+    const reader = new FileReader();
+    reader.onload = () => setPhasePhotos(p => ({ ...p, [phase]: String(reader.result || "") }));
+    reader.readAsDataURL(file);
+  };
+
+  const identifyEquipment = async (phase: string) => {
+    const dataUrl = phasePhotos[phase];
+    if (!dataUrl) return;
+    setPhaseAnalyzing(phase);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-scan", {
+        body: { mode: "full_unit", imageBase64: dataUrl },
+      });
+      if (error) throw error;
+      const parsed = typeof data?.result === "string" ? JSON.parse(data.result) : (data?.result || data);
+      const summary = parsed?.summary || parsed?.unitType || "Equipment identified";
+      toast.success(summary, {
+        description: parsed?.unitType ? `Type: ${parsed.unitType}` : undefined,
+        action: parsed?.unitType ? {
+          label: "Use as Part Model",
+          onClick: () => setPartModels(prev => prev ? `${prev}, ${parsed.unitType}` : parsed.unitType),
+        } : undefined,
+      });
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't identify equipment");
+    } finally {
+      setPhaseAnalyzing(null);
+    }
+  };
 
   const [quoteDesc, setQuoteDesc] = useState("");
   const [quoteCost, setQuoteCost] = useState("");
@@ -262,13 +300,39 @@ const ContractorDashboard = () => {
             <label className="text-xs font-medium text-muted-foreground mb-2 block">Photo Documentation</label>
             <div className="grid grid-cols-3 gap-2">
               {["Before", "During", "After"].map(phase => (
-                <label key={phase} className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" />
-                  <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-4 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
-                    <Image className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-[9px] text-muted-foreground">{phase}</span>
-                  </div>
-                </label>
+                <div key={phase} className="space-y-1.5">
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhasePhoto(phase, e.target.files?.[0] || null)}
+                    />
+                    {phasePhotos[phase] ? (
+                      <div className="relative rounded-xl border border-primary/40 overflow-hidden aspect-square bg-card">
+                        <img src={phasePhotos[phase]!} alt={phase} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 left-1 text-[9px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded">{phase}</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-4 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors aspect-square">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-[9px] text-muted-foreground">{phase}</span>
+                      </div>
+                    )}
+                  </label>
+                  {phasePhotos[phase] && (
+                    <button
+                      type="button"
+                      onClick={() => identifyEquipment(phase)}
+                      disabled={phaseAnalyzing === phase}
+                      className="w-full inline-flex items-center justify-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 py-1 text-[9px] font-semibold text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
+                    >
+                      {phaseAnalyzing === phase
+                        ? <><Loader2 className="h-3 w-3 animate-spin" /> Analyzing…</>
+                        : <><Sparkles className="h-3 w-3" /> Identify with AI</>}
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -357,6 +421,15 @@ const ContractorDashboard = () => {
       <InspectionNotificationBanner variant="contractor" />
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Contractor"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Licensed Contractor</p>
+
+      <button
+        onClick={() => navigate("/documents")}
+        className="w-full mb-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
+      >
+        <FolderOpen className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Documents Vault</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">Job records, invoices, photo logs</span>
+      </button>
 
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[

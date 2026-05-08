@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 import {
   Building2, DollarSign, TrendingUp, Clock, Plus, ChevronRight,
   BarChart3, Calculator, Star, FileText, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, AlertTriangle, X, Download
+  CheckCircle2, AlertTriangle, X, Download, FolderOpen
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import SEO from "@/components/SEO";
@@ -90,6 +91,7 @@ const InputField = ({ label, value, onChange, placeholder, helper }: { label: st
 
 const InvestorDashboard = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<FlipProject[]>([]);
   const [contractors, setContractors] = useState<FlipContractor[]>([]);
   const [activeTab, setActiveTab] = useState<"projects" | "analyzer" | "portfolio">("projects");
@@ -491,6 +493,15 @@ const InvestorDashboard = () => {
       {projects.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
       <ClosedDealLogger />
+
+      <button
+        onClick={() => navigate("/documents")}
+        className="w-full rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
+      >
+        <FolderOpen className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Documents Vault</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">Property files, deal docs, ROI exports</span>
+      </button>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
