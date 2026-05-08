@@ -63,6 +63,7 @@ const SystemConfigScreen = () => {
   const [aiFilledKeys, setAiFilledKeys] = useState<Set<string>>(new Set());
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
