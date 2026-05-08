@@ -117,6 +117,10 @@ const uploadFabRoutes = [
   "/well-water",
   "/utilities",
   "/home-defense",
+  "/realtor",
+  "/inspector",
+  "/contractor",
+  "/investor",
 ];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

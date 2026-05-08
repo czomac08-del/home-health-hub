@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
+import HomeAIChat from "@/components/HomeAIChat";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
@@ -503,6 +504,7 @@ const ContractorDashboard = () => {
           </div>
         </>
       )}
+      <HomeAIChat />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemoData } from "@/hooks/useDemoData";
+import HomeAIChat from "@/components/HomeAIChat";
 import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
@@ -610,6 +611,7 @@ const BuyerReport = ({ listing, onBack }: { listing: Listing; onBack: () => void
         <ComplianceDisclaimer variant="fair-housing" />
         <ComplianceDisclaimer variant="contractor-referral" />
       </div>
+      <HomeAIChat />
     </div>
   );
 };
