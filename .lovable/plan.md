@@ -1,83 +1,85 @@
-## Scope
+## Pre-Launch Trust & Provenance Upgrades
 
-Pre-launch security hardening for items 5–12 in your prompt. UX reframes (1–4) are deferred to a follow-up.
+Three connected upgrades: AI honesty rules, permanent provenance tagging, and user-submitted data acknowledgments. The codebase already has substantial scaffolding (`permanent_archive`, `archive-submit`, `verification_events`, `permanent_archive_disputes`, `ConfidenceBadge`, `SourceBadge`, `HonestNotFound`, `DisputeDialog`). This plan extends what exists rather than rebuilding.
 
-## 1. Database migration (single migration, all schema changes)
+---
 
-New tables:
-- **`property_claims`** — pending/approved claim attempts with verification path (`zip_county` | `document_ocr`), normalized address, IP, user agent, status, reviewed_at. RLS: claimant reads their own attempts; admins via `has_role('admin')`.
-- **`claim_attempt_log`** — append-only audit row per attempt (success or fail) with `ip`, `user_agent`, `claim_id`, `outcome`, `reason`, `created_at`. Insert-only RLS.
-- **`shared_reports`** — id (uuid v4), property_id, created_by, expires_at (nullable for "never"), revoked, view_count. Public SELECT only via security-definer function `public.get_shared_report(token uuid)` that enforces expiry/revoke.
-- **`address_refresh_cache`** — `cache_key text primary key` (county_fips when known, else sha256 of normalized address), `last_refreshed_at`, `payload jsonb`, `sources jsonb`, `expires_at`. Anyone authenticated can read; only edge functions (service role) can write.
+### Part 1 — AI Honesty Standard (system-prompt + UI rendering)
 
-Column additions:
-- **`permanent_archive`** — `submitted_by_user_id uuid`, `submitted_at timestamptz`, `submitted_ip text`, `legal_acknowledgment_text text`, `provenance_locked boolean default true`. Trigger blocks `UPDATE` of any of these 5 columns once set.
-- **`permanent_archive_disputes`** — new table linking archive_id → user_id with reason, created_at; auto-suppress flag set after >1 distinct disputer in 30 days (security-definer function recomputes on insert).
-- **`verification_events`** — add `ip_address text`, `user_agent text` (used by claim flow + letter generator).
-- **`refresh_logs`** — add `cache_key text`, `address_hash text`, `county_fips text`. Index on `(cache_key, created_at)`.
+**1a. Central AI honesty preamble**
+Create `supabase/functions/_shared/aiHonestyPrompt.ts` exporting a `AI_HONESTY_PREAMBLE` string with: verified-source whitelist (FEMA/NOAA/EPA/USDA/Census/RentCast/uploaded-doc-OCR/owner-confirmed), banned phrases ("your home likely has", "based on homes like yours", "it is probable", "your home appears to", any guess-as-fact), required replacement phrasing, the exact "I was not able to confirm…" sentence, and instructions to append a confidence label `🟢 VERIFIED`, `🟡 UNVERIFIED`, or `🔴 NOT FOUND` to every factual claim.
 
-## 2. Edge function authentication (item 8)
+**1b. Inject into all AI edge functions**
+Prepend `AI_HONESTY_PREAMBLE` to system prompts in: `insurance-chat`, `warranty-chat`, `record-research-chat`, `manual-finder`, `extract-document-data`, `ai-scan`, `verify-claim-document`. Also any HomeAIChat function (search for `lovable-ai` callers).
 
-Add a small `_shared/auth.ts` (deployed as part of each function, since shared imports across functions aren't supported — actually each function gets a private inline copy or we duplicate the snippet). Implementation: each function calls `supabase.auth.getClaims(token)` from the `Authorization` header and returns 401 immediately on failure. No external API call before auth passes.
+**1c. Client-side label rendering**
+Add `src/components/AIConfidenceLabel.tsx` rendering the three colored pill labels. Add a small `src/lib/aiResponseFormat.ts` helper that scans an AI message for the inline tokens `🟢 VERIFIED` / `🟡 UNVERIFIED` / `🔴 NOT FOUND` and replaces them with the styled component. Wire into `HomeAIChat`, `WarrantyAIChat`, `InsuranceScreen` chat, research-chat surfaces.
 
-Functions getting JWT enforcement (currently unprotected):
-- `ai-scan`, `drought-status`, `epa-echo`, `extract-document-data`, `fema-disasters`, `geocode`, `manual-finder`, `noaa-storms`, `rentcast-lookup`, `record-research-chat`, `insurance-chat`, `warranty-chat`, `youtube-search`, `free-data-refresh`.
+---
 
-Exceptions (intentionally public):
-- `stripe-webhook` (signature-verified webhook).
+### Part 2 — Permanent Record Provenance
 
-Internal callers (e.g., `rentcast-lookup` calls `geocode`, `free-data-refresh` calls FEMA/NOAA/EPA) currently use the anon key. We switch internal calls to forward the original user's `Authorization` header when invoked from a user request, OR use the service role key for server-to-server hops. Going with: forward the user JWT for internal hops so RLS still works.
+**2a. DB migration** on `permanent_archive`:
+- Add enum `archive_source_tag` with values `GOVERNMENT_API`, `DOCUMENT_EXTRACTED`, `OWNER_PROVIDED`, `PROFESSIONAL_SUBMITTED`, `AI_INFERRED`.
+- Add columns: `source_tag archive_source_tag`, `property_address text`, `county_fips text`, `legal_acknowledgment_accepted boolean default false`, `acknowledgment_timestamp timestamptz`, `ai_inferred_flagged_at timestamptz` (for 90-day cleanup), `confirmed_by_owner_at timestamptz`.
+- Backfill `source_tag` from existing `evidence_sources`/`record_source` heuristics where possible; default `OWNER_PROVIDED` otherwise.
+- Confidence-tag CHECK trigger (not constraint) enforcing tag→range bands.
 
-## 3. Address-keyed refresh cache (item 12)
+**2b. Update `archive-submit` edge function** to require and validate `source_tag`, store address + county_fips, and write a `verification_events` row capturing the acknowledgment.
 
-In `useDataRefresh` and on the server in `rentcast-lookup` / `fema-disasters` / etc., cache key resolution:
-1. If `county_fips` known → `cache_key = "fips:<fips>:<source>"`.
-2. Else → `cache_key = "addr:<sha256(normalized_address)>:<source>"`.
+**2c. Auto-archive helpers**
+- `src/lib/archiveProvenance.ts`: `archiveGovernmentRecord()`, `archiveDocumentExtraction()`, `archiveOwnerSubmission()`, `archiveProfessionalSubmission()`, `archiveAIInference()`. Each calls `archive_to_vault` RPC + inserts a `permanent_archive` row with the right tag.
+- Wire into existing flows: government-API responders (FEMA/NOAA/EPA/Census/RentCast edge functions return success → call from client), `extract-document-data` success → DOCUMENT_EXTRACTED, manual property-record entry → OWNER_PROVIDED, inspector/contractor submissions → PROFESSIONAL_SUBMITTED, AI auto-fill suggestions → AI_INFERRED.
 
-Server-side: each external-data edge function checks `address_refresh_cache` first; if a fresh row exists (within 24 h), returns the cached payload immediately and skips the upstream call. Otherwise, calls upstream, writes the result back into cache.
+---
 
-Client-side: `useDataRefresh` now stops blocking the UI on user-level cooldown — instead the server enforces address-level cooldown. The client just calls and gets cached responses for free.
+### Part 3 — Legal Acknowledgment + Source Badges + Dispute + AI Cleanup
 
-## 4. Permanent archive immutability + disputes (item 6)
+**3a. `LegalAcknowledgmentDialog` component**
+One-time per (user × record_type × property) modal with the exact wording, single checkbox "I understand and confirm", "Save Record" button. Tracked in new `acknowledgment_log` table (user_id, property_id, record_type, accepted_at) — checked before showing again. On accept, also write a `verification_events` row.
 
-- Insert path captures `submitted_ip` from `x-forwarded-for` via a new helper edge function `archive-submit` (so we can read the IP server-side; client can't be trusted for it).
-- Update trigger raises an exception if any locked-provenance column changes after first set.
-- Dispute UI on `PermanentArchive` adds a small "Flag as inaccurate" button that calls `supabase.from('permanent_archive_disputes').insert(...)`; UI shows "Disputed" badge when `dispute_count > 0`; `auto_suppressed=true` rows hidden from public report views.
+**3b. Wire into save points**
+Document upload modal, manual record entry forms, system data forms — gate save on acknowledgment.
 
-## 5. Report URLs use UUID v4 + expiry (item 7)
+**3c. Source badge component**
+Extend existing `SourceBadge` with the 5 tag variants (teal/blue/orange/gray/navy) and tooltips. Render on every record card: `PermanentArchive`, `TrueRecordCard`, `SystemCard`, `MissingRecordsIntelligence`, `RecordGapDrawer` resolved rows, document hub.
 
-- New `shared_reports` table generates `id uuid default gen_random_uuid()`.
-- `ScoreReportPage` is updated: reads token from URL, calls `supabase.rpc('get_shared_report', { token })` which returns the report only when `expires_at > now()` and `revoked=false`. Expired → friendly 404 message.
-- Where reports are generated (handover/score), a "Link expires in" selector (7 / 30 / never), default 30 days.
+**3d. Dispute flag**
+Re-use existing `permanent_archive_disputes` + `recompute_archive_dispute_state` trigger (already auto-suppresses on >1 unique disputer in 30 days). Add a small flag-icon button on every record card opening `DisputeDialog`. Disputed records get a "Disputed" pill, are filtered out of verified-gap counts in `MissingRecordsIntelligence`, and excluded from Home Passport report queries (`auto_suppressed=false AND dispute_count=0`).
 
-## 6. AI letter generator ownership check (item 11)
+**3e. AI_INFERRED 90-day cleanup**
+- New SQL view `ai_inferred_unconfirmed` selecting `permanent_archive WHERE source_tag='AI_INFERRED' AND confirmed_by_owner_at IS NULL AND created_at < now() - interval '90 days'`.
+- Dashboard "This Week's IQ Updates" card surfaces count + CTA "Confirm AI estimates".
+- (Email-side hook stub left as TODO comment in monthly-pulse function if it exists; otherwise skipped — no email infra yet for pulse.)
 
-In the records-request letter generator path (currently in `record-research-chat` or wherever the letter is built — verified during implementation), reject if `address` is not in the caller's `properties` table. Server-side check using the JWT-derived `user_id`.
+---
 
-## 7. Claim verification, two paths (item 5)
+### Files Touched (summary)
 
-Client refactor of `ClaimHomeScreen`:
-- Step 1: blank text input — claimant types the full address (case/whitespace-insensitive match).
-- Step 2: choose path
-  - **A**: enter last-4 ZIP digits + county name (matched against the property's known values).
-  - **B**: upload utility/tax/mortgage statement → new edge function `verify-claim-document` (Gemini OCR; returns match boolean only; no document is persisted).
-- All attempts (success/fail) write a row to `verification_events` (with IP/user_agent) AND `claim_attempt_log`.
+```text
+NEW
+  supabase/migrations/<ts>_provenance_and_ack.sql
+  supabase/functions/_shared/aiHonestyPrompt.ts
+  src/components/AIConfidenceLabel.tsx
+  src/components/LegalAcknowledgmentDialog.tsx
+  src/lib/archiveProvenance.ts
+  src/lib/aiResponseFormat.ts
 
-## 8. Lockout warning email (item 10)
+EDITED
+  supabase/functions/{insurance-chat,warranty-chat,record-research-chat,
+    manual-finder,extract-document-data,ai-scan,verify-claim-document,
+    archive-submit}/index.ts
+  src/components/SourceBadge.tsx                 (+ 5 provenance variants)
+  src/components/PermanentArchive.tsx            (badges + flag + acknowledgment)
+  src/components/MissingRecordsIntelligence.tsx  (exclude disputed)
+  src/components/UploadDocumentModal.tsx         (acknowledgment gate)
+  src/components/HomeAIChat.tsx                  (label rendering)
+  src/components/WarrantyAIChat.tsx              (label rendering)
+  src/pages/InsuranceScreen.tsx                  (label rendering)
+  src/pages/DashboardScreen.tsx                  (AI-inferred cleanup CTA)
+```
 
-Use Lovable's built-in auth rate limits as the actual throttle; we add the warning email layer:
-- New table `auth_failure_log(email_lower text, ip text, created_at timestamptz)`.
-- New edge function `auth-fail-notify` invoked from the existing `AuthPage` sign-in `catch` block when the error matches an invalid-credentials code. The function counts failures in the last 15 min for that email; if ≥10, sends a security email via Lovable Emails.
-- Requires the auth email infrastructure scaffold; we set this up only if not already present.
-
-## Files affected (high level)
-
-- New migration: `supabase/migrations/<ts>_security_hardening.sql`
-- New edge functions: `verify-claim-document`, `archive-submit`, `auth-fail-notify`
-- Modified edge functions: 14 (add JWT check), plus `rentcast-lookup`/`fema-disasters`/`noaa-storms`/`epa-echo`/`drought-status` (read/write `address_refresh_cache`), `record-research-chat` (ownership check on letter)
-- Modified pages/components: `ClaimHomeScreen.tsx`, `ScoreReportPage.tsx`, `PermanentArchive.tsx`, `App.tsx` (route param swap), `AuthPage.tsx` (call notify on failure), `src/hooks/useDataRefresh.ts` (drop client cooldown)
-
-## Out of scope (will follow up)
-
-- Storage RLS audit (item 9): existing buckets are private with owner-scoped SELECT; the prompt's "Shared/Pro" enforcement at bucket level requires a `property_connections` join in policies. I'll address this in a focused second migration after the schema above lands so the policies have a stable base. I'll flag it explicitly when handing back.
-- Items 1–4 (UX reframes).
+### Out of Scope (will note for follow-up)
+- Backfilling provenance for legacy rows beyond a best-effort default.
+- Building the monthly Home Health Pulse email itself (no sender infra yet).
+- Admin review queue UI for auto-suppressed records.
