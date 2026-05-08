@@ -486,7 +486,19 @@ function DocCard({
         </button>
         {canImport && (
           <button
-            onClick={() => onAddToProfile(doc.id)}
+            onClick={() => {
+              // Warranty docs use the dedicated warranty review/sync modal
+              // so the data lands in the `warranties` table, not just system_details.
+              if (
+                doc.category === "warranty" &&
+                doc.source_table === "property_records" &&
+                onReviewWarranty
+              ) {
+                onReviewWarranty(doc.id);
+                return;
+              }
+              onAddToProfile(doc.id);
+            }}
             className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
           >
             <Sparkles className="h-3 w-3" /> Add to Profile
