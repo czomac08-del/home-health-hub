@@ -291,7 +291,58 @@ const SystemConfigScreen = () => {
     }
   };
 
-  const handleSave = async (opts?: { silent?: boolean }) => {
+  const buildSystemPayload = (overrideSpecs: Record<string, string | boolean | string[]> = {}) => ({
+    property_id: activeProperty!.id,
+    user_id: user!.id,
+    system_name: displayName,
+    brand: brand || null,
+    model: model || null,
+    serial_number: serial || null,
+    install_date: installDate || null,
+    purchase_date: purchaseDate || null,
+    warranty_exp: warrantyExp || null,
+    warranty_provider: warrantyProvider || null,
+    extended_warranty: extendedWarranty,
+    last_service: lastService || null,
+    next_service: nextService || null,
+    service_company: serviceCompany || null,
+    service_phone: servicePhone || null,
+    specs: { ...specs, ...overrideSpecs } as any,
+    notes: notes || null,
+    location_in_home: location || null,
+    source_tags: sourceTags as any,
+    status: "configured",
+  });
+
+  const saveSystemDetails = async (overrideSpecs: Record<string, string | boolean | string[]> = {}) => {
+    const payload = buildSystemPayload(overrideSpecs);
+    console.info("[SystemConfig] system_details write payload", { table: "system_details", property_id: payload.property_id, system_name: payload.system_name, payload });
+
+    const { data: existing, error: lookupErr } = await supabase
+      .from("system_details")
+      .select("id, property_id, user_id, system_name")
+      .eq("property_id", activeProperty!.id)
+      .eq("system_name", displayName)
+      .maybeSingle();
+    console.info("[SystemConfig] system_details lookup response", { queried_property_id: activeProperty!.id, data: existing, error: lookupErr });
+    if (lookupErr) throw lookupErr;
+
+    if (existing) {
+      const response = await supabase.from("system_details").update(payload).eq("id", existing.id).select("id, property_id, user_id, system_name").single();
+      console.info("[SystemConfig] system_details update response", response);
+      if (response.error) throw response.error;
+      setSystemDetailId(response.data.id);
+      return response.data.id;
+    }
+
+    const response = await supabase.from("system_details").insert(payload).select("id, property_id, user_id, system_name").single();
+    console.info("[SystemConfig] system_details insert response", response);
+    if (response.error) throw response.error;
+    setSystemDetailId(response.data.id);
+    return response.data.id;
+  };
+
+  const handleSave = async (opts?: { silent?: boolean; overrideSpecs?: Record<string, string | boolean | string[]> }) => {
     if (!user || !activeProperty) {
       toast.error("No active property. Please add a property first.");
       return;
@@ -299,46 +350,7 @@ const SystemConfigScreen = () => {
     if (saving) return;
     setSaving(true);
     try {
-    const payload = {
-      property_id: activeProperty.id,
-      user_id: user.id,
-      system_name: displayName,
-      brand: brand || null,
-      model: model || null,
-      serial_number: serial || null,
-      install_date: installDate || null,
-      purchase_date: purchaseDate || null,
-      warranty_exp: warrantyExp || null,
-      warranty_provider: warrantyProvider || null,
-      extended_warranty: extendedWarranty,
-      last_service: lastService || null,
-      next_service: nextService || null,
-      service_company: serviceCompany || null,
-      service_phone: servicePhone || null,
-      specs: specs as any,
-      notes: notes || null,
-      location_in_home: location || null,
-      status: "configured",
-    };
-
-    const { data: existing, error: lookupErr } = await supabase
-      .from("system_details")
-      .select("id")
-      .eq("property_id", activeProperty.id)
-      .eq("system_name", displayName)
-      .maybeSingle();
-    if (lookupErr) throw lookupErr;
-
-    let systemDetailId: string;
-    if (existing) {
-      const { error } = await supabase.from("system_details").update(payload).eq("id", existing.id);
-      if (error) throw error;
-      systemDetailId = existing.id;
-    } else {
-      const { data, error } = await supabase.from("system_details").insert(payload).select("id").single();
-      if (error) throw error;
-      systemDetailId = data.id;
-    }
+    const savedSystemDetailId = await saveSystemDetails(opts?.overrideSpecs || {});
 
     // Save new photos (skip already-saved ones loaded from DB)
     for (const photo of photos) {
@@ -346,7 +358,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_photos").select("id").eq("storage_path", photo.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_photos").insert({
-            system_detail_id: systemDetailId,
+            system_detail_id: savedSystemDetailId,
             user_id: user.id,
             storage_path: photo.storagePath,
             label: photo.label,
@@ -362,7 +374,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_documents").select("id").eq("storage_path", doc.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_documents").insert({
-            system_detail_id: systemDetailId,
+            system_detail_id: savedSystemDetailId,
             user_id: user.id,
             storage_path: doc.storagePath,
             doc_type: docType,
@@ -381,21 +393,11 @@ const SystemConfigScreen = () => {
     }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
-      toast.error("Couldn't save — please try again.");
+      toast.error(opts?.silent ? "Couldn't save your information — please try again." : "Couldn't save — please try again.");
     } finally {
       setSaving(false);
     }
   };
-
-  // Auto-persist when the HVAC wizard completes its final step so setup_complete sticks
-  // even if the user never clicks "Save to Passport". Runs after specs state has flushed.
-  useEffect(() => {
-    if (!pendingAutoSave) return;
-    if (!specs["filterSize"]) return; // wait until setSpec has propagated
-    setPendingAutoSave(false);
-    void handleSave({ silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAutoSave, specs]);
 
   // Load existing data on mount
   useEffect(() => {
