@@ -4032,6 +4032,7 @@ export type Database = {
           serial_number: string | null
           service_company: string | null
           service_phone: string | null
+          source_tags: Json
           specs: Json | null
           status: string | null
           system_name: string
@@ -4059,6 +4060,7 @@ export type Database = {
           serial_number?: string | null
           service_company?: string | null
           service_phone?: string | null
+          source_tags?: Json
           specs?: Json | null
           status?: string | null
           system_name: string
@@ -4086,6 +4088,7 @@ export type Database = {
           serial_number?: string | null
           service_company?: string | null
           service_phone?: string | null
+          source_tags?: Json
           specs?: Json | null
           status?: string | null
           system_name?: string
@@ -4148,6 +4151,9 @@ export type Database = {
       }
       system_photos: {
         Row: {
+          ai_analysis_result: Json | null
+          ai_analyzed: boolean
+          ai_analyzed_at: string | null
           created_at: string
           id: string
           label: string
@@ -4157,6 +4163,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_analysis_result?: Json | null
+          ai_analyzed?: boolean
+          ai_analyzed_at?: string | null
           created_at?: string
           id?: string
           label?: string
@@ -4166,6 +4175,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_analysis_result?: Json | null
+          ai_analyzed?: boolean
+          ai_analyzed_at?: string | null
           created_at?: string
           id?: string
           label?: string

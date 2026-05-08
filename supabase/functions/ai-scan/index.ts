@@ -104,6 +104,22 @@ serve(async (req) => {
 }`;
         break;
 
+      case "photo_review":
+        systemPrompt = "You are a home inspection AI expert reviewing a previously uploaded photo of home equipment. Identify the equipment and read any visible labels. TRUTHFULNESS RULE: Only return values that are visibly present in the image. If you cannot read a label or determine a value, return null — do not guess. Accuracy beats completeness.";
+        userPrompt = `Review this photo of a home appliance/system/equipment. Extract everything you can see and return a JSON object:
+{
+  "unitType": "what type of equipment this is (e.g. 'Gas water heater', 'Central AC condenser')",
+  "brand": "manufacturer/brand name from any visible label, or null",
+  "model": "model number from label, or null",
+  "serial": "serial number from label, or null",
+  "estimatedAge": "rough age range based on visual condition and any visible date codes, or null",
+  "condition": "overall condition (e.g. 'Good', 'Fair', 'Poor', 'New') based on visible wear/damage",
+  "visibleIssues": ["list any visible problems: rust, leaks, corrosion, damage, missing parts"],
+  "summary": "One short sentence describing what this is and its condition",
+  "confidence": { "unitType": "high/medium/low", "brand": "high/medium/low", "model": "high/medium/low", "serial": "high/medium/low" }
+}`;
+        break;
+
       default:
         return new Response(JSON.stringify({ error: "Invalid scan mode" }), {
           status: 400,
