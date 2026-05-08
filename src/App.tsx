@@ -249,6 +249,7 @@ const AppContent = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/join" element={<JoinReferralScreen />} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
             <Route path="/verify-email" element={<VerifyEmailScreen />} />
