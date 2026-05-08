@@ -60,13 +60,12 @@ function getRecommendation(factors: HouseholdFactor[]) {
   const reasons: string[] = [];
   let needsPurifier = false;
 
-  if (hasPets) { merv = Math.max(merv, 11); days = Math.min(days, 45); reasons.push("pets"); }
-  if (factors.includes("multiple_pets")) { days = Math.min(days, 30); }
-  if (hasAllergy) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("allergy sufferers"); needsPurifier = true; }
-  if (hasAsthma) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("asthma"); needsPurifier = true; }
-  if (hasKids) { merv = Math.max(merv, 11); days = Math.min(days, 45); reasons.push("young children"); needsPurifier = true; }
-  if (hasSmokers) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("smokers"); }
-  if (hasImmuno) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("immunocompromised household member"); needsPurifier = true; }
+  if (hasPets) { merv = Math.max(merv, 13); days = 60; reasons.push("pets"); }
+  if (hasAllergy) { merv = Math.max(merv, 13); days = 60; reasons.push("allergy sufferers"); needsPurifier = true; }
+  if (hasAsthma) { merv = Math.max(merv, 13); days = 60; reasons.push("asthma"); needsPurifier = true; }
+  if (hasKids) { reasons.push("young children"); }
+  if (hasSmokers) { merv = Math.max(merv, 13); days = 60; reasons.push("smokers"); }
+  if (hasImmuno) { merv = Math.max(merv, 13); days = 60; reasons.push("immunocompromised household member"); needsPurifier = true; }
 
   return { merv, days, reasons, needsPurifier };
 }
@@ -146,7 +145,7 @@ interface Props {
   onFilterSizeChange?: (size: string) => void;
   onHouseholdFactorsChange?: (factors: string[]) => void;
   onRecommendationChange?: (rec: { filterType: string; changeFrequency: string }) => void;
-  onSetupComplete?: () => void;
+  onSetupComplete?: (setup: { filterSize: string; householdFactors: string[]; filterType: string; changeFrequency: string }) => Promise<boolean | void> | boolean | void;
 }
 
 export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange, onSetupComplete }: Props) => {
@@ -160,6 +159,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [savingSetup, setSavingSetup] = useState(false);
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const sizeReady = sizeSubmitted;
@@ -184,6 +184,33 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   }, [recommendation, localFilterSize]);
 
   const effectiveSize = localFilterSize || filterSize;
+
+  const getFilterTypeLabel = (merv: number) => merv >= 13 ? "HEPA" : "MERV-8";
+  const getFrequencyLabel = (recDays: number, selected: ChangeFrequency | "") => {
+    if (selected === "1mo") return "Every 30 Days";
+    if (selected === "2mo") return "Every 60 Days";
+    if (selected === "3mo") return "Every 90 Days";
+    if (selected === "6mo") return "Every 6 Months";
+    return recDays <= 60 ? "Every 60 Days" : "Every 90 Days";
+  };
+
+  const completeSetup = async () => {
+    if (!recommendation) return;
+    setSavingSetup(true);
+    try {
+      const filterType = getFilterTypeLabel(recommendation.merv);
+      const changeFrequency = getFrequencyLabel(recommendation.days, changeFreq);
+      const ok = await onSetupComplete?.({
+        filterSize: effectiveSize,
+        householdFactors,
+        filterType,
+        changeFrequency,
+      });
+      if (ok !== false) setSetupComplete(true);
+    } finally {
+      setSavingSetup(false);
+    }
+  };
 
   const toggleFactor = (f: HouseholdFactor) => {
     setHouseholdFactors(prev => {
