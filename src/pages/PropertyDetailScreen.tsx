@@ -20,6 +20,7 @@ import InspectionAlertBanner from "@/components/InspectionAlertBanner";
 import InspectionIssuesList from "@/components/InspectionIssuesList";
 import InspectionHistorySection from "@/components/InspectionHistorySection";
 import InspectionProgressCard from "@/components/InspectionProgressCard";
+import StructuresZonesSection from "@/components/StructuresZonesSection";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -113,6 +114,13 @@ const PropertyDetailScreen = () => {
 
       {/* Construction Profile */}
       <ConstructionProfile />
+
+      {/* Structures & Zones */}
+      {propertyId && (
+        <div className="mt-6">
+          <StructuresZonesSection propertyId={propertyId} />
+        </div>
+      )}
 
       {/* Property Timeline */}
       <div className="mt-6 mb-6">
