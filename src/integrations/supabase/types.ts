@@ -1148,6 +1148,174 @@ export type Database = {
         }
         Relationships: []
       }
+      email_preferences: {
+        Row: {
+          created_at: string
+          handover_emails: boolean
+          last_seen_at: string
+          onboarding_emails: boolean
+          pulse_emails: boolean
+          reengagement_45_sent_at: string | null
+          reengagement_60_sent_at: string | null
+          reengagement_emails: boolean
+          referral_emails: boolean
+          unsubscribed_all: boolean
+          unsubscribed_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handover_emails?: boolean
+          last_seen_at?: string
+          onboarding_emails?: boolean
+          pulse_emails?: boolean
+          reengagement_45_sent_at?: string | null
+          reengagement_60_sent_at?: string | null
+          reengagement_emails?: boolean
+          referral_emails?: boolean
+          unsubscribed_all?: boolean
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handover_emails?: boolean
+          last_seen_at?: string
+          onboarding_emails?: boolean
+          pulse_emails?: boolean
+          reengagement_45_sent_at?: string | null
+          reengagement_60_sent_at?: string | null
+          reengagement_emails?: boolean
+          referral_emails?: boolean
+          unsubscribed_all?: boolean
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          email: string
+          error_message: string | null
+          id: string
+          idempotency_key: string | null
+          property_id: string | null
+          scheduled_for: string
+          sent_at: string | null
+          sequence_step: number
+          sequence_type: Database["public"]["Enums"]["email_sequence_type"]
+          status: Database["public"]["Enums"]["email_queue_status"]
+          template_data: Json
+          template_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          property_id?: string | null
+          scheduled_for: string
+          sent_at?: string | null
+          sequence_step?: number
+          sequence_type: Database["public"]["Enums"]["email_sequence_type"]
+          status?: Database["public"]["Enums"]["email_queue_status"]
+          template_data?: Json
+          template_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          property_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          sequence_step?: number
+          sequence_type?: Database["public"]["Enums"]["email_sequence_type"]
+          status?: Database["public"]["Enums"]["email_queue_status"]
+          template_data?: Json
+          template_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      email_send_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email?: string
+          status?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
+      email_send_state: {
+        Row: {
+          auth_email_ttl_minutes: number
+          batch_size: number
+          id: number
+          retry_after_until: string | null
+          send_delay_ms: number
+          transactional_email_ttl_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_signups: {
         Row: {
           created_at: string
@@ -1169,6 +1337,30 @@ export type Database = {
           id?: string
           source?: string
           subscribed?: boolean
+        }
+        Relationships: []
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          token?: string
+          used_at?: string | null
         }
         Relationships: []
       }
@@ -3761,6 +3953,30 @@ export type Database = {
         }
         Relationships: []
       }
+      suppressed_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
+        }
+        Relationships: []
+      }
       system_details: {
         Row: {
           brand: string | null
@@ -4283,6 +4499,14 @@ export type Database = {
         }
         Returns: string
       }
+      delete_email: {
+        Args: { message_id: number; queue_name: string }
+        Returns: boolean
+      }
+      enqueue_email: {
+        Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
       extend_inspection_one_time_access: {
         Args: { _days?: number; _property_record_id: string }
         Returns: string
@@ -4329,6 +4553,15 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      move_to_dlq: {
+        Args: {
+          dlq_name: string
+          message_id: number
+          payload: Json
+          source_queue: string
+        }
+        Returns: number
+      }
       notify_property_connections: {
         Args: {
           _inspection_record_id: string
@@ -4337,6 +4570,14 @@ export type Database = {
           _property_id: string
         }
         Returns: number
+      }
+      read_email_batch: {
+        Args: { batch_size: number; queue_name: string; vt: number }
+        Returns: {
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
       }
       spend_credits: { Args: { _amount: number }; Returns: boolean }
     }
@@ -4369,6 +4610,18 @@ export type Database = {
         | "under_review"
         | "resolved_upheld"
         | "resolved_updated"
+      email_queue_status:
+        | "pending"
+        | "sent"
+        | "failed"
+        | "skipped"
+        | "cancelled"
+      email_sequence_type:
+        | "onboarding"
+        | "pulse"
+        | "reengagement"
+        | "referral"
+        | "handover"
       inspection_notification_type:
         | "new_inspection_uploaded"
         | "finding_resolved"
@@ -4566,6 +4819,14 @@ export const Constants = {
         "under_review",
         "resolved_upheld",
         "resolved_updated",
+      ],
+      email_queue_status: ["pending", "sent", "failed", "skipped", "cancelled"],
+      email_sequence_type: [
+        "onboarding",
+        "pulse",
+        "reengagement",
+        "referral",
+        "handover",
       ],
       inspection_notification_type: [
         "new_inspection_uploaded",

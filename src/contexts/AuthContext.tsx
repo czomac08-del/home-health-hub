@@ -110,6 +110,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Update email_preferences.last_seen_at at most once per hour to power the
+  // re-engagement detector. Idempotent — safe to call on every session refresh.
+  const touchLastSeen = async (userId: string) => {
+    try {
+      const lsKey = `last_seen_touched_${userId}`;
+      const last = Number(localStorage.getItem(lsKey) || 0);
+      if (Date.now() - last < 60 * 60 * 1000) return;
+      localStorage.setItem(lsKey, String(Date.now()));
+      await supabase.from("email_preferences").update({ last_seen_at: new Date().toISOString() }).eq("user_id", userId);
+    } catch {}
+  };
+
   useEffect(() => {
     // 1. Get the initial session — this determines loading state
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -119,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Fire-and-forget: don't block loading on data fetches
         void fetchProfile(s.user.id);
         void fetchProperties(s.user.id);
+        void touchLastSeen(s.user.id);
       }
       setLoading(false);
     });
@@ -131,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (s?.user) {
           void fetchProfile(s.user.id);
           void fetchProperties(s.user.id);
+          void touchLastSeen(s.user.id);
           if (event === "SIGNED_IN") {
             // Dispatch custom event for welcome toast
             setTimeout(() => {
