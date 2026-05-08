@@ -133,6 +133,18 @@ const SystemConfigScreen = () => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Reload saved photos (used after AI analysis to refresh ai_analyzed flag).
+  const reloadPhotos = useCallback(async () => {
+    if (!systemDetailId) return;
+    const { data } = await supabase
+      .from("system_photos")
+      .select("id, url, label, storage_path, ai_analyzed")
+      .eq("system_detail_id", systemDetailId);
+    if (data) setPhotos(data.map((p: any) => ({
+      id: p.id, url: p.url, label: p.label, storagePath: p.storage_path, ai_analyzed: !!p.ai_analyzed,
+    })));
+  }, [systemDetailId]);
+
   // Apply AI data
   const applyAiData = useCallback(() => {
     if (!aiData) return;
