@@ -40,6 +40,7 @@ import WarrantyDashboard from "./pages/WarrantyDashboard";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import FeedbackScreen from "./pages/FeedbackScreen";
+import InspectionChecklistScreen from "./pages/InspectionChecklistScreen";
 import BottomNav from "./components/BottomNav";
 import HelpButton from "./components/HelpButton";
 import DesktopSidebar from "./components/DesktopSidebar";
