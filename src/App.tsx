@@ -67,6 +67,7 @@ import PartnersPage from "./pages/PartnersPage";
 import CentriqAlternativePage from "./pages/CentriqAlternativePage";
 import BlogIndexPage from "./pages/BlogIndexPage";
 import BlogPostPage from "./pages/BlogPostPage";
+import UnsubscribePage from "./pages/UnsubscribePage";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
@@ -76,6 +77,7 @@ import SEO from "./components/SEO";
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog"];
+const _hideUnsub = "/unsubscribe";
 const hideNavPrefixes = ["/inspection-review/", "/blog/"];
 
 /**
