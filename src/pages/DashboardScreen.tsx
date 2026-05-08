@@ -237,10 +237,26 @@ const DashboardScreen = () => {
           <DroughtAlertBanner />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Health Score */}
+          {/* Health Score — only render when a real score exists. Never fabricate a default. */}
           <div className="flex flex-col items-center gap-2 lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:p-8">
             <h2 className="text-muted-foreground text-sm font-medium uppercase tracking-wider">Your Home IQ Score</h2>
-            <HealthRing percentage={assessedCount > 0 ? (activeProperty?.health_score || 78) : null} size={180} strokeWidth={12} label={assessedCount > 0 ? "Home IQ" : "Add system info to get your score"} />
+            <HealthRing
+              percentage={
+                assessedCount > 0 && typeof activeProperty?.health_score === "number"
+                  ? activeProperty.health_score
+                  : null
+              }
+              size={180}
+              strokeWidth={12}
+              label={
+                assessedCount > 0 && typeof activeProperty?.health_score === "number"
+                  ? "Home IQ"
+                  : "Add system info to get your score"
+              }
+            />
+            <p className="text-[10px] text-muted-foreground text-center max-w-[220px] mt-1">
+              Score counts only verified records — government data, uploaded documents, owner-confirmed details. AI estimates do not count.
+            </p>
           </div>
 
           {/* This Week Summary */}
@@ -250,10 +266,7 @@ const DashboardScreen = () => {
                 <p className="text-foreground font-heading font-bold">Good morning, {userName}</p>
                 <p className="text-[10px] text-muted-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
               </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1">
-                <Sun className="h-3.5 w-3.5 text-warning" />
-                <span className="text-xs text-foreground font-heading font-bold">72°F</span>
-              </div>
+              {/* Weather chip removed — was a hardcoded 72°F with no live source. */}
             </div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
             <div className="space-y-2">
@@ -297,9 +310,9 @@ const DashboardScreen = () => {
           />
         )}
 
-        {/* Certification Card */}
+        {/* Certification Card — pass the real score (0 when none). Never fabricate 78. */}
         <CertificationCard
-          healthScore={assessedCount > 0 ? (currentHealthScore || 78) : 0}
+          healthScore={assessedCount > 0 && typeof currentHealthScore === "number" ? currentHealthScore : 0}
           profileCompleteness={profileCompleteness}
           systems={systems.filter(s => s.assessed).map((s) => ({ name: s.name, health: s.health || 0 }))}
         />
