@@ -450,5 +450,19 @@ export default function UploadDocumentModal({
         )}
       </DialogContent>
     </Dialog>
+    {activeProperty && (
+      <LegalAcknowledgmentDialog
+        open={ackOpen}
+        onClose={() => setAckOpen(false)}
+        onAccepted={() => {
+          setAckPassed(true);
+          // Resume upload with the next tick to ensure state has flushed.
+          setTimeout(() => { void handleUpload(); }, 0);
+        }}
+        propertyId={activeProperty.id}
+        recordType={docType}
+      />
+    )}
+    </>
   );
 }
