@@ -63,6 +63,7 @@ const SystemConfigScreen = () => {
   const [aiFilledKeys, setAiFilledKeys] = useState<Set<string>>(new Set());
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -247,6 +248,9 @@ const SystemConfigScreen = () => {
       toast.error("No active property. Please add a property first.");
       return;
     }
+    if (saving) return;
+    setSaving(true);
+    try {
     const payload = {
       property_id: activeProperty.id,
       user_id: user.id,
@@ -269,21 +273,22 @@ const SystemConfigScreen = () => {
       status: "configured",
     };
 
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupErr } = await supabase
       .from("system_details")
       .select("id")
       .eq("property_id", activeProperty.id)
       .eq("system_name", displayName)
       .maybeSingle();
+    if (lookupErr) throw lookupErr;
 
     let systemDetailId: string;
     if (existing) {
       const { error } = await supabase.from("system_details").update(payload).eq("id", existing.id);
-      if (error) { toast.error("Failed to save"); return; }
+      if (error) throw error;
       systemDetailId = existing.id;
     } else {
       const { data, error } = await supabase.from("system_details").insert(payload).select("id").single();
-      if (error) { toast.error("Failed to save"); return; }
+      if (error) throw error;
       systemDetailId = data.id;
     }
 
@@ -322,6 +327,12 @@ const SystemConfigScreen = () => {
 
     toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
     navigate("/systems");
+    } catch (e: any) {
+      console.error("[SystemConfig] save failed", e);
+      toast.error("Couldn't save — please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Load existing data on mount
@@ -709,8 +720,12 @@ const SystemConfigScreen = () => {
 
           {/* ═══ SAVE BUTTONS ═══ */}
           <div className="space-y-3 mt-6">
-            <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
-              <Save className="h-5 w-5" /> Save to Passport
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Save className="h-5 w-5" /> {saving ? "Saving…" : "Save to Passport"}
             </button>
             <SaveButtonMessage />
             <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
