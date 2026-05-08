@@ -374,7 +374,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">How often do you want to change your filter?</p>
-            <button onClick={() => { setHouseholdConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
+            <button onClick={() => { setHouseholdConfirmed(false); setFrequencyConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
           </div>
           <div className="space-y-2">
             {FREQUENCY_OPTIONS.map(opt => (
@@ -384,6 +384,14 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
               </TapCard>
             ))}
           </div>
+          <button
+            type="button"
+            disabled={!changeFreq}
+            onClick={() => setFrequencyConfirmed(true)}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            Continue
+          </button>
         </div>
       )}
 
@@ -392,7 +400,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground">Filter size: {localFilterSize}</p>
-            <button onClick={() => { setChangeFreq(""); }} className="text-[10px] text-primary hover:underline">← Edit preferences</button>
+            <button onClick={() => { setFrequencyConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Edit preferences</button>
           </div>
 
           {/* Recommendation Summary */}
@@ -514,6 +522,15 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           </div>
 
           <AffiliateNote />
+
+          <button
+            type="button"
+            onClick={completeSetup}
+            disabled={savingSetup}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            {savingSetup ? "Saving…" : "Save Filter Setup"}
+          </button>
         </div>
       )}
         </>
