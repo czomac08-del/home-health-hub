@@ -323,6 +323,7 @@ const SystemConfigScreen = () => {
         .eq("system_name", displayName)
         .maybeSingle();
       if (!data) return;
+      setSystemDetailId(data.id);
       if (data.brand) setBrand(data.brand);
       if (data.model) setModel(data.model);
       if (data.serial_number) setSerial(data.serial_number);
@@ -347,9 +348,11 @@ const SystemConfigScreen = () => {
       // Load photos
       const { data: photoData } = await supabase
         .from("system_photos")
-        .select("*")
+        .select("id, url, label, storage_path, ai_analyzed")
         .eq("system_detail_id", data.id);
-      if (photoData) setPhotos(photoData.map((p: any) => ({ url: p.url, label: p.label, storagePath: p.storage_path })));
+      if (photoData) setPhotos(photoData.map((p: any) => ({
+        id: p.id, url: p.url, label: p.label, storagePath: p.storage_path, ai_analyzed: !!p.ai_analyzed,
+      })));
 
       // Load docs
       const { data: docData } = await supabase
