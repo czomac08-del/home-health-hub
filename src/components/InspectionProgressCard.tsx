@@ -8,7 +8,7 @@ interface Props { propertyId: string; }
 
 export default function InspectionProgressCard({ propertyId }: Props) {
   const navigate = useNavigate();
-  const [data, setData] = useState<{ total: number; resolved: number; openSafety: number; openMajor: number; date: string | null } | null>(null);
+  const [data, setData] = useState<{ total: number; resolved: number; openSafety: number; openMajor: number; date: string | null; recordId: string | null } | null>(null);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -38,7 +38,7 @@ export default function InspectionProgressCard({ propertyId }: Props) {
       const openSafety = counted.filter((r) => r.level === 1 && !isResolved(r.status)).length;
       const openMajor = counted.filter((r) => r.level === 2 && !isResolved(r.status)).length;
       const latest = (rec || [])[0] as any;
-      setData({ total, resolved, openSafety, openMajor, date: latest?.document_date || latest?.created_at || null });
+      setData({ total, resolved, openSafety, openMajor, date: latest?.document_date || latest?.created_at || null, recordId: latest?.id ?? null });
     })();
     return () => { cancelled = true; };
   }, [propertyId]);
@@ -53,7 +53,13 @@ export default function InspectionProgressCard({ propertyId }: Props) {
 
   return (
     <button
-      onClick={() => navigate(`/property/${propertyId}#issues`)}
+      onClick={() =>
+        navigate(
+          data.recordId
+            ? `/inspection-review/${data.recordId}/viewer`
+            : "/property#issues",
+        )
+      }
       className={`w-full text-left rounded-2xl border p-4 ${tone} transition-colors hover:bg-muted/30`}
     >
       <div className="flex items-center gap-2 mb-2">
