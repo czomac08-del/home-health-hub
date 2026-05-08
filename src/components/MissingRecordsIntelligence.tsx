@@ -209,7 +209,29 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-4">
         <Search className="h-5 w-5 text-primary" />
-        <h3 className="font-bold text-foreground">What's Still Missing</h3>
+        <h3 className="font-bold text-foreground">
+          {view === "known" ? "What We Know" : "Your Next 5 Actions"}
+        </h3>
+      </div>
+
+      {/* View toggle */}
+      <div className="flex gap-1 p-1 mb-4 rounded-lg bg-secondary/40 border border-border">
+        <button
+          onClick={() => setViewPersist("known")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+            view === "known" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          What We Know <span className="ml-1 opacity-70">{totalKnown}</span>
+        </button>
+        <button
+          onClick={() => setViewPersist("next")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+            view === "next" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          What To Find Next <span className="ml-1 opacity-70">{totalGaps}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-5">
