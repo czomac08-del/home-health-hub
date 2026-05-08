@@ -335,17 +335,18 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-      }),
-    });
+    const callAI = (model: string) =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model, messages }),
+      });
+
+    let response = await callAI("google/gemini-2.5-flash");
+    let usedModel = "google/gemini-2.5-flash";
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -391,27 +392,31 @@ serve(async (req) => {
       });
     }
 
-    const rawText = await response.text();
+    let rawText = await response.text();
     let aiResponse: any = {};
-    try {
-      aiResponse = rawText ? JSON.parse(rawText) : {};
-    } catch (parseErr) {
-      console.error("AI gateway returned non-JSON body:", rawText?.slice(0, 500));
-      return new Response(JSON.stringify({
-        error: "We couldn't read this document. Try a different file or re-scan it.",
-        fallback: true,
-        extracted: {},
-        confidence: "low",
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const content = aiResponse.choices?.[0]?.message?.content || "";
+    try { aiResponse = rawText ? JSON.parse(rawText) : {}; } catch { /* handled below */ }
+    let content: string = aiResponse.choices?.[0]?.message?.content || "";
+
+    // Retry once with a stronger vision-capable model when the first pass
+    // returns nothing — this commonly happens for scanned/image-only PDFs
+    // where the flash model can't OCR reliably.
     if (!content || !content.trim()) {
-      console.error("AI gateway returned empty content. Full response:", JSON.stringify(aiResponse).slice(0, 500));
+      console.warn("First-pass extraction returned empty; retrying with gemini-2.5-pro vision");
+      try {
+        response = await callAI("google/gemini-2.5-pro");
+        usedModel = "google/gemini-2.5-pro";
+        rawText = await response.text();
+        try { aiResponse = rawText ? JSON.parse(rawText) : {}; } catch { aiResponse = {}; }
+        content = aiResponse.choices?.[0]?.message?.content || "";
+      } catch (retryErr) {
+        console.error("Vision retry failed:", retryErr);
+      }
+    }
+
+    if (!content || !content.trim()) {
+      console.error("AI gateway returned empty content after retry. Last response:", JSON.stringify(aiResponse).slice(0, 500));
       return new Response(JSON.stringify({
-        error: "We couldn't extract data from this document. Try a different file or re-scan it.",
+        error: "AI couldn't extract details from this document. This often happens with scanned PDFs, image-heavy reports, or encrypted files.",
         fallback: true,
         extracted: {},
         confidence: "low",
