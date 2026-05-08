@@ -106,15 +106,13 @@ const WarrantyDashboard = () => {
 
   const openWarrantyDetail = (w: WarrantyRow) => {
     const sys = w.system_detail_id ? systems[w.system_detail_id] : null;
-    setDetailRow({ ...w, /* enrich for context */ });
+    setDetailRow({ ...w, system_name: sys?.system_name || null } as any);
     setDetailDoc({
       fileName: w.document_path?.split("/").pop() || w.provider_name || "Warranty",
       storagePath: w.document_path,
       bucket: "property-records",
       url: null,
     });
-    // attach system_name onto detailRow via state setter using closure data
-    setDetailRow(prev => prev ? ({ ...prev, system_name: sys?.system_name || null } as any) : prev);
   };
 
   const filters: { key: FilterType; label: string }[] = [
