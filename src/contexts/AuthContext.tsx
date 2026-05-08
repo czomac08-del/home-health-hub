@@ -118,7 +118,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const last = Number(localStorage.getItem(lsKey) || 0);
       if (Date.now() - last < 60 * 60 * 1000) return;
       localStorage.setItem(lsKey, String(Date.now()));
-      // @ts-expect-error - email_preferences not yet in generated types
       await supabase.from("email_preferences").update({ last_seen_at: new Date().toISOString() }).eq("user_id", userId);
     } catch {}
   };
