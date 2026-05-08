@@ -76,8 +76,7 @@ import SEO from "./components/SEO";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog"];
-const _hideUnsub = "/unsubscribe";
+const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog", "/unsubscribe"];
 const hideNavPrefixes = ["/inspection-review/", "/blog/"];
 
 /**
