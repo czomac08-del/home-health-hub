@@ -12,6 +12,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import WellTypeIdentificationGuide from "@/components/WellTypeIdentificationGuide";
+import SystemApplicabilityGate from "@/components/SystemApplicabilityGate";
 
 /* ─── Well Type Selector ─── */
 const WellTypeSelector = ({ selected, onSelect }: { selected: string | null; onSelect: (id: string) => void }) => (
@@ -288,19 +289,27 @@ const WellWaterScreen = () => {
   const [droughtLoading, setDroughtLoading] = useState(true);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // null = not yet answered, true/false = saved answer
+  const [hasWell, setHasWell] = useState<boolean | null>(null);
+  const [gateLoaded, setGateLoaded] = useState(false);
 
   // Load well type from system_details
   useEffect(() => {
     if (!user || !activeProperty) return;
     supabase
       .from("system_details")
-      .select("well_type")
+      .select("well_type, specs")
       .eq("property_id", activeProperty.id)
       .eq("user_id", user.id)
       .eq("system_name", "Water Source")
       .maybeSingle()
       .then(({ data }) => {
         if (data?.well_type) setWellType(data.well_type);
+        const specs = (data?.specs as Record<string, any> | null) || null;
+        if (specs && typeof specs.has_well === "boolean") {
+          setHasWell(specs.has_well);
+        }
+        setGateLoaded(true);
       });
   }, [user, activeProperty]);
 
@@ -345,6 +354,32 @@ const WellWaterScreen = () => {
     toast.success(`Well type set to ${WELL_TYPES.find((w) => w.id === type)?.name}`);
   };
 
+  // Persist has_well flag onto the Water Source row's specs JSON.
+  const saveHasWell = async (next: boolean) => {
+    setHasWell(next);
+    if (!user || !activeProperty) return;
+    const { data: existing } = await supabase
+      .from("system_details")
+      .select("id, specs")
+      .eq("property_id", activeProperty.id)
+      .eq("user_id", user.id)
+      .eq("system_name", "Water Source")
+      .maybeSingle();
+    const prevSpecs = ((existing?.specs as Record<string, any> | null) ?? {}) as Record<string, any>;
+    const nextSpecs = { ...prevSpecs, has_well: next };
+    if (existing) {
+      await supabase.from("system_details").update({ specs: nextSpecs as any }).eq("id", existing.id);
+    } else {
+      await supabase.from("system_details").insert({
+        property_id: activeProperty.id,
+        user_id: user.id,
+        system_name: "Water Source",
+        specs: nextSpecs as any,
+      } as any);
+    }
+    toast.success(next ? "Well marked as present on this property" : "Marked: no well on this property");
+  };
+
   const wellInfo = WELL_TYPES.find((w) => w.id === wellType);
   const guideline = wellType ? getUsageGuideline(wellType, droughtLevel) : "";
   const maxMin = wellType ? getMaxMinutes(wellType, droughtLevel) : 60;
@@ -381,6 +416,21 @@ const WellWaterScreen = () => {
         )}
       </div>
 
+      {/* Applicability Gate — must be answered first */}
+      {gateLoaded && (
+        <SystemApplicabilityGate
+          question="Does this property currently have a well?"
+          yesLabel="Yes, we have a well"
+          noLabel="No well on this property"
+          notApplicableLabel="no well on this property"
+          inactiveBanner="You've indicated this property doesn't have a well. This section is inactive."
+          applicable={hasWell}
+          onChange={saveHasWell}
+        />
+      )}
+
+      {/* Everything below dims and disables when not applicable */}
+      <div className={hasWell === false ? "opacity-40 pointer-events-none select-none" : ""} aria-disabled={hasWell === false}>
       {/* Well Type Selector */}
       <WellTypeSelector selected={wellType} onSelect={saveWellType} />
 
@@ -450,6 +500,7 @@ const WellWaterScreen = () => {
 
       {/* Water Quality */}
       {activeProperty && <WaterQualitySection propertyId={activeProperty.id} />}
+      </div>
     </div>
   );
 };
