@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Sparkles,
   Trash2,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -272,6 +274,7 @@ const DocumentVaultScreen = () => {
                       doc={doc}
                       onAddToProfile={(id) => setImportDocId(id)}
                       onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
+                        onReanalyzed={reload}
                     />
                   ))}
                 </div>
@@ -287,6 +290,7 @@ const DocumentVaultScreen = () => {
               doc={doc}
               onAddToProfile={(id) => setImportDocId(id)}
               onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
+              onReanalyzed={reload}
             />
           ))}
         </div>
@@ -339,14 +343,65 @@ function DocCard({
   doc,
   onAddToProfile,
   onDelete,
+  onReanalyzed,
 }: {
   doc: UnifiedDocument;
   onAddToProfile: (id: string) => void;
   onDelete?: (d: UnifiedDocument) => void;
+  onReanalyzed?: () => void;
 }) {
   const navigate = useNavigate();
   const Icon = fileIcon(doc.fileType);
   const canImport = doc.source_table === "property_records" && doc.hasExtractedData;
+  const canReanalyze =
+    doc.source_table === "property_records" &&
+    !!doc.storagePath &&
+    doc.extractionFailed === true;
+  const [reanalyzing, setReanalyzing] = useState(false);
+
+  const handleReanalyze = async () => {
+    if (!doc.storagePath) return;
+    setReanalyzing(true);
+    try {
+      const { data: urlData, error: urlErr } = await supabase
+        .storage
+        .from(doc.bucket)
+        .createSignedUrl(doc.storagePath, 60 * 30);
+      if (urlErr || !urlData?.signedUrl) throw urlErr || new Error("Could not get file URL");
+
+      const systemType = doc.systemType || (doc.recordType === "inspection_report" ? "inspection" : undefined);
+      const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
+        body: { documentUrl: urlData.signedUrl, systemType, source: "homeowner" },
+      });
+      if (extErr) throw extErr;
+
+      const extracted = ext?.extracted || {};
+      const inspectionReport = ext?.inspectionReport || null;
+      const hasAnything =
+        Object.keys(extracted).length > 0 ||
+        (inspectionReport && Array.isArray(inspectionReport.findings) && inspectionReport.findings.length > 0);
+
+      if (!hasAnything) {
+        toast.error("AI analysis ran but couldn't extract details. Try the manual entry option below.");
+        return;
+      }
+
+      const merged = inspectionReport ? { ...extracted, inspection_report: inspectionReport } : extracted;
+      const { error: updErr } = await supabase
+        .from("property_records")
+        .update({ ai_extracted_data: merged, ai_verified: false })
+        .eq("id", doc.id);
+      if (updErr) throw updErr;
+
+      toast.success("AI re-analysis complete");
+      onReanalyzed?.();
+    } catch (e) {
+      console.error(e);
+      toast.error("Re-analysis failed. Please try again.");
+    } finally {
+      setReanalyzing(false);
+    }
+  };
 
   return (
     <div className="relative rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors">
@@ -405,6 +460,23 @@ function DocCard({
             className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
           >
             <Sparkles className="h-3 w-3" /> Add to Profile
+          </button>
+        )}
+        {canReanalyze && (
+          <button
+            onClick={handleReanalyze}
+            disabled={reanalyzing}
+            className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1 disabled:opacity-60"
+          >
+            {reanalyzing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" /> Re-analyzing…
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-3 w-3" /> Re-run AI Analysis
+              </>
+            )}
           </button>
         )}
       </div>

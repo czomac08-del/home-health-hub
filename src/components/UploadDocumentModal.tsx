@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X, Home } from "lucide-react";
+import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X, Home, Wand2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -52,6 +52,10 @@ export default function UploadDocumentModal({
   const [inspectionReport, setInspectionReport] = useState<InspectionReportData | null>(null);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [reanalyzing, setReanalyzing] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualDate, setManualDate] = useState("");
+  const [manualDetails, setManualDetails] = useState("");
 
   const reset = () => {
     setStep("form");
@@ -63,6 +67,10 @@ export default function UploadDocumentModal({
     setInspectionReport(null);
     setRecordId(null);
     setErrorMsg("");
+    setReanalyzing(false);
+    setManualMode(false);
+    setManualDate("");
+    setManualDetails("");
   };
 
   const handleClose = (next: boolean) => {
@@ -244,6 +252,84 @@ export default function UploadDocumentModal({
   };
 
   const extractedEntries = Object.entries(extracted).filter(([, v]) => v != null && v !== "");
+  const extractionEmpty = extractedEntries.length === 0 && !inspectionReport;
+
+  const handleReanalyze = async () => {
+    if (!recordId) return;
+    setReanalyzing(true);
+    try {
+      // Re-fetch the storage path from the saved record so we can re-sign it.
+      const { data: rec } = await supabase
+        .from("property_records")
+        .select("storage_path, system_type")
+        .eq("id", recordId)
+        .single();
+      if (!rec?.storage_path) throw new Error("File path missing");
+      const { data: urlData, error: urlErr } = await supabase
+        .storage
+        .from("property-records")
+        .createSignedUrl(rec.storage_path, 60 * 30);
+      if (urlErr || !urlData?.signedUrl) throw urlErr || new Error("Could not get file URL");
+
+      const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
+        body: { documentUrl: urlData.signedUrl, systemType: rec.system_type, source: "homeowner" },
+      });
+      if (extErr) throw extErr;
+      const newExtracted = ext?.extracted || {};
+      const newReport = ext?.inspectionReport || null;
+      const hasAnything =
+        Object.keys(newExtracted).length > 0 ||
+        (newReport && Array.isArray(newReport.findings) && newReport.findings.length > 0);
+      setExtracted(newExtracted);
+      setConfidence(ext?.confidence || "low");
+      setInspectionReport(newReport);
+      if (!hasAnything) {
+        toast.error("AI analysis ran but couldn't extract details. Try the manual entry option below.");
+      } else {
+        toast.success("AI re-analysis complete");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Re-analysis failed. Please try again.");
+    } finally {
+      setReanalyzing(false);
+    }
+  };
+
+  const handleSaveManual = async () => {
+    if (!recordId) {
+      handleClose(false);
+      return;
+    }
+    try {
+      const manualPayload: Record<string, any> = {};
+      if (manualDate) manualPayload.document_date = manualDate;
+      if (manualDetails.trim()) manualPayload.key_details = manualDetails.trim();
+      manualPayload.manual_doc_type = docType;
+      await supabase
+        .from("property_records")
+        .update({
+          ai_verified: false,
+          ai_extracted_data: { ...manualPayload, manual_entry: true },
+          notes: notes || manualDetails || null,
+        })
+        .eq("id", recordId);
+      toast.success("Saved with manual details");
+      setStep("saved");
+      try {
+        recordRecentUpload({
+          id: recordId || "",
+          name: file?.name || "Document",
+          uploadedAt: new Date().toISOString(),
+          category: docType,
+          url: null,
+        });
+      } catch {}
+      setTimeout(() => handleClose(false), 1200);
+    } catch (e) {
+      toast.error("Failed to save");
+    }
+  };
 
   return (
     <>
@@ -393,10 +479,74 @@ export default function UploadDocumentModal({
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Extracted details {confidence && <span className="ml-1 normal-case font-normal">({confidence} confidence)</span>}
                 </p>
-                {extractedEntries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    AI couldn't extract structured details from this document. Your file is still saved.
-                  </p>
+                {extractionEmpty ? (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+                    <div className="flex gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="text-xs space-y-1">
+                        <p className="font-semibold text-foreground">
+                          AI couldn't extract structured details
+                        </p>
+                        <p className="text-muted-foreground">
+                          This can happen with scanned PDFs, image-heavy reports, or encrypted files. Your file is safely saved either way.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleReanalyze}
+                        disabled={reanalyzing}
+                        className="gap-1.5"
+                      >
+                        {reanalyzing ? (
+                          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-analyzing…</>
+                        ) : (
+                          <><Wand2 className="h-3.5 w-3.5" /> Re-run Analysis</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setManualMode((v) => !v)}
+                        className="gap-1.5"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        {manualMode ? "Hide manual entry" : "Save & Enter Manually"}
+                      </Button>
+                    </div>
+                    {manualMode && (
+                      <div className="space-y-2 pt-2 border-t border-amber-500/20">
+                        <div>
+                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            Document date
+                          </label>
+                          <input
+                            type="date"
+                            value={manualDate}
+                            onChange={(e) => setManualDate(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            Key details
+                          </label>
+                          <textarea
+                            value={manualDetails}
+                            onChange={(e) => setManualDetails(e.target.value.slice(0, 500))}
+                            rows={3}
+                            placeholder="e.g. Inspector name, key findings, permit number…"
+                            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                          />
+                        </div>
+                        <Button size="sm" onClick={handleSaveManual} className="w-full">
+                          Save with manual details
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {extractedEntries.map(([k, v]) => (
@@ -451,7 +601,7 @@ export default function UploadDocumentModal({
                 <Button
                   onClick={handleConfirm}
                   className="flex-1"
-                  disabled={extractedEntries.length === 0 && !inspectionReport}
+                  disabled={extractionEmpty}
                 >
                   Confirm & Save
                 </Button>

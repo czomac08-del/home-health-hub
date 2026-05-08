@@ -31,6 +31,8 @@ export interface UnifiedDocument {
   findingsCount?: number | null;
   overallScore?: number | null;
   hasExtractedData?: boolean;
+  /** True when this is an uploaded document but AI extraction returned nothing usable. */
+  extractionFailed?: boolean;
   raw?: any;
 }
 
@@ -103,6 +105,9 @@ export function usePropertyDocuments(propertyId: string | undefined) {
 
       const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
       const rep = ext && (r.ai_extracted_data as any).inspection_report;
+      const extractedKeys = ext ? Object.keys(r.ai_extracted_data as any).filter((k) => k !== "inspection_report") : [];
+      const hasFindings = !!(rep && Array.isArray(rep.findings) && rep.findings.length);
+      const extractionFailed = !ext || (extractedKeys.length === 0 && !hasFindings);
       all.push({
         id: r.id,
         source_table: "property_records",
@@ -119,6 +124,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         findingsCount: Array.isArray(rep?.findings) ? rep.findings.length : null,
         overallScore: null,
         hasExtractedData: !!ext,
+        extractionFailed,
         raw: r,
       });
     });
