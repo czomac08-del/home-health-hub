@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Home, Check, Shield, Star, ArrowRight, Upload, FileText } from "lucide-react";
+import { Home, Check, ArrowRight, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
