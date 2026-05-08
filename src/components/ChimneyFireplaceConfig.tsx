@@ -1,8 +1,5 @@
 import { useMemo } from "react";
-import { Flame, Zap, Brick, RotateCcw, X, Check } from "lucide-react";
-
-/* lucide-react has no `Brick` icon — we re-export a fallback below. */
-import { Square as BrickIcon } from "lucide-react";
+import { Flame, Zap, RotateCcw, X, Check, Square as BrickIcon } from "lucide-react";
 
 export type ChimneyScenario =
   | "wood"
