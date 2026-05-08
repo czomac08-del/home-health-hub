@@ -35,6 +35,7 @@ import {
 } from "@/hooks/usePropertyDocuments";
 import UploadDocumentModal from "@/components/UploadDocumentModal";
 import AddToProfileModal from "@/components/AddToProfileModal";
+import WarrantyReviewModal from "@/components/WarrantyReviewModal";
 
 const FILTERS: { value: "all" | DocCategory; label: string }[] = [
   { value: "all", label: "All" },
@@ -74,6 +75,7 @@ const DocumentVaultScreen = () => {
   const [sort, setSort] = useState<"newest" | "oldest" | "type">("newest");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [importDocId, setImportDocId] = useState<string | null>(null);
+  const [warrantyReviewDocId, setWarrantyReviewDocId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UnifiedDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Locally-hidden ids — let us remove the card immediately on success without
@@ -317,6 +319,11 @@ const DocumentVaultScreen = () => {
           recordId={importDocId}
         />
       )}
+      <WarrantyReviewModal
+        open={!!warrantyReviewDocId}
+        onOpenChange={(v) => { if (!v) setWarrantyReviewDocId(null); }}
+        recordId={warrantyReviewDocId}
+      />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
         <AlertDialogContent>
