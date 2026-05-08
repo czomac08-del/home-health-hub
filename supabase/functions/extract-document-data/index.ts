@@ -69,6 +69,34 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
 }`,
 };
 
+// Warranty document extraction — pulls coverage details that the
+// Warranty Vault and Warranties dashboard need to render a real card.
+const WARRANTY_PROMPT = `Extract warranty coverage details from this document. For each field, rate confidence 0-100. Return JSON only:
+{
+  "fields": {
+    "warranty_type": { "value": "manufacturer|extended|home_warranty|builder|service_contract", "confidence": 85 },
+    "provider_name": { "value": string or null, "confidence": 90 },
+    "product_name": { "value": "What is covered (e.g. 'Gutters', 'Foundation', 'HVAC unit')", "confidence": 90 },
+    "coverage_start": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "coverage_end": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "coverage_term_years": { "value": number or null, "confidence": 80 },
+    "coverage_summary": { "value": "Plain-language summary of what's covered", "confidence": 80 },
+    "exclusions": { "value": "What's NOT covered, or null", "confidence": 70 },
+    "claim_phone": { "value": string or null, "confidence": 90 },
+    "claim_website": { "value": string or null, "confidence": 90 },
+    "claim_email": { "value": string or null, "confidence": 90 },
+    "is_transferable": { "value": true | false | null, "confidence": 70 },
+    "serial_or_contract_number": { "value": string or null, "confidence": 85 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}
+
+CRITICAL: If coverage_end is not stated explicitly but coverage_start and coverage_term_years are present, calculate coverage_end = coverage_start + coverage_term_years. Only return values present in or directly derivable from the document.`;
+EXTRACTION_PROMPTS.warranty = WARRANTY_PROMPT;
+
 // Inspection report extraction — categorizes every finding into 4 urgency levels
 // with citations to ASHI, InterNACHI, or NFPA standards.
 const INSPECTION_REPORT_PROMPT = `You are extracting findings from a home inspection report. Categorize EVERY finding into one of 4 urgency levels based on industry-standard inspector classifications. You MUST cite the applicable standard (ASHI, InterNACHI, or NFPA) for every Level 1 and Level 2 item — do NOT assign severity based on judgment alone.
