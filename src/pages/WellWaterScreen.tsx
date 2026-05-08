@@ -430,7 +430,7 @@ const WellWaterScreen = () => {
       )}
 
       {/* Everything below dims and disables when not applicable */}
-      <div className={hasWell === false ? "opacity-40 pointer-events-none select-none" : ""} aria-disabled={hasWell === false}>
+      <div className={hasWell !== true ? "opacity-40 pointer-events-none select-none" : ""} aria-disabled={hasWell !== true}>
       {/* Well Type Selector */}
       <WellTypeSelector selected={wellType} onSelect={saveWellType} />
 
