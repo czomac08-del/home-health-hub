@@ -257,26 +257,24 @@ const DashboardScreen = () => {
             </div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
             <div className="space-y-2">
-              {assessedCount > 0 ? (
-                [
-                  { icon: Wind, text: "HVAC filter due in 2 weeks", color: "text-orange", action: "Set Reminder" },
-                  { icon: Droplets, text: "Gutters should be cleaned before fall", color: "text-warning", action: "Find a Pro" },
-                  { icon: Wrench, text: "Well water test is overdue", color: "text-danger", action: "Schedule Test" },
-                ].map((tip) => (
-                  <div key={tip.text} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <tip.icon className={`h-3.5 w-3.5 ${tip.color} shrink-0`} />
-                      <span className="text-xs text-foreground truncate">{tip.text}</span>
-                    </div>
-                    <button className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-0.5">
-                      {tip.action} <ChevronRight className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-xs text-muted-foreground">Add details about your home systems to get personalized recommendations.</p>
-                  <button onClick={() => navigate("/systems")} className="mt-2 text-xs font-heading font-bold text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
+              {/*
+                Honest empty state. We never fabricate "filter due in 2 weeks"
+                or "well water test overdue" — those tips were not tied to any
+                verified record. Until we have GOVERNMENT_API or
+                DOCUMENT_EXTRACTED data driving real reminders, surface the top
+                actionable gaps from the Missing Records list instead.
+              */}
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                <p className="text-xs text-foreground font-medium mb-1">No new verified records this week.</p>
+                <p className="text-[11px] text-muted-foreground mb-3">Here are your top actions to build your home's record.</p>
+                <button onClick={() => navigate(activeProperty ? `/property/${activeProperty.id}` : "/systems")}
+                  className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors inline-flex items-center gap-1">
+                  See top 3 actions <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+              {assessedCount === 0 && (
+                <div className="text-center py-2">
+                  <button onClick={() => navigate("/systems")} className="text-xs font-heading font-bold text-primary bg-primary/10 px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
                     Document Your Systems →
                   </button>
                 </div>
