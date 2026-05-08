@@ -1,7 +1,9 @@
-import { useState, useRef, useCallback } from "react";
-import { Camera, X, Sparkles, ScanLine, QrCode, Package, Loader2, FileText } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Camera, X, Sparkles, ScanLine, QrCode, Package, Loader2, FileText, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeImageFile, fileToDataUrl } from "@/lib/imageUpload";
+import { toast } from "sonner";
 
 export type ScanMode = "label_scan" | "barcode" | "full_unit" | "receipt";
 
@@ -29,15 +31,19 @@ export function AiPhotoPicker({ open, onClose, onPhotoSelected, onScanComplete, 
 
   if (!open) return null;
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      onPhotoSelected(file, ev.target?.result as string);
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.files?.[0];
+    e.target.value = "";
+    if (!raw) return;
+    try {
+      const file = await normalizeImageFile(raw);
+      const preview = await fileToDataUrl(file);
+      onPhotoSelected(file, preview);
       onClose();
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error("Photo select failed:", err);
+      toast.error(err?.message || "Couldn't load that photo. Please try another.");
+    }
   };
 
   if (showScanner) {
@@ -58,17 +64,17 @@ export function AiPhotoPicker({ open, onClose, onPhotoSelected, onScanComplete, 
         <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-4" />
         <h3 className="text-foreground font-semibold text-center mb-3">Add Photo</h3>
 
-        <button onClick={() => cameraRef.current?.click()} className="w-full flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3.5 hover:bg-secondary transition-colors">
+        <button onClick={() => { setScanMode("label_scan"); setShowScanner(true); }} className="w-full flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3.5 hover:bg-secondary transition-colors">
           <Camera className="h-5 w-5 text-primary" />
           <span className="text-sm text-foreground font-medium">Take Photo</span>
         </button>
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+        <input ref={cameraRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
         <button onClick={() => fileRef.current?.click()} className="w-full flex items-center gap-3 rounded-xl bg-secondary/60 border border-border px-4 py-3.5 hover:bg-secondary transition-colors">
           <Package className="h-5 w-5 text-muted-foreground" />
           <span className="text-sm text-foreground font-medium">Upload from Library</span>
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <input ref={fileRef} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleFile} />
 
         <button onClick={() => { setScanMode("label_scan"); setShowScanner(true); }} className="w-full flex items-center gap-3 rounded-xl bg-primary/10 border border-primary/30 px-4 py-3.5 hover:bg-primary/15 transition-colors">
           <Sparkles className="h-5 w-5 text-primary" />
@@ -104,31 +110,106 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
 }) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [camState, setCamState] = useState<"idle" | "starting" | "ready" | "denied" | "unsupported" | "error">("idle");
+  const [camError, setCamError] = useState<string | null>(null);
 
-  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      setPreview(base64);
-      setScanning(true);
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
 
-      try {
-        const { data, error } = await supabase.functions.invoke("ai-scan", {
-          body: { mode, imageBase64: base64 },
-        });
-        if (error) throw error;
-        onScanComplete({ mode, imagePreview: base64, data: data.result || {}, timestamp: Date.now() });
-      } catch (err) {
-        console.error("AI scan failed:", err);
-        onScanComplete({ mode, imagePreview: base64, data: { error: "Scan failed — please try again" }, timestamp: Date.now() });
-      } finally {
-        setScanning(false);
+  const startCamera = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamState("unsupported");
+      setCamError("Your browser doesn't support in-app camera. Use 'Choose from Library' instead.");
+      return;
+    }
+    setCamState("starting");
+    setCamError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      const v = videoRef.current;
+      if (v) {
+        v.srcObject = stream;
+        v.setAttribute("playsinline", "true");
+        v.muted = true;
+        try { await v.play(); } catch { /* iOS may need user gesture; UI button retries */ }
       }
-    };
-    reader.readAsDataURL(file);
+      setCamState("ready");
+    } catch (err: any) {
+      console.error("getUserMedia failed:", err);
+      const name = err?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setCamState("denied");
+        setCamError("Camera access was blocked. Enable camera permission in your browser/phone settings, then tap Retry.");
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        setCamState("error");
+        setCamError("No camera was found on this device.");
+      } else {
+        setCamState("error");
+        setCamError(err?.message || "Couldn't start the camera. Please try again.");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    startCamera();
+    return () => { stopStream(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const runScan = async (base64: string) => {
+    setPreview(base64);
+    setScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-scan", {
+        body: { mode, imageBase64: base64 },
+      });
+      if (error) throw error;
+      onScanComplete({ mode, imagePreview: base64, data: data.result || {}, timestamp: Date.now() });
+    } catch (err) {
+      console.error("AI scan failed:", err);
+      onScanComplete({ mode, imagePreview: base64, data: { error: "Scan failed — please try again" }, timestamp: Date.now() });
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const captureFrame = async () => {
+    const v = videoRef.current;
+    if (!v || camState !== "ready" || !v.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    const base64 = canvas.toDataURL("image/jpeg", 0.9);
+    stopStream();
+    await runScan(base64);
+  };
+
+  const handleGalleryPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.files?.[0];
+    e.target.value = "";
+    if (!raw) return;
+    try {
+      const file = await normalizeImageFile(raw);
+      const base64 = await fileToDataUrl(file);
+      stopStream();
+      await runScan(base64);
+    } catch (err: any) {
+      console.error("Gallery pick failed:", err);
+      toast.error(err?.message || "Couldn't load that photo.");
+    }
   };
 
   const modeLabels: Record<ScanMode, string> = {
@@ -167,7 +248,44 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
         {preview ? (
           <img src={preview} alt="Captured" className="w-full h-full object-contain" />
         ) : (
-          <div className="relative w-64 h-64">
+          <>
+            <video
+              ref={videoRef}
+              playsInline
+              autoPlay
+              muted
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover",
+                camState === "ready" ? "opacity-100" : "opacity-0"
+              )}
+            />
+            {camState !== "ready" && (camState === "denied" || camState === "unsupported" || camState === "error") && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                <AlertCircle className="h-10 w-10 text-[hsl(var(--health-amber))]" />
+                <p className="text-sm text-foreground max-w-xs">{camError}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={startCamera}
+                    className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Retry
+                  </button>
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="rounded-full bg-secondary border border-border px-4 py-2 text-xs font-semibold text-foreground"
+                  >
+                    Choose from Library
+                  </button>
+                </div>
+              </div>
+            )}
+            {camState === "starting" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                <p className="text-xs text-muted-foreground">Starting camera…</p>
+              </div>
+            )}
+            <div className="relative w-64 h-64 pointer-events-none">
             {/* Animated scanning reticle corners */}
             <div className="absolute top-0 left-0 w-10 h-10 border-t-[3px] border-l-[3px] border-primary rounded-tl-lg animate-pulse" />
             <div className="absolute top-0 right-0 w-10 h-10 border-t-[3px] border-r-[3px] border-primary rounded-tr-lg animate-pulse" style={{ animationDelay: "0.15s" }} />
@@ -176,15 +294,8 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
 
             {/* Scanning line */}
             <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
-
-            {/* Center icon */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              {mode === "barcode" ? <QrCode className="h-12 w-12 text-primary/30" /> :
-               mode === "receipt" ? <FileText className="h-12 w-12 text-primary/30" /> :
-               mode === "full_unit" ? <Package className="h-12 w-12 text-primary/30" /> :
-               <Camera className="h-12 w-12 text-primary/30" />}
             </div>
-          </div>
+          </>
         )}
 
         {scanning && (
@@ -221,15 +332,15 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
       {/* Capture button */}
       <div className="flex justify-center pb-8 pt-2">
         <button
-          onClick={() => fileRef.current?.click()}
-          disabled={scanning}
+          onClick={captureFrame}
+          disabled={scanning || camState !== "ready"}
           className="h-18 w-18 rounded-full bg-primary flex items-center justify-center hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-primary/40 relative"
           style={{ height: 72, width: 72 }}
         >
           <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-ping" style={{ animationDuration: "2s" }} />
           <Camera className="h-8 w-8 text-primary-foreground relative" />
         </button>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCapture} />
+        <input ref={fileRef} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={handleGalleryPick} />
       </div>
     </div>
   );
