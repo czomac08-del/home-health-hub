@@ -340,20 +340,21 @@ function FindingRow({
             {f.system_category && <span>· {f.system_category}</span>}
           </div>
 
-          {f.page_reference ? (
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            {f.page_reference ? (
               <span className="inline-flex items-center gap-1">
                 <FileText className="h-3 w-3" /> Page {f.page_reference} of report
               </span>
-              <button
-                type="button"
-                onClick={() => onViewInReport(f.page_reference as number)}
-                className="text-primary hover:underline"
-              >
-                → View in Report
-              </button>
-            </div>
-          ) : null}
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onViewInReport(f.page_reference ?? 1)}
+              className="text-primary hover:underline inline-flex items-center gap-1"
+            >
+              {!f.page_reference && <FileText className="h-3 w-3" />}
+              → View in Report
+            </button>
+          </div>
 
           {!readOnly && !resolved && (
             <div className="mt-3 flex flex-wrap gap-2">
