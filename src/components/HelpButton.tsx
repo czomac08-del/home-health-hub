@@ -50,7 +50,7 @@ const HelpButton = () => {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-4 z-40 h-10 w-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/30 transition-colors shadow-lg"
+        className="fixed bottom-20 right-4 lg:bottom-8 lg:right-24 z-40 h-10 w-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/30 transition-colors shadow-lg"
         aria-label="Help"
       >
         <HelpCircle className="h-5 w-5" />

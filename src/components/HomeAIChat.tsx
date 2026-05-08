@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Sparkles, X, Send, Mic } from "lucide-react";
+import { Sparkles, X, Send, Mic, Home as HomeIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import AIConfidenceStrip from "@/components/AIConfidenceStrip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 interface Message {
   role: "user" | "assistant";
@@ -119,6 +120,34 @@ const HomeAIChat = () => {
   const [systemDetails, setSystemDetails] = useState<SystemDetailRecord[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const [showBubble, setShowBubble] = useState(false);
+
+  // Proactive check-in bubble: shows after 45s on a page if chat is closed
+  // and the user hasn't dismissed it within the last 24 hours.
+  const bubbleMessage = useMemo(() => {
+    const path = location.pathname;
+    if (path.startsWith("/dashboard")) return "I noticed some systems need attention. Want me to explain?";
+    if (path.startsWith("/systems")) return "I can help you document your systems faster.";
+    if (path.startsWith("/documents")) return "Want me to explain what I found in your documents?";
+    if (path.startsWith("/warranties")) return "I can tell you which warranties are about to expire.";
+    if (path.startsWith("/insurance")) return "Want me to check your coverage gaps?";
+    return "Hi, I'm IQ. Need help with anything?";
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setShowBubble(false);
+    if (open) return;
+    const dismissedAt = Number(localStorage.getItem("iq_bubble_dismissed_at") || 0);
+    if (Date.now() - dismissedAt < 24 * 60 * 60 * 1000) return;
+    const t = window.setTimeout(() => setShowBubble(true), 45_000);
+    return () => window.clearTimeout(t);
+  }, [open, location.pathname]);
+
+  const dismissBubble = () => {
+    setShowBubble(false);
+    localStorage.setItem("iq_bubble_dismissed_at", String(Date.now()));
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -154,14 +183,14 @@ const HomeAIChat = () => {
 
   const greeting = useMemo(() => {
     if (loadingData) {
-      return `Hi! 👋 I'm your Home IQ Assistant for **${addr}**. I'm loading your documented home data now.`;
+      return `Hi! 👋 I'm **IQ**, your ComingHomeIQ home assistant for **${addr}**. I'm loading your documented home data now.`;
     }
 
     if (documentedSystems.length === 0) {
-      return `Hi! 👋 I'm your Home IQ Assistant for **${addr}**.\n\nI only answer using information you've documented, uploaded, or that comes from verified data sources. Right now, I don't have any documented system details yet.\n\nAsk me about a system and I'll tell you exactly what's missing and how to add it.`;
+      return `Hi! 👋 I'm **IQ**, your ComingHomeIQ home assistant for **${addr}**.\n\nI only answer using information you've documented, uploaded, or that comes from verified data sources. Right now, I don't have any documented system details yet.\n\nAsk me about a system and I'll tell you exactly what's missing and how to add it.`;
     }
 
-    return `Hi! 👋 I'm your Home IQ Assistant for **${addr}**.\n\nI only use documented information — never guesses. Right now, I have some documented details for **${documentedSystems.map((record) => record.system_name).join(", ")}**.\n\nAsk me about a system and I'll tell you what I know — and what I don't.`;
+    return `Hi! 👋 I'm **IQ**, your ComingHomeIQ home assistant for **${addr}**.\n\nI only use documented information — never guesses. Right now, I have some documented details for **${documentedSystems.map((record) => record.system_name).join(", ")}**.\n\nAsk me about a system and I'll tell you what I know — and what I don't.`;
   }, [addr, documentedSystems, loadingData]);
 
   useEffect(() => {
@@ -264,12 +293,32 @@ const HomeAIChat = () => {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 h-14 w-14 rounded-full bg-primary shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity glow-teal-strong"
-      >
-        <Sparkles className="h-6 w-6 text-primary-foreground" />
-      </button>
+      <>
+        {showBubble && (
+          <div className="fixed bottom-40 right-4 lg:bottom-24 lg:right-8 z-50 max-w-[200px] animate-slide-in-right">
+            <div className="relative bg-primary text-primary-foreground rounded-xl px-3 py-2 pr-7 text-[12px] leading-snug shadow-lg">
+              {bubbleMessage}
+              <button
+                onClick={dismissBubble}
+                aria-label="Dismiss"
+                className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full hover:bg-primary-foreground/20 flex items-center justify-center"
+              >
+                <X className="h-3 w-3" />
+              </button>
+              {/* Tail pointing down toward IQ button */}
+              <div className="absolute -bottom-1.5 right-5 h-3 w-3 bg-primary rotate-45" />
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => { setOpen(true); setShowBubble(false); }}
+          aria-label="Ask IQ"
+          title="Ask IQ"
+          className="fixed bottom-24 right-4 lg:bottom-8 lg:right-[10.5rem] z-50 h-14 w-14 rounded-full bg-primary shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity glow-teal-strong"
+        >
+          <Sparkles className="h-6 w-6 text-primary-foreground" />
+        </button>
+      </>
     );
   }
 
@@ -277,12 +326,13 @@ const HomeAIChat = () => {
     <div className="fixed inset-0 z-50 flex flex-col bg-background md:inset-auto md:bottom-24 md:right-4 md:w-[380px] md:h-[600px] md:rounded-2xl md:border md:border-border md:shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-primary" />
+          <div className="relative h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center">
+            <HomeIcon className="h-4 w-4 text-primary" />
+            <Sparkles className="h-2.5 w-2.5 text-primary absolute -top-0.5 -right-0.5" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-bold text-foreground">Home IQ Assistant</p>
+              <p className="text-sm font-bold text-foreground">IQ — Your Home Assistant</p>
               <span className="text-[9px] text-muted-foreground">— Honest by default</span>
             </div>
             <div className="flex items-center gap-1">
