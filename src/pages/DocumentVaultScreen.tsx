@@ -35,6 +35,7 @@ import {
 } from "@/hooks/usePropertyDocuments";
 import UploadDocumentModal from "@/components/UploadDocumentModal";
 import AddToProfileModal from "@/components/AddToProfileModal";
+import WarrantyReviewModal from "@/components/WarrantyReviewModal";
 
 const FILTERS: { value: "all" | DocCategory; label: string }[] = [
   { value: "all", label: "All" },
@@ -74,6 +75,7 @@ const DocumentVaultScreen = () => {
   const [sort, setSort] = useState<"newest" | "oldest" | "type">("newest");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [importDocId, setImportDocId] = useState<string | null>(null);
+  const [warrantyReviewDocId, setWarrantyReviewDocId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UnifiedDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Locally-hidden ids — let us remove the card immediately on success without
@@ -274,6 +276,7 @@ const DocumentVaultScreen = () => {
                       key={`${doc.source_table}-${doc.id}`}
                       doc={doc}
                       onAddToProfile={(id) => setImportDocId(id)}
+                      onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
                       onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
                         onReanalyzed={reload}
                     />
@@ -290,6 +293,7 @@ const DocumentVaultScreen = () => {
               key={`${doc.source_table}-${doc.id}`}
               doc={doc}
               onAddToProfile={(id) => setImportDocId(id)}
+              onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
               onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
               onReanalyzed={reload}
             />
@@ -317,6 +321,16 @@ const DocumentVaultScreen = () => {
           recordId={importDocId}
         />
       )}
+      <WarrantyReviewModal
+        open={!!warrantyReviewDocId}
+        onOpenChange={(v) => {
+          if (!v) {
+            setWarrantyReviewDocId(null);
+            void reload();
+          }
+        }}
+        recordId={warrantyReviewDocId}
+      />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
         <AlertDialogContent>
@@ -349,11 +363,13 @@ const DocumentVaultScreen = () => {
 function DocCard({
   doc,
   onAddToProfile,
+  onReviewWarranty,
   onDelete,
   onReanalyzed,
 }: {
   doc: UnifiedDocument;
   onAddToProfile: (id: string) => void;
+  onReviewWarranty?: (id: string) => void;
   onDelete?: (d: UnifiedDocument) => void;
   onReanalyzed?: () => void;
 }) {
@@ -458,14 +474,36 @@ function DocCard({
           </button>
         )}
         <button
-          onClick={() => navigate(reviewRoute(doc))}
+          onClick={() => {
+            if (
+              doc.category === "warranty" &&
+              doc.source_table === "property_records" &&
+              onReviewWarranty
+            ) {
+              onReviewWarranty(doc.id);
+              return;
+            }
+            navigate(reviewRoute(doc));
+          }}
           className="text-[11px] font-medium text-primary-foreground bg-primary hover:opacity-90 px-2.5 py-1 rounded-md"
         >
           Review {doc.category === "inspection" ? "Findings" : ""}
         </button>
         {canImport && (
           <button
-            onClick={() => onAddToProfile(doc.id)}
+            onClick={() => {
+              // Warranty docs use the dedicated warranty review/sync modal
+              // so the data lands in the `warranties` table, not just system_details.
+              if (
+                doc.category === "warranty" &&
+                doc.source_table === "property_records" &&
+                onReviewWarranty
+              ) {
+                onReviewWarranty(doc.id);
+                return;
+              }
+              onAddToProfile(doc.id);
+            }}
             className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
           >
             <Sparkles className="h-3 w-3" /> Add to Profile
