@@ -586,7 +586,20 @@ const SystemConfigScreen = () => {
                 if (!specs["filterType"]) setSpec("filterType", filterType);
                 if (!specs["changeFrequency"]) setSpec("changeFrequency", changeFrequency);
               }}
-              onSetupComplete={() => setPendingAutoSave(true)}
+              onSetupComplete={async ({ filterSize, householdFactors, filterType, changeFrequency }) => {
+                const wizardSpecs = { ...specs, filterSize, householdFactors, filterType, changeFrequency, setup_complete: true };
+                setSpecs(wizardSpecs);
+                setHvacHouseholdFactors(householdFactors);
+                try {
+                  await saveSystemDetails(wizardSpecs);
+                  toast.success("Filter setup saved");
+                  return true;
+                } catch (e) {
+                  console.error("[SystemConfig] HVAC wizard save failed", e);
+                  toast.error("Couldn't save your information — please try again.");
+                  return false;
+                }
+              }}
             />
           )}
 
