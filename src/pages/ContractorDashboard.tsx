@@ -396,6 +396,15 @@ const ContractorDashboard = () => {
       <h1 className="text-xl font-bold text-foreground mb-0.5">Welcome, {profile?.full_name || "Contractor"}</h1>
       <p className="text-xs text-muted-foreground mb-6">Licensed Contractor</p>
 
+      <button
+        onClick={() => navigate("/documents")}
+        className="w-full mb-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
+      >
+        <FolderOpen className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Documents Vault</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">Job records, invoices, photo logs</span>
+      </button>
+
       <div className="grid grid-cols-4 gap-2 mb-6">
         {[
           { value: String(effectiveJobs.length), label: "Total Jobs", icon: <Wrench className="h-3.5 w-3.5 text-primary" /> },
