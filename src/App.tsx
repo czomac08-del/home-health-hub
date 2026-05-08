@@ -65,6 +65,8 @@ import SubToLandingPage from "./pages/SubToLandingPage";
 import ContrarianLandingPage from "./pages/ContrarianLandingPage";
 import PartnersPage from "./pages/PartnersPage";
 import CentriqAlternativePage from "./pages/CentriqAlternativePage";
+import BlogIndexPage from "./pages/BlogIndexPage";
+import BlogPostPage from "./pages/BlogPostPage";
 import UploadDocumentFab from "./components/UploadDocumentFab";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import PrivacyRightsPage from "./pages/PrivacyRightsPage";
@@ -73,8 +75,8 @@ import SEO from "./components/SEO";
 
 const queryClient = new QueryClient();
 
-const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative"];
-const hideNavPrefixes = ["/inspection-review/"];
+const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog"];
+const hideNavPrefixes = ["/inspection-review/", "/blog/"];
 
 /**
  * Routes that have their own per-page SEO and should be crawled.
@@ -96,8 +98,9 @@ const PUBLIC_INDEXABLE_ROUTES = new Set<string>([
   "/contrarian",
   "/partners",
   "/centriq-alternative",
+  "/blog",
 ]);
-const PUBLIC_INDEXABLE_PREFIXES = ["/report/"]; // shared certification reports stay indexable
+const PUBLIC_INDEXABLE_PREFIXES = ["/report/", "/blog/"]; // shared certification reports + blog posts stay indexable
 
 // Pages where the Upload Document FAB should appear (homeowner property pages).
 const uploadFabRoutes = [
