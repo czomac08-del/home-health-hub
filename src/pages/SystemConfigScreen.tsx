@@ -720,8 +720,12 @@ const SystemConfigScreen = () => {
 
           {/* ═══ SAVE BUTTONS ═══ */}
           <div className="space-y-3 mt-6">
-            <button onClick={handleSave} className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2">
-              <Save className="h-5 w-5" /> Save to Passport
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Save className="h-5 w-5" /> {saving ? "Saving…" : "Save to Passport"}
             </button>
             <SaveButtonMessage />
             <button onClick={() => navigate("/systems")} className="w-full rounded-xl bg-secondary py-3.5 font-semibold text-secondary-foreground hover:bg-secondary/80 transition-colors">
