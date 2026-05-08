@@ -182,10 +182,10 @@ function ConfirmModal({ photo, result, onClose, onSaved }: ConfirmModalProps) {
         )}
 
         <div className="space-y-3">
-          <Field label="Equipment Type" value={unitType} onChange={setUnitType} conf={result.confidence?.unitType} />
-          <Field label="Brand" value={brand} onChange={setBrand} conf={result.confidence?.brand} />
-          <Field label="Model" value={model} onChange={setModel} conf={result.confidence?.model} />
-          <Field label="Serial" value={serial} onChange={setSerial} conf={result.confidence?.serial} />
+          <Field label="Equipment Type" value={unitType} onChange={setUnitType} conf={result.confidence?.unitType?.toString()} />
+          <Field label="Brand" value={brand} onChange={setBrand} conf={result.confidence?.brand?.toString()} />
+          <Field label="Model" value={model} onChange={setModel} conf={result.confidence?.model?.toString()} />
+          <Field label="Serial" value={serial} onChange={setSerial} conf={result.confidence?.serial?.toString()} />
           <Field label="Estimated Age" value={estimatedAge} onChange={setEstimatedAge} />
           <Field label="Condition" value={condition} onChange={setCondition} />
 
