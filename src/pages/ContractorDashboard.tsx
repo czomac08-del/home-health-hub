@@ -13,7 +13,7 @@ import SEO from "@/components/SEO";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
-  X, FileText, Plug2, Download, BadgeCheck, Image
+  X, FileText, Plug2, Download, BadgeCheck, Image, FolderOpen, Sparkles
 } from "lucide-react";
 
 interface Job {
@@ -61,6 +61,44 @@ const ContractorDashboard = () => {
   const [laborTime, setLaborTime] = useState("");
   const [nextServiceRec, setNextServiceRec] = useState("");
   const [cost, setCost] = useState("");
+
+  // Job-photo AI identification state. Each phase holds an optional data URL.
+  const [phasePhotos, setPhasePhotos] = useState<Record<string, string | null>>({
+    Before: null, During: null, After: null,
+  });
+  const [phaseAnalyzing, setPhaseAnalyzing] = useState<string | null>(null);
+
+  const handlePhasePhoto = (phase: string, file: File | null) => {
+    if (!file) { setPhasePhotos(p => ({ ...p, [phase]: null })); return; }
+    const reader = new FileReader();
+    reader.onload = () => setPhasePhotos(p => ({ ...p, [phase]: String(reader.result || "") }));
+    reader.readAsDataURL(file);
+  };
+
+  const identifyEquipment = async (phase: string) => {
+    const dataUrl = phasePhotos[phase];
+    if (!dataUrl) return;
+    setPhaseAnalyzing(phase);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-scan", {
+        body: { mode: "full_unit", imageBase64: dataUrl },
+      });
+      if (error) throw error;
+      const parsed = typeof data?.result === "string" ? JSON.parse(data.result) : (data?.result || data);
+      const summary = parsed?.summary || parsed?.unitType || "Equipment identified";
+      toast.success(summary, {
+        description: parsed?.unitType ? `Type: ${parsed.unitType}` : undefined,
+        action: parsed?.unitType ? {
+          label: "Use as Part Model",
+          onClick: () => setPartModels(prev => prev ? `${prev}, ${parsed.unitType}` : parsed.unitType),
+        } : undefined,
+      });
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't identify equipment");
+    } finally {
+      setPhaseAnalyzing(null);
+    }
+  };
 
   const [quoteDesc, setQuoteDesc] = useState("");
   const [quoteCost, setQuoteCost] = useState("");
