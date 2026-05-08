@@ -300,13 +300,39 @@ const ContractorDashboard = () => {
             <label className="text-xs font-medium text-muted-foreground mb-2 block">Photo Documentation</label>
             <div className="grid grid-cols-3 gap-2">
               {["Before", "During", "After"].map(phase => (
-                <label key={phase} className="cursor-pointer">
-                  <input type="file" accept="image/*" className="hidden" />
-                  <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-4 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
-                    <Image className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-[9px] text-muted-foreground">{phase}</span>
-                  </div>
-                </label>
+                <div key={phase} className="space-y-1.5">
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhasePhoto(phase, e.target.files?.[0] || null)}
+                    />
+                    {phasePhotos[phase] ? (
+                      <div className="relative rounded-xl border border-primary/40 overflow-hidden aspect-square bg-card">
+                        <img src={phasePhotos[phase]!} alt={phase} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 left-1 text-[9px] font-semibold text-white bg-black/60 px-1.5 py-0.5 rounded">{phase}</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border-2 border-dashed border-border bg-card/50 py-4 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors aspect-square">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-[9px] text-muted-foreground">{phase}</span>
+                      </div>
+                    )}
+                  </label>
+                  {phasePhotos[phase] && (
+                    <button
+                      type="button"
+                      onClick={() => identifyEquipment(phase)}
+                      disabled={phaseAnalyzing === phase}
+                      className="w-full inline-flex items-center justify-center gap-1 rounded-full bg-primary/15 border border-primary/30 px-2 py-1 text-[9px] font-semibold text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
+                    >
+                      {phaseAnalyzing === phase
+                        ? <><Loader2 className="h-3 w-3 animate-spin" /> Analyzing…</>
+                        : <><Sparkles className="h-3 w-3" /> Identify with AI</>}
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
