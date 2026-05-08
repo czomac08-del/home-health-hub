@@ -34,6 +34,8 @@ export interface UnifiedDocument {
   hasExtractedData?: boolean;
   /** True when this is an uploaded document but AI extraction returned nothing usable. */
   extractionFailed?: boolean;
+  /** True once the user has imported the AI-extracted data into their profile. */
+  addedToProfile?: boolean;
   /** For system_photos: whether AI photo review has been run. */
   aiAnalyzed?: boolean;
   /** For system_photos: parent system_details id, used to merge AI results. */
@@ -148,6 +150,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         overallScore: null,
         hasExtractedData: !!ext,
         extractionFailed,
+        addedToProfile: !!r.ai_verified,
         raw: r,
       });
     });
