@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Camera, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeImageFile, fileToDataUrl } from "@/lib/imageUpload";
 
 interface ScannedFields {
   brand: string | null;
@@ -21,19 +22,17 @@ export default function ApplianceScanner({ systemName, onFieldsScanned }: Applia
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const raw = e.target.files?.[0];
+    if (cameraRef.current) cameraRef.current.value = "";
+    if (!raw) return;
 
     setScanning(true);
     setError(null);
     setScannedFields(null);
 
     try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve) => {
-        reader.onload = (ev) => resolve(ev.target?.result as string);
-        reader.readAsDataURL(file);
-      });
+      const file = await normalizeImageFile(raw);
+      const base64 = await fileToDataUrl(file);
 
       const { data, error: fnError } = await supabase.functions.invoke("ai-scan", {
         body: { mode: "label_scan", imageBase64: base64 },
@@ -56,12 +55,11 @@ export default function ApplianceScanner({ systemName, onFieldsScanned }: Applia
 
       setScannedFields(fields);
       onFieldsScanned(fields);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Scan error:", err);
-      setError("Couldn't read label — please enter manually.");
+      setError(err?.message || "Couldn't read label — please enter manually.");
     } finally {
       setScanning(false);
-      if (cameraRef.current) cameraRef.current.value = "";
     }
   };
 
@@ -93,8 +91,7 @@ export default function ApplianceScanner({ systemName, onFieldsScanned }: Applia
       <input
         ref={cameraRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        accept="image/*,.heic,.heif"
         className="hidden"
         onChange={handleCapture}
       />
