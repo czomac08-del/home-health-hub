@@ -169,7 +169,7 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
           subtitle="Quick DIY Wins"
           items={diyOpen.slice(0, 3).map((f) => f.title)}
           ctaLabel="See Full DIY List"
-          onClick={() => navigate(`/property/inspection?tab=diy${recordId ? `&record=${recordId}` : ""}`)}
+          onClick={() => recordId && navigate(`/inspection/${recordId}/diy`)}
           accent="brain-blue"
         />
 
@@ -180,7 +180,7 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
           subtitle="Fix Before You List"
           items={proOpen.slice(0, 3).map((f) => f.title)}
           ctaLabel="See Full Fix List"
-          onClick={() => navigate(`/property/inspection?tab=pro${recordId ? `&record=${recordId}` : ""}`)}
+          onClick={() => recordId && navigate(`/inspection/${recordId}/fix-list`)}
           accent="health-amber"
           footer={
             proOpen.length > 0
@@ -202,7 +202,7 @@ export default function InspectionAlertBanner({ propertyId }: Props) {
               : "Minimal buyer credit risk",
           ]}
           ctaLabel="See Selling Options"
-          onClick={() => navigate(`/property/inspection?tab=selling${recordId ? `&record=${recordId}` : ""}`)}
+          onClick={() => recordId && navigate(`/inspection/${recordId}/selling`)}
           accent="primary"
         />
       </div>
