@@ -13,7 +13,7 @@ import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from 
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
-import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhotosBanner, type AnalyzablePhoto } from "@/components/PhotoAiAnalyzer";
+import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhotosBanner, analyzePhoto, type AnalyzablePhoto, type PhotoReviewResult } from "@/components/PhotoAiAnalyzer";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import ChimneyIntelligence from "@/components/ChimneyIntelligence";
@@ -44,6 +44,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
 
 interface PhotoItem { url: string; label: string; storagePath?: string; id?: string; ai_analyzed?: boolean; }
 interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
+interface AiSuggestion { key: string; label: string; value: string; target: "brand" | "model" | "serial" | "installDate" | "notes" | "spec"; specKey?: string; }
 
 // Small teal badge
 const AiBadge = () => (
@@ -64,7 +65,9 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pendingAutoSave, setPendingAutoSave] = useState(false);
+  const [aiPhotoBanner, setAiPhotoBanner] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [analyzingPhotoIds, setAnalyzingPhotoIds] = useState<Set<string>>(new Set());
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
