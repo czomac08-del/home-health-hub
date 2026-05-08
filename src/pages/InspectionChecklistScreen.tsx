@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Circle, ChevronDown, HardHat, BookOpen, AlertTriangle, Wrench, ClipboardList, Tag } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, ChevronDown, HardHat, BookOpen, AlertTriangle, Wrench, ClipboardList, Tag, FileText, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { estCost, fmtMoney } from "@/lib/inspectionScoring";
 import FindContractorModal from "@/components/FindContractorModal";
+import InspectionPdfViewer from "@/components/InspectionPdfViewer";
 
 export type ChecklistMode = "progress" | "diy" | "fix-list" | "selling";
 
@@ -22,6 +24,7 @@ interface Finding {
   status: string;
   resolved_at: string | null;
   resolution_cost: number | null;
+  page_reference: number | null;
 }
 
 const MODE_META: Record<ChecklistMode, { title: string; subtitle: string; icon: React.ComponentType<{ className?: string }>; }> = {
@@ -56,6 +59,9 @@ export default function InspectionChecklistScreen({ mode }: Props) {
   const [loading, setLoading] = useState(true);
   const [recordMeta, setRecordMeta] = useState<{ document_date: string | null; created_at: string | null } | null>(null);
   const [contractorFor, setContractorFor] = useState<Finding | null>(null);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [viewerPage, setViewerPage] = useState<number | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     if (!inspectionId) return;
@@ -65,12 +71,12 @@ export default function InspectionChecklistScreen({ mode }: Props) {
       const [{ data: rec }, { data: rows }] = await Promise.all([
         supabase
           .from("property_records")
-          .select("document_date, created_at")
+          .select("document_date, created_at, storage_path, url")
           .eq("id", inspectionId)
           .maybeSingle(),
         supabase
           .from("inspection_findings")
-          .select("id, title, description, recommendation, level, category, system_category, is_diy, status, resolved_at, resolution_cost")
+          .select("id, title, description, recommendation, level, category, system_category, is_diy, status, resolved_at, resolution_cost, page_reference")
           .eq("inspection_record_id", inspectionId)
           .order("level", { ascending: true })
           .order("title", { ascending: true }),
@@ -78,6 +84,16 @@ export default function InspectionChecklistScreen({ mode }: Props) {
       if (cancelled) return;
       setRecordMeta(rec ?? null);
       setFindings((rows ?? []) as Finding[]);
+      // Resolve PDF URL (prefer signed URL from storage)
+      let url: string | null = (rec as any)?.url ?? null;
+      const storagePath = (rec as any)?.storage_path ?? null;
+      if (storagePath) {
+        const { data: signed } = await supabase.storage
+          .from("property-records")
+          .createSignedUrl(storagePath, 60 * 60);
+        if (signed?.signedUrl) url = signed.signedUrl;
+      }
+      setReportUrl(url);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -130,6 +146,12 @@ export default function InspectionChecklistScreen({ mode }: Props) {
 
   const meta = MODE_META[mode];
   const Icon = meta.icon;
+
+  function openReportAt(page: number) {
+    setViewerPage(page);
+    setViewerOpen(true);
+  }
+
   const dateLabel = recordMeta?.document_date
     ? new Date(recordMeta.document_date).toLocaleDateString()
     : recordMeta?.created_at
@@ -203,6 +225,7 @@ export default function InspectionChecklistScreen({ mode }: Props) {
                 mode={mode}
                 onToggle={() => toggle(f)}
                 onFindContractor={() => setContractorFor(f)}
+                onViewInReport={openReportAt}
               />
             ))}
           </ul>
@@ -223,6 +246,7 @@ export default function InspectionChecklistScreen({ mode }: Props) {
                     mode={mode}
                     onToggle={() => toggle(f)}
                     onFindContractor={() => setContractorFor(f)}
+                    onViewInReport={openReportAt}
                   />
                 ))}
               </ul>
@@ -239,6 +263,23 @@ export default function InspectionChecklistScreen({ mode }: Props) {
         city={activeProperty?.city || null}
         state={activeProperty?.state || null}
       />
+
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+        <DialogContent className="max-w-5xl w-[95vw] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-background">
+            <Button variant="ghost" size="sm" onClick={() => setViewerOpen(false)}>
+              <ArrowLeft className="h-4 w-4" /> Back to {meta.title}
+            </Button>
+            <div className="flex-1" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewerOpen(false)} aria-label="Close">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <InspectionPdfViewer fileUrl={reportUrl} jumpToPage={viewerPage} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -248,11 +289,13 @@ function FindingRow({
   mode,
   onToggle,
   onFindContractor,
+  onViewInReport,
 }: {
   f: Finding;
   mode: ChecklistMode;
   onToggle: () => void;
   onFindContractor: () => void;
+  onViewInReport: (page: number) => void;
 }) {
   const sev = severityLabel(f.level);
   const [lo, hi] = estCost(f.level);
@@ -296,6 +339,21 @@ function FindingRow({
             <span>Est. {fmtMoney(lo)} – {fmtMoney(hi)}</span>
             {f.system_category && <span>· {f.system_category}</span>}
           </div>
+
+          {f.page_reference ? (
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <FileText className="h-3 w-3" /> Page {f.page_reference} of report
+              </span>
+              <button
+                type="button"
+                onClick={() => onViewInReport(f.page_reference as number)}
+                className="text-primary hover:underline"
+              >
+                → View in Report
+              </button>
+            </div>
+          ) : null}
 
           {!readOnly && !resolved && (
             <div className="mt-3 flex flex-wrap gap-2">
