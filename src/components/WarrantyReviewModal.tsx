@@ -1,15 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Wand2, ExternalLink, Check, ShieldCheck, FileText } from "lucide-react";
 import { toast } from "sonner";
+import InspectionPdfViewer from "@/components/InspectionPdfViewer";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   recordId: string | null;
+  /**
+   * Optional direct document for warranties already synced to the
+   * `warranties` table (no `property_records` row to fetch). When present,
+   * the modal skips the lookup and renders an inline PDF viewer using these
+   * fields.
+   */
+  directDoc?: {
+    fileName?: string | null;
+    url?: string | null;
+    storagePath?: string | null;
+    bucket?: string | null;
+  } | null;
 }
 
 interface WarrantyExtraction {
@@ -56,7 +69,7 @@ function looksLikeWarranty(w: WarrantyExtraction): boolean {
   );
 }
 
-export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Props) {
+export default function WarrantyReviewModal({ open, onOpenChange, recordId, directDoc }: Props) {
   const { user, activeProperty } = useAuth();
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -64,11 +77,35 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
   const [record, setRecord] = useState<any>(null);
   const [warranty, setWarranty] = useState<WarrantyExtraction>({});
   const [synced, setSynced] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !recordId) return;
+    if (!open) return;
+    // Direct-doc mode: nothing to fetch from property_records, just resolve
+    // a viewable URL for the inline PDF viewer.
+    if (!recordId && directDoc) {
+      setLoading(false);
+      setRecord(null);
+      setWarranty({});
+      setSynced(false);
+      (async () => {
+        if (directDoc.url) {
+          setSignedUrl(directDoc.url);
+          return;
+        }
+        if (directDoc.storagePath && directDoc.bucket) {
+          const { data } = await supabase.storage
+            .from(directDoc.bucket)
+            .createSignedUrl(directDoc.storagePath, 60 * 60);
+          setSignedUrl(data?.signedUrl || null);
+        }
+      })();
+      return;
+    }
+    if (!recordId) return;
     setLoading(true);
     setSynced(false);
+    setSignedUrl(null);
     (async () => {
       const { data } = await supabase
         .from("property_records")
@@ -85,10 +122,18 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
           .eq("document_path", data.storage_path)
           .limit(1);
         if (existing && existing.length > 0) setSynced(true);
+        // Also resolve a signed URL up-front so the inline PDF fallback
+        // renders immediately if extraction returned nothing.
+        const { data: urlData } = await supabase.storage
+          .from("property-records")
+          .createSignedUrl(data.storage_path, 60 * 60);
+        setSignedUrl(urlData?.signedUrl || data.url || null);
+      } else if (data?.url) {
+        setSignedUrl(data.url);
       }
       setLoading(false);
     })();
-  }, [open, recordId]);
+  }, [open, recordId, directDoc]);
 
   const reExtract = async () => {
     if (!record?.storage_path) {
@@ -187,17 +232,26 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
   };
 
   const hasDetails = looksLikeWarranty(warranty);
+  const isDirectMode = !recordId && !!directDoc;
+  const titleLabel =
+    record?.file_name ||
+    directDoc?.fileName ||
+    "Warranty";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={isDirectMode || (!loading && !hasDetails) ? "max-w-4xl h-[85vh] flex flex-col" : "max-w-lg"}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            {record?.file_name || "Warranty"}
+            {titleLabel}
           </DialogTitle>
           <DialogDescription>
-            Extracted warranty details. Sync to your Warranties dashboard to track expiration.
+            {isDirectMode
+              ? "Viewing your warranty document."
+              : hasDetails
+                ? "Extracted warranty details. Sync to your Warranties dashboard to track expiration."
+                : "AI couldn't extract structured details — view the original document below."}
           </DialogDescription>
         </DialogHeader>
 
@@ -205,20 +259,19 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
           <div className="py-8 flex justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : isDirectMode ? (
+          <div className="flex-1 min-h-0 -mx-6 -mb-6 border-t border-border">
+            <InspectionPdfViewer fileUrl={signedUrl} />
+          </div>
         ) : !hasDetails ? (
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              We don't have structured warranty details for this document yet. You can still add it
-              to your Warranties dashboard using the filename, run AI analysis to extract coverage,
-              or open the PDF to read it directly.
-            </p>
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {synced ? (
-                <Button disabled variant="secondary" className="flex-1">
+                <Button disabled variant="secondary">
                   <Check className="h-4 w-4 mr-2" /> Added to Warranties
                 </Button>
               ) : (
-                <Button onClick={syncToWarranties} disabled={syncing} className="flex-1">
+                <Button onClick={syncToWarranties} disabled={syncing}>
                   {syncing ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding…</>
                   ) : (
@@ -226,16 +279,16 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
                   )}
                 </Button>
               )}
-              <Button onClick={reExtract} disabled={extracting} className="flex-1">
+              <Button onClick={reExtract} disabled={extracting} variant="outline">
                 {extracting ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing…</>
                 ) : (
                   <><Wand2 className="h-4 w-4 mr-2" /> Run AI Analysis</>
                 )}
               </Button>
-              <Button variant="outline" onClick={openPdf}>
-                <ExternalLink className="h-4 w-4 mr-2" /> View PDF
-              </Button>
+            </div>
+            <div className="flex-1 min-h-0 -mx-6 -mb-6 border-t border-border">
+              <InspectionPdfViewer fileUrl={signedUrl} />
             </div>
           </div>
         ) : (
