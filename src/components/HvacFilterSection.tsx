@@ -145,19 +145,23 @@ interface Props {
   filterSize?: string;
   onFilterSizeChange?: (size: string) => void;
   onHouseholdFactorsChange?: (factors: string[]) => void;
+  onRecommendationChange?: (rec: { filterType: string; changeFrequency: string }) => void;
 }
 
-export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange }: Props) => {
+export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange }: Props) => {
   // Progressive disclosure steps
   const [knowsSize, setKnowsSize] = useState<"yes" | "no" | "">("");
   const [localFilterSize, setLocalFilterSize] = useState(filterSize);
+  const [sizeSubmitted, setSizeSubmitted] = useState(!!filterSize);
   const [householdFactors, setHouseholdFactors] = useState<HouseholdFactor[]>([]);
   const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
-  const sizeReady = !!localFilterSize || knowsSize === "no";
+  const sizeReady = sizeSubmitted;
+  // Valid format: NNxNNxN (e.g., 16x25x1) — at least 5 chars and contains two "x"/"X"
+  const isValidSize = /^\s*\d{1,2}\s*[xX]\s*\d{1,2}\s*[xX]\s*\d{1,2}\s*$/.test(localFilterSize);
 
   const step = useMemo(() => {
     if (!sizeReady) return 1; // ask filter size
@@ -188,6 +192,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
 
   const handleSizeEntered = (size: string) => {
     setLocalFilterSize(size);
+    setSizeSubmitted(true);
     onFilterSizeChange?.(size);
   };
 
@@ -236,19 +241,30 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           <input
             value={localFilterSize}
             onChange={e => setLocalFilterSize(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && isValidSize) {
+                e.preventDefault();
+                handleSizeEntered(localFilterSize);
+              }
+            }}
             placeholder="e.g. 16x25x1"
             className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          {localFilterSize && (
-            <button onClick={() => handleSizeEntered(localFilterSize)}
-              className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors">
-              Continue
-            </button>
+          <button
+            type="button"
+            disabled={!isValidSize}
+            onClick={() => handleSizeEntered(localFilterSize)}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            Next →
+          </button>
+          {localFilterSize && !isValidSize && (
+            <p className="text-[10px] text-muted-foreground">Format: width × height × depth, e.g. 16x25x1</p>
           )}
         </div>
       )}
 
-      {step === 1 && knowsSize === "no" && !localFilterSize && (
+      {step === 1 && knowsSize === "no" && (
         <div className="animate-fade-in space-y-3">
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
             <p className="text-xs font-semibold text-foreground mb-2">How to find your filter size</p>
@@ -263,10 +279,24 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           <input
             value={localFilterSize}
             onChange={e => setLocalFilterSize(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && isValidSize) {
+                e.preventDefault();
+                handleSizeEntered(localFilterSize);
+              }
+            }}
             placeholder="Enter size once you find it, e.g. 16x25x1"
             className="w-full rounded-xl border border-border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          <button onClick={() => { setLocalFilterSize("unknown"); }}
+          <button
+            type="button"
+            disabled={!isValidSize}
+            onClick={() => handleSizeEntered(localFilterSize)}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            Next →
+          </button>
+          <button onClick={() => { handleSizeEntered("unknown"); }}
             className="w-full rounded-xl border border-border text-muted-foreground py-2.5 text-xs font-medium hover:border-primary/40 transition-colors">
             Skip — I'll measure later
           </button>
@@ -278,7 +308,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">Who lives in your home?</p>
-            <button onClick={() => { setLocalFilterSize(""); setKnowsSize(""); }} className="text-[10px] text-primary hover:underline">← Change size</button>
+            <button onClick={() => { setLocalFilterSize(""); setSizeSubmitted(false); setKnowsSize(""); }} className="text-[10px] text-primary hover:underline">← Change size</button>
           </div>
           <p className="text-[10px] text-muted-foreground">Select all that apply</p>
           <div className="grid grid-cols-2 gap-2">
@@ -292,7 +322,14 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
             ))}
           </div>
           {householdFactors.length > 0 && (
-            <button onClick={() => { setHouseholdConfirmed(true); onHouseholdFactorsChange?.(householdFactors); }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
+            <button onClick={() => {
+              setHouseholdConfirmed(true);
+              onHouseholdFactorsChange?.(householdFactors);
+              const rec = getRecommendation(householdFactors);
+              const filterType = rec.merv >= 13 ? "HEPA" : "Pleated";
+              const changeFrequency = rec.days <= 45 ? "Monthly" : rec.days <= 90 ? "Every 3 Months" : "Every 6 Months";
+              onRecommendationChange?.({ filterType, changeFrequency });
+            }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
           )}
