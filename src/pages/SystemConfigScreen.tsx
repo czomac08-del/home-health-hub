@@ -243,6 +243,30 @@ const SystemConfigScreen = () => {
     setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl } }));
   };
 
+  const deletePhoto = async (photo: PhotoItem, index: number) => {
+    // Unsaved (no DB id) — just remove from local state.
+    if (!photo.id) {
+      if (photo.storagePath) {
+        await supabase.storage.from("system-photos").remove([photo.storagePath]).catch(() => {});
+      }
+      setPhotos((prev) => prev.filter((_, idx) => idx !== index));
+      return;
+    }
+    try {
+      const { error: dbErr } = await supabase.from("system_photos").delete().eq("id", photo.id);
+      if (dbErr) throw dbErr;
+      if (photo.storagePath) {
+        const { error: stErr } = await supabase.storage.from("system-photos").remove([photo.storagePath]);
+        if (stErr) console.warn("[SystemConfig] storage remove failed", stErr);
+      }
+      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+      toast.success("Photo deleted");
+    } catch (e: any) {
+      console.error("[SystemConfig] photo delete failed", e);
+      toast.error("Couldn't delete photo. Please try again.");
+    }
+  };
+
   const handleSave = async () => {
     if (!user || !activeProperty) {
       toast.error("No active property. Please add a property first.");
