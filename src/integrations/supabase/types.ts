@@ -281,6 +281,54 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author: string
+          category: string
+          content: string
+          created_at: string
+          featured_image_url: string | null
+          id: string
+          meta_description: string
+          published: boolean
+          published_at: string | null
+          read_time_minutes: number
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          category: string
+          content: string
+          created_at?: string
+          featured_image_url?: string | null
+          id?: string
+          meta_description: string
+          published?: boolean
+          published_at?: string | null
+          read_time_minutes?: number
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          category?: string
+          content?: string
+          created_at?: string
+          featured_image_url?: string | null
+          id?: string
+          meta_description?: string
+          published?: boolean
+          published_at?: string | null
+          read_time_minutes?: number
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       certification_shares: {
         Row: {
           created_at: string
