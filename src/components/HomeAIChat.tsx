@@ -308,6 +308,7 @@ const HomeAIChat = () => {
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <AIConfidenceStrip text={msg.content} />
                 </div>
               ) : (
                 msg.content
