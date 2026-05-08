@@ -158,6 +158,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const [householdFactors, setHouseholdFactors] = useState<HouseholdFactor[]>([]);
   const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
+  const [frequencyConfirmed, setFrequencyConfirmed] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [savingSetup, setSavingSetup] = useState(false);
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
@@ -169,9 +170,9 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const step = useMemo(() => {
     if (!sizeReady) return 1; // ask filter size
     if (!householdConfirmed) return 2; // ask household
-    if (!changeFreq) return 3; // ask frequency
+    if (!frequencyConfirmed) return 3; // ask frequency
     return 4; // show results
-  }, [sizeReady, householdConfirmed, changeFreq]);
+  }, [sizeReady, householdConfirmed, frequencyConfirmed]);
 
   const recommendation = useMemo(() => {
     if (householdFactors.length === 0) return null;
