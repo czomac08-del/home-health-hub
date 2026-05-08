@@ -16,7 +16,8 @@ export interface UnifiedDocument {
     | "property_records"
     | "inspector_media"
     | "insurance_documents"
-    | "fix_verifications";
+    | "fix_verifications"
+    | "system_photos";
   category: DocCategory;
   title: string;
   fileType: "pdf" | "image" | "doc" | "other";
@@ -33,6 +34,10 @@ export interface UnifiedDocument {
   hasExtractedData?: boolean;
   /** True when this is an uploaded document but AI extraction returned nothing usable. */
   extractionFailed?: boolean;
+  /** For system_photos: whether AI photo review has been run. */
+  aiAnalyzed?: boolean;
+  /** For system_photos: parent system_details id, used to merge AI results. */
+  systemDetailId?: string | null;
   raw?: any;
 }
 
@@ -69,7 +74,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     setLoading(true);
     const all: UnifiedDocument[] = [];
 
-    const [recs, media, ins, fixes] = await Promise.all([
+    const [recs, media, ins, fixes, sysPhotos] = await Promise.all([
       supabase
         .from("property_records")
         .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
@@ -88,6 +93,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .from("fix_verifications")
         .select("id, photos, documents, date_completed, created_at, fix_type, contractor_name")
         .eq("property_id", propertyId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("system_photos" as any)
+        .select("id, url, storage_path, label, created_at, ai_analyzed, system_detail_id, system_details!inner(property_id, system_name)")
+        .eq("system_details.property_id", propertyId)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -182,6 +192,25 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           recordType: f.fix_type,
           raw: f,
         });
+      });
+    });
+
+    (sysPhotos.data || []).forEach((p: any) => {
+      const name = p.label || p.system_details?.system_name || "System photo";
+      all.push({
+        id: p.id,
+        source_table: "system_photos",
+        category: "other",
+        title: name,
+        fileType: "image",
+        uploadedAt: p.created_at,
+        url: p.url,
+        storagePath: p.storage_path,
+        bucket: "system-photos",
+        systemType: p.system_details?.system_name ?? null,
+        aiAnalyzed: !!p.ai_analyzed,
+        systemDetailId: p.system_detail_id,
+        raw: p,
       });
     });
 
