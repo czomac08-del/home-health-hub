@@ -105,18 +105,45 @@ serve(async (req) => {
         break;
 
       case "photo_review":
-        systemPrompt = "You are a home inspection AI expert reviewing a previously uploaded photo of home equipment. Identify the equipment and read any visible labels. TRUTHFULNESS RULE: Only return values that are visibly present in the image. If you cannot read a label or determine a value, return null — do not guess. Accuracy beats completeness.";
+        systemPrompt = "You are a home inspection AI expert reviewing a previously uploaded photo of home equipment. Identify the equipment and read any visible labels. Return structured JSON only. TRUTHFULNESS RULE: Only return values that are visibly present in the image. If you cannot read a label or determine a value, return null — do not guess. Accuracy beats completeness. Confidence must be high, medium, or low for each extracted field.";
         userPrompt = `Review this photo of a home appliance/system/equipment. Extract everything you can see and return a JSON object:
 {
   "unitType": "what type of equipment this is (e.g. 'Gas water heater', 'Central AC condenser')",
-  "brand": "manufacturer/brand name from any visible label, or null",
-  "model": "model number from label, or null",
-  "serial": "serial number from label, or null",
-  "estimatedAge": "rough age range based on visual condition and any visible date codes, or null",
+  "manufacturer": "manufacturer/brand name from any visible label, or null",
+  "brand": "same as manufacturer if visible, or null",
+  "modelName": "model name if visible, or null",
+  "modelNumber": "model number from label, or null",
+  "model": "best model name or number if visible, or null",
+  "serialNumber": "serial number from label, or null",
+  "serial": "same as serialNumber if visible, or null",
+  "manufactureYear": "manufacture year or date code if visible, or null",
+  "estimatedAge": "age range based only on visible date codes or condition, or null",
+  "fuelType": "fuel type if visible or clearly indicated, or null",
+  "capacity": "capacity/BTU/gallons/tonnage/amps/voltage if visible, or null",
+  "size": "physical size or filter size if visible, or null",
   "condition": "overall condition (e.g. 'Good', 'Fair', 'Poor', 'New') based on visible wear/damage",
+  "warningLabels": ["visible warning/caution labels or null if none are visible"],
+  "recalls": ["only recalls visibly printed on labels; otherwise empty array"],
   "visibleIssues": ["list any visible problems: rust, leaks, corrosion, damage, missing parts"],
   "summary": "One short sentence describing what this is and its condition",
-  "confidence": { "unitType": "high/medium/low", "brand": "high/medium/low", "model": "high/medium/low", "serial": "high/medium/low" }
+  "confidence": {
+    "unitType": "high/medium/low",
+    "manufacturer": "high/medium/low",
+    "brand": "high/medium/low",
+    "modelName": "high/medium/low",
+    "modelNumber": "high/medium/low",
+    "model": "high/medium/low",
+    "serialNumber": "high/medium/low",
+    "serial": "high/medium/low",
+    "manufactureYear": "high/medium/low",
+    "estimatedAge": "high/medium/low",
+    "fuelType": "high/medium/low",
+    "capacity": "high/medium/low",
+    "size": "high/medium/low",
+    "condition": "high/medium/low",
+    "warningLabels": "high/medium/low",
+    "recalls": "high/medium/low"
+  }
 }`;
         break;
 
