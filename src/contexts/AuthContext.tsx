@@ -119,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Fire-and-forget: don't block loading on data fetches
         void fetchProfile(s.user.id);
         void fetchProperties(s.user.id);
+        void touchLastSeen(s.user.id);
       }
       setLoading(false);
     });
@@ -131,6 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (s?.user) {
           void fetchProfile(s.user.id);
           void fetchProperties(s.user.id);
+          void touchLastSeen(s.user.id);
           if (event === "SIGNED_IN") {
             // Dispatch custom event for welcome toast
             setTimeout(() => {
