@@ -276,6 +276,7 @@ const DocumentVaultScreen = () => {
                       key={`${doc.source_table}-${doc.id}`}
                       doc={doc}
                       onAddToProfile={(id) => setImportDocId(id)}
+                      onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
                       onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
                         onReanalyzed={reload}
                     />
@@ -292,6 +293,7 @@ const DocumentVaultScreen = () => {
               key={`${doc.source_table}-${doc.id}`}
               doc={doc}
               onAddToProfile={(id) => setImportDocId(id)}
+              onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
               onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
               onReanalyzed={reload}
             />
