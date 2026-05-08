@@ -299,6 +299,10 @@ const AppContent = () => {
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
             <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/inspection-review/:id/viewer" element={<ProtectedRoute><InspectionReviewViewer /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/progress" element={<ProtectedRoute><InspectionChecklistScreen mode="progress" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/diy" element={<ProtectedRoute><InspectionChecklistScreen mode="diy" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/fix-list" element={<ProtectedRoute><InspectionChecklistScreen mode="fix-list" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/selling" element={<ProtectedRoute><InspectionChecklistScreen mode="selling" /></ProtectedRoute>} />
             <Route path="/subto" element={<SubToLandingPage />} />
             <Route path="/contrarian" element={<ContrarianLandingPage />} />
             <Route path="/partners" element={<PartnersPage />} />
