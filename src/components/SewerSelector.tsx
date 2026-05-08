@@ -7,32 +7,37 @@ interface SewerSelectorProps {
   selected?: string;
 }
 
-export const SewerTypeSelector = ({ onSelect, selected }: SewerSelectorProps) => (
-  <div className="flex flex-col gap-4 animate-fade-in">
-    <h2 className="text-lg font-bold text-foreground">What is your sewer / waste system?</h2>
-    <p className="text-xs text-muted-foreground">Select your primary waste system type.</p>
-    <div className="grid grid-cols-2 gap-4">
-      <button
-        onClick={() => onSelect("city")}
-        className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
-          selected === "city" ? "border-primary bg-primary/10 shadow-lg shadow-primary/20" : "border-border bg-card hover:border-primary/40"
-        }`}
-      >
-        <Droplets className={`h-10 w-10 ${selected === "city" ? "text-primary" : "text-muted-foreground"}`} />
-        <span className={`text-sm font-semibold ${selected === "city" ? "text-foreground" : "text-muted-foreground"}`}>City / Municipal Sewer</span>
-      </button>
-      <button
-        onClick={() => onSelect("septic")}
-        className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
-          selected === "septic" ? "border-primary bg-primary/10 shadow-lg shadow-primary/20" : "border-border bg-card hover:border-primary/40"
-        }`}
-      >
-        <CircleDot className={`h-10 w-10 ${selected === "septic" ? "text-primary" : "text-muted-foreground"}`} />
-        <span className={`text-sm font-semibold ${selected === "septic" ? "text-foreground" : "text-muted-foreground"}`}>Septic System</span>
-      </button>
+export const SewerTypeSelector = ({ onSelect, selected }: SewerSelectorProps) => {
+  const dimUnselected = (type: "city" | "septic") => !!selected && selected !== type;
+  return (
+    <div className="flex flex-col gap-4 animate-fade-in">
+      <h2 className="text-lg font-bold text-foreground">What is your sewer / waste system?</h2>
+      <p className="text-xs text-muted-foreground">Select your primary waste system type. The non-applicable option will be greyed out.</p>
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => onSelect("city")}
+          className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
+            selected === "city" ? "border-primary bg-primary/10 shadow-lg shadow-primary/20" : "border-border bg-card hover:border-primary/40"
+          } ${dimUnselected("city") ? "opacity-40" : ""}`}
+        >
+          <Droplets className={`h-10 w-10 ${selected === "city" ? "text-primary" : "text-muted-foreground"}`} />
+          <span className={`text-sm font-semibold ${selected === "city" ? "text-foreground" : "text-muted-foreground"}`}>City / Municipal Sewer</span>
+          {dimUnselected("city") && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Not applicable</span>}
+        </button>
+        <button
+          onClick={() => onSelect("septic")}
+          className={`flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all ${
+            selected === "septic" ? "border-primary bg-primary/10 shadow-lg shadow-primary/20" : "border-border bg-card hover:border-primary/40"
+          } ${dimUnselected("septic") ? "opacity-40" : ""}`}
+        >
+          <CircleDot className={`h-10 w-10 ${selected === "septic" ? "text-primary" : "text-muted-foreground"}`} />
+          <span className={`text-sm font-semibold ${selected === "septic" ? "text-foreground" : "text-muted-foreground"}`}>Septic System</span>
+          {dimUnselected("septic") && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Not applicable</span>}
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export interface SepticSystem {
   name: string;
