@@ -248,6 +248,9 @@ const SystemConfigScreen = () => {
       toast.error("No active property. Please add a property first.");
       return;
     }
+    if (saving) return;
+    setSaving(true);
+    try {
     const payload = {
       property_id: activeProperty.id,
       user_id: user.id,
@@ -270,21 +273,22 @@ const SystemConfigScreen = () => {
       status: "configured",
     };
 
-    const { data: existing } = await supabase
+    const { data: existing, error: lookupErr } = await supabase
       .from("system_details")
       .select("id")
       .eq("property_id", activeProperty.id)
       .eq("system_name", displayName)
       .maybeSingle();
+    if (lookupErr) throw lookupErr;
 
     let systemDetailId: string;
     if (existing) {
       const { error } = await supabase.from("system_details").update(payload).eq("id", existing.id);
-      if (error) { toast.error("Failed to save"); return; }
+      if (error) throw error;
       systemDetailId = existing.id;
     } else {
       const { data, error } = await supabase.from("system_details").insert(payload).select("id").single();
-      if (error) { toast.error("Failed to save"); return; }
+      if (error) throw error;
       systemDetailId = data.id;
     }
 
@@ -323,6 +327,12 @@ const SystemConfigScreen = () => {
 
     toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
     navigate("/systems");
+    } catch (e: any) {
+      console.error("[SystemConfig] save failed", e);
+      toast.error("Couldn't save — please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Load existing data on mount
