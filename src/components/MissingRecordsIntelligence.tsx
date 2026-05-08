@@ -154,6 +154,31 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
     0,
   );
 
+  const totalKnown = allRecordTypes.filter(isResolved).length;
+
+  // "Your Next 5 Actions": safety-critical first, then by findability heuristic
+  // (records whose digitization year is more recent are easier to find).
+  const prioritizedGaps = useMemo(() => {
+    const open = allRecordTypes.filter(isOpenGap);
+    return open
+      .map((rt) => ({
+        rt,
+        priority:
+          (rt.safety_critical ? 1000 : 0) +
+          (getCutoffYear(rt) || 1900),
+      }))
+      .sort((a, b) => b.priority - a.priority)
+      .map((x) => x.rt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRecordTypes, actionStatus, builtYear, stateAbbr]);
+
+  const top5 = prioritizedGaps.slice(0, 5);
+  // Always include safety-critical gaps not already in top5
+  const extraSafety = prioritizedGaps
+    .slice(5)
+    .filter((rt) => rt.safety_critical && !top5.includes(rt));
+  const nextActions = [...top5, ...extraSafety];
+
   const handleRowClick = (rt: MissingRecord) => {
     setActiveRecord({
       subcategory: rt.subcategory,
