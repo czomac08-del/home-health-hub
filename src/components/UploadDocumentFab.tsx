@@ -21,7 +21,7 @@ export default function UploadDocumentFab({ defaultDocType, defaultSystemType }:
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-40 h-14 px-5 rounded-full bg-primary text-primary-foreground font-heading font-extrabold text-sm shadow-[0_8px_24px_hsl(var(--orange)/0.45)] hover:-translate-y-[2px] transition-all flex items-center gap-2"
+        className="fixed bottom-36 right-4 lg:bottom-20 lg:right-8 z-40 h-14 px-5 rounded-full bg-primary text-primary-foreground font-heading font-extrabold text-sm shadow-[0_8px_24px_hsl(var(--orange)/0.45)] hover:-translate-y-[2px] transition-all flex items-center gap-2"
         aria-label="Upload a document"
       >
         <Upload className="h-5 w-5" />
