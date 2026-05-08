@@ -76,6 +76,17 @@ const defaultCategories: Record<string, { budget: number; spent: number }> = {
 
 const renoCategories = Object.keys(defaultCategories);
 
+// Module-scope so identity is stable; defining inside InvestorDashboard caused
+// inputs to remount on every keystroke and lose focus.
+const InputField = ({ label, value, onChange, placeholder, helper }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; helper?: string }) => (
+  <div>
+    <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
+    <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+    {helper && <p className="text-[9px] text-muted-foreground/70 mt-0.5">{helper}</p>}
+  </div>
+);
+
 const InvestorDashboard = () => {
   const { user, profile } = useAuth();
   const [projects, setProjects] = useState<FlipProject[]>([]);
@@ -261,14 +272,6 @@ const InvestorDashboard = () => {
   const projContractors = selectedProject ? effectiveContractors.filter(c => c.project_id === selectedProject.id) : [];
   const statuses = ["acquisition", "demo", "renovation", "punch list", "listed", "sold"];
 
-  const InputField = ({ label, value, onChange, placeholder, helper }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; helper?: string }) => (
-    <div>
-      <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-      {helper && <p className="text-[9px] text-muted-foreground/70 mt-0.5">{helper}</p>}
-    </div>
-  );
 
   // ── Project detail view ──
   if (selectedProject) {
