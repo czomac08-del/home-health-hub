@@ -126,20 +126,20 @@ export async function applyInspectionFindingsToSystems(args: {
     const penalty = fs.reduce((acc, f) => acc + (f.level === 1 ? 15 : f.level === 2 ? 8 : f.level === 3 ? 3 : 0), 0);
     const nextHealth = Math.max(20, baseHealth - penalty);
 
+    const upsertRow: Record<string, any> = {
+      property_id: propertyId,
+      user_id: userId,
+      system_name: slug,
+      notes: nextNotes,
+      status: nextStatus,
+      health_score: nextHealth,
+    };
+    // Only stamp data_status on rows we're creating — never overwrite a
+    // homeowner-confirmed row's provenance.
+    if (!prior) upsertRow.data_status = "ai_extracted";
     const { error } = await supabase
       .from("system_details")
-      .upsert(
-        {
-          property_id: propertyId,
-          user_id: userId,
-          system_name: slug,
-          notes: nextNotes,
-          status: nextStatus,
-          health_score: nextHealth,
-          data_status: "confirmed" as const,
-        },
-        { onConflict: "property_id,system_name" },
-      );
+      .upsert(upsertRow, { onConflict: "property_id,system_name" });
     if (!error) updated.push(slug);
   }
 
