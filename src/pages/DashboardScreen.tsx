@@ -294,7 +294,7 @@ const DashboardScreen = () => {
               <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
                 <p className="text-xs text-foreground font-medium mb-1">No new verified records this week.</p>
                 <p className="text-[11px] text-muted-foreground mb-3">Here are your top actions to build your home's record.</p>
-                <button onClick={() => navigate(activeProperty ? `/property/${activeProperty.id}` : "/systems")}
+                <button onClick={() => navigate(activeProperty ? "/property" : "/systems")}
                   className="text-[10px] font-heading font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors inline-flex items-center gap-1">
                   See top 3 actions <ChevronRight className="h-3 w-3" />
                 </button>
