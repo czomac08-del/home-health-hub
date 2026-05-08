@@ -1,16 +1,26 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Grid3X3, FileText, User, Briefcase, ShieldAlert } from "lucide-react";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
+import { useRole } from "@/contexts/RoleContext";
+
+const ROLE_HOME: Record<string, string> = {
+  realtor: "/realtor",
+  inspector: "/inspector",
+  contractor: "/contractor",
+  investor: "/investor",
+};
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeAppProfile } = useProfileSwitcher();
+  const { role } = useRole();
 
   const isBusiness = activeAppProfile?.profile_type === "business";
+  const dashPath = ROLE_HOME[role] || "/dashboard";
 
   const tabs = [
-    { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { path: dashPath, icon: LayoutDashboard, label: "Dashboard" },
     ...(isBusiness ? [{ path: "/portfolio", icon: Briefcase, label: "Portfolio" }] : []),
     { path: "/systems", icon: Grid3X3, label: "Systems" },
     { path: "/home-defense", icon: ShieldAlert, label: "Defense" },
@@ -19,7 +29,14 @@ const BottomNav = () => {
   ];
 
   const isActive = (path: string) => {
-    if (path === "/dashboard") return location.pathname === "/dashboard" || location.pathname.startsWith("/system/");
+    if (path === dashPath) {
+      return (
+        location.pathname === dashPath ||
+        location.pathname === "/dashboard" ||
+        location.pathname.startsWith("/system/") ||
+        Object.values(ROLE_HOME).includes(location.pathname)
+      );
+    }
     return location.pathname === path;
   };
 
