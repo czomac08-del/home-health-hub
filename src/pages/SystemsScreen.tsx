@@ -80,7 +80,7 @@ const hasRealSystemData = (item: SystemDetailSummary) => {
   return coreFields.some(hasValue) || (item.specs && Object.values(item.specs).some(hasValue));
 };
 
-const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, onClick }: { item: SystemItem; documented: boolean; flagged?: boolean; flaggedDetail?: string | null; notApplicable?: boolean; onClick: () => void }) => {
+const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, summary, onClick }: { item: SystemItem; documented: boolean; flagged?: boolean; flaggedDetail?: string | null; notApplicable?: boolean; summary?: string; onClick: () => void }) => {
   return (
     <button onClick={onClick} className={`w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left ${notApplicable ? "opacity-50" : ""}`}>
       <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -95,7 +95,7 @@ const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, on
           )}
         </div>
         <p className={`text-xs mt-0.5 ml-[18px] ${documented ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
-          {notApplicable ? "Not applicable — no longer present on this property" : flagged ? (flaggedDetail || "Inspection finding — review details") : documented ? item.documentedDetail : item.emptyDetail}
+          {notApplicable ? "Not applicable — no longer present on this property" : flagged ? (flaggedDetail || "Inspection finding — review details") : summary || (documented ? item.documentedDetail : item.emptyDetail)}
         </p>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
