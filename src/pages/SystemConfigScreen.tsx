@@ -507,6 +507,10 @@ const SystemConfigScreen = () => {
               filterSize={(specs["filterSize"] as string) || ""}
               onFilterSizeChange={(size) => setSpec("filterSize", size)}
               onHouseholdFactorsChange={setHvacHouseholdFactors}
+              onRecommendationChange={({ filterType, changeFrequency }) => {
+                if (!specs["filterType"]) setSpec("filterType", filterType);
+                if (!specs["changeFrequency"]) setSpec("changeFrequency", changeFrequency);
+              }}
             />
           )}
 
