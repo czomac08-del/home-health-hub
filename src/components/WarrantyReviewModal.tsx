@@ -77,12 +77,12 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
         .maybeSingle();
       setRecord(data || null);
       setWarranty(unwrap(data?.ai_extracted_data));
-      // Check whether we already created a warranties row for this doc.
-      if (data?.id) {
+      // Detect a previous sync by matching the source document path.
+      if (data?.storage_path) {
         const { data: existing } = await supabase
           .from("warranties")
           .select("id")
-          .eq("source_record_id", data.id)
+          .eq("document_path", data.storage_path)
           .limit(1);
         if (existing && existing.length > 0) setSynced(true);
       }
@@ -149,7 +149,6 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId }: Pr
         is_transferable: warranty.is_transferable ?? null,
         document_path: record.storage_path || null,
         document_url: record.url || null,
-        source_record_id: record.id,
       };
       const { error } = await supabase.from("warranties").insert(insertPayload);
       if (error) throw error;
