@@ -40,6 +40,7 @@ import WarrantyDashboard from "./pages/WarrantyDashboard";
 import PrivacyReminderScreen from "./pages/PrivacyReminderScreen";
 import DocumentVaultScreen from "./pages/DocumentVaultScreen";
 import FeedbackScreen from "./pages/FeedbackScreen";
+import InspectionChecklistScreen from "./pages/InspectionChecklistScreen";
 import BottomNav from "./components/BottomNav";
 import HelpButton from "./components/HelpButton";
 import DesktopSidebar from "./components/DesktopSidebar";
@@ -298,6 +299,10 @@ const AppContent = () => {
             <Route path="/admin/rewards" element={<ProtectedRoute><AdminRewardsPage /></ProtectedRoute>} />
             <Route path="/affiliate-dashboard" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
             <Route path="/inspection-review/:id/viewer" element={<ProtectedRoute><InspectionReviewViewer /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/progress" element={<ProtectedRoute><InspectionChecklistScreen mode="progress" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/diy" element={<ProtectedRoute><InspectionChecklistScreen mode="diy" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/fix-list" element={<ProtectedRoute><InspectionChecklistScreen mode="fix-list" /></ProtectedRoute>} />
+           <Route path="/inspection/:inspectionId/selling" element={<ProtectedRoute><InspectionChecklistScreen mode="selling" /></ProtectedRoute>} />
             <Route path="/subto" element={<SubToLandingPage />} />
             <Route path="/contrarian" element={<ContrarianLandingPage />} />
             <Route path="/partners" element={<PartnersPage />} />
