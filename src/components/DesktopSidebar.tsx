@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Grid3X3, Wrench, User, Settings, Briefcase, Heart, Shield, ShieldAlert, Umbrella } from "lucide-react";
+import { LayoutDashboard, Grid3X3, Wrench, User, Settings, Briefcase, Heart, Shield, ShieldAlert, Umbrella, FolderOpen } from "lucide-react";
 import { useProfileSwitcher } from "@/contexts/ProfileSwitcherContext";
 const DesktopSidebar = () => {
   const location = useLocation();
@@ -14,6 +14,7 @@ const DesktopSidebar = () => {
     { path: "/guides", icon: Wrench, label: "DIY Guides" },
     { path: "/warranties", icon: Shield, label: "Warranties" },
     { path: "/insurance", icon: Umbrella, label: "Insurance" },
+    { path: "/documents", icon: FolderOpen, label: "Documents Vault" },
     { path: "/home-defense", icon: ShieldAlert, label: "Home Defense" },
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/integrations", icon: Settings, label: "Settings" },

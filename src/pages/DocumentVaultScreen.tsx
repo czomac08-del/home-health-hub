@@ -9,8 +9,21 @@ import {
   Upload,
   ChevronRight,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   usePropertyDocuments,
   CATEGORY_LABEL,
@@ -49,7 +62,7 @@ function reviewRoute(doc: UnifiedDocument): string {
 
 const DocumentVaultScreen = () => {
   const navigate = useNavigate();
-  const { activeProperty } = useAuth();
+  const { activeProperty, user } = useAuth();
   const [searchParams] = useSearchParams();
   const { docs, loading, reload } = usePropertyDocuments(activeProperty?.id);
 
@@ -58,6 +71,52 @@ const DocumentVaultScreen = () => {
   const [sort, setSort] = useState<"newest" | "oldest" | "type">("newest");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [importDocId, setImportDocId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<UnifiedDocument | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  // Locally-hidden ids — let us remove the card immediately on success without
+  // waiting for the next reload.
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+
+  // Documents shown in this screen always belong to the active property, which
+  // useAuth already scopes to the logged-in user. Treat all as owned.
+  const canDelete = !!user;
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      // Remove the storage object first when we know the path.
+      if (pendingDelete.storagePath && pendingDelete.bucket) {
+        const { error: storageErr } = await supabase
+          .storage
+          .from(pendingDelete.bucket)
+          .remove([pendingDelete.storagePath]);
+        // Storage errors are non-fatal — the row delete is the source of truth.
+        if (storageErr) console.warn("Storage remove failed:", storageErr);
+      }
+      const { error: rowErr } = await supabase
+        .from(pendingDelete.source_table as any)
+        .delete()
+        .eq("id", pendingDelete.id);
+      if (rowErr) throw rowErr;
+
+      const cardKey = `${pendingDelete.source_table}-${pendingDelete.id}`;
+      setHiddenIds((s) => {
+        const next = new Set(s);
+        next.add(cardKey);
+        return next;
+      });
+      toast.success("Document deleted");
+      setPendingDelete(null);
+      // Background refresh so counts/categories stay in sync.
+      void reload();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to delete document. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Auto-open import modal from notification deep link
   useEffect(() => {
@@ -66,7 +125,7 @@ const DocumentVaultScreen = () => {
   }, [searchParams]);
 
   const filtered = useMemo(() => {
-    let list = docs;
+    let list = docs.filter((d) => !hiddenIds.has(`${d.source_table}-${d.id}`));
     if (filter !== "all") list = list.filter((d) => d.category === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -208,7 +267,12 @@ const DocumentVaultScreen = () => {
                 </h2>
                 <div className="space-y-2">
                   {grouped[cat].map((doc) => (
-                    <DocCard key={`${doc.source_table}-${doc.id}`} doc={doc} onAddToProfile={(id) => setImportDocId(id)} />
+                    <DocCard
+                      key={`${doc.source_table}-${doc.id}`}
+                      doc={doc}
+                      onAddToProfile={(id) => setImportDocId(id)}
+                      onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
+                    />
                   ))}
                 </div>
               </section>
@@ -218,7 +282,12 @@ const DocumentVaultScreen = () => {
       ) : (
         <div className="space-y-2">
           {filtered.map((doc) => (
-            <DocCard key={`${doc.source_table}-${doc.id}`} doc={doc} onAddToProfile={(id) => setImportDocId(id)} />
+            <DocCard
+              key={`${doc.source_table}-${doc.id}`}
+              doc={doc}
+              onAddToProfile={(id) => setImportDocId(id)}
+              onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
+            />
           ))}
         </div>
       )}
@@ -237,6 +306,31 @@ const DocumentVaultScreen = () => {
           recordId={importDocId}
         />
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                "{pendingDelete?.title}"
+              </span>
+              ? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); void handleConfirmDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -244,21 +338,33 @@ const DocumentVaultScreen = () => {
 function DocCard({
   doc,
   onAddToProfile,
+  onDelete,
 }: {
   doc: UnifiedDocument;
   onAddToProfile: (id: string) => void;
+  onDelete?: (d: UnifiedDocument) => void;
 }) {
   const navigate = useNavigate();
   const Icon = fileIcon(doc.fileType);
   const canImport = doc.source_table === "property_records" && doc.hasExtractedData;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors">
+      {onDelete && (
+        <button
+          type="button"
+          aria-label={`Delete ${doc.title}`}
+          onClick={(e) => { e.stopPropagation(); onDelete(doc); }}
+          className="absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pr-8">
           <p className="text-sm font-medium text-foreground truncate">{doc.title}</p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[10px] text-muted-foreground">
