@@ -64,6 +64,7 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pendingAutoSave, setPendingAutoSave] = useState(false);
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -546,6 +547,7 @@ const SystemConfigScreen = () => {
                 if (!specs["filterType"]) setSpec("filterType", filterType);
                 if (!specs["changeFrequency"]) setSpec("changeFrequency", changeFrequency);
               }}
+              onSetupComplete={() => setPendingAutoSave(true)}
             />
           )}
 
