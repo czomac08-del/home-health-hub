@@ -31,7 +31,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
   isOpen: boolean; title: string; onToggle: () => void; children: React.ReactNode;
 }) => (
   <div className="mb-4 overflow-hidden">
-    <button onClick={onToggle} className="w-full flex items-center justify-between py-2 mb-2">
+    <button type="button" onClick={onToggle} className="w-full flex items-center justify-between py-2 mb-2">
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
       <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
     </button>
