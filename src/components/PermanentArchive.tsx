@@ -142,7 +142,7 @@ const PermanentArchive = ({ propertyId }: Props) => {
       {disputeFor && (
         <DisputeDialog
           open={!!disputeFor}
-          onClose={() => setDisputeFor(null)}
+          onOpenChange={(o) => !o && setDisputeFor(null)}
           propertyId={propertyId}
           propertyRecordId={disputeFor.id}
           inspectorFindingText={disputeFor.title}
