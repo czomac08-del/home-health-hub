@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Wind, ShoppingCart, Check, ChevronRight, AlertTriangle, Sparkles, Dog, Cat, Baby, Cigarette, ShieldAlert, Heart, Users, Leaf } from "lucide-react";
 
 /* ───────── types ───────── */
@@ -161,6 +161,19 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const [frequencyConfirmed, setFrequencyConfirmed] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [savingSetup, setSavingSetup] = useState(false);
+
+  // The `filterSize` prop arrives empty on the first render because
+  // SystemConfigScreen loads from Supabase asynchronously. Sync local state
+  // once the saved value arrives so the wizard hides itself instead of
+  // re-prompting the user.
+  useEffect(() => {
+    if (filterSize) {
+      setSetupComplete(true);
+      setSizeSubmitted(true);
+      setLocalFilterSize(filterSize);
+    }
+  }, [filterSize]);
+
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const sizeReady = sizeSubmitted;

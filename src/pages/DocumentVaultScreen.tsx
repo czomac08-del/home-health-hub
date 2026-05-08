@@ -76,6 +76,10 @@ const DocumentVaultScreen = () => {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [importDocId, setImportDocId] = useState<string | null>(null);
   const [warrantyReviewDocId, setWarrantyReviewDocId] = useState<string | null>(null);
+  // For warranty docs sourced from the `warranties` table we don't have a
+  // property_records row to look up — keep the doc itself so the modal can
+  // render its PDF inline instead of popping a new tab.
+  const [warrantyDirectDoc, setWarrantyDirectDoc] = useState<UnifiedDocument | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UnifiedDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Locally-hidden ids — let us remove the card immediately on success without
@@ -277,6 +281,7 @@ const DocumentVaultScreen = () => {
                       doc={doc}
                       onAddToProfile={(id) => setImportDocId(id)}
                       onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
+                      onReviewWarrantyDirect={(d) => setWarrantyDirectDoc(d)}
                       onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
                         onReanalyzed={reload}
                     />
@@ -294,6 +299,7 @@ const DocumentVaultScreen = () => {
               doc={doc}
               onAddToProfile={(id) => setImportDocId(id)}
               onReviewWarranty={(id) => setWarrantyReviewDocId(id)}
+              onReviewWarrantyDirect={(d) => setWarrantyDirectDoc(d)}
               onDelete={canDelete ? (d) => setPendingDelete(d) : undefined}
               onReanalyzed={reload}
             />
@@ -322,14 +328,25 @@ const DocumentVaultScreen = () => {
         />
       )}
       <WarrantyReviewModal
-        open={!!warrantyReviewDocId}
+        open={!!warrantyReviewDocId || !!warrantyDirectDoc}
         onOpenChange={(v) => {
           if (!v) {
             setWarrantyReviewDocId(null);
+            setWarrantyDirectDoc(null);
             void reload();
           }
         }}
         recordId={warrantyReviewDocId}
+        directDoc={
+          warrantyDirectDoc
+            ? {
+                fileName: warrantyDirectDoc.title,
+                url: warrantyDirectDoc.url,
+                storagePath: warrantyDirectDoc.storagePath,
+                bucket: warrantyDirectDoc.bucket,
+              }
+            : null
+        }
       />
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
@@ -364,12 +381,14 @@ function DocCard({
   doc,
   onAddToProfile,
   onReviewWarranty,
+  onReviewWarrantyDirect,
   onDelete,
   onReanalyzed,
 }: {
   doc: UnifiedDocument;
   onAddToProfile: (id: string) => void;
   onReviewWarranty?: (id: string) => void;
+  onReviewWarrantyDirect?: (d: UnifiedDocument) => void;
   onDelete?: (d: UnifiedDocument) => void;
   onReanalyzed?: () => void;
 }) {
@@ -483,18 +502,10 @@ function DocCard({
                 onReviewWarranty(doc.id);
                 return;
               }
-              if (doc.url) {
-                window.open(doc.url, "_blank");
-                return;
-              }
-              if (doc.storagePath) {
-                supabase.storage
-                  .from(doc.bucket)
-                  .createSignedUrl(doc.storagePath, 60 * 60)
-                  .then(({ data }) => {
-                    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                    else toast.error("Could not open warranty document.");
-                  });
+              // Warranties already in the warranties table — open inline so
+              // the user never leaves the page.
+              if (onReviewWarrantyDirect && (doc.url || doc.storagePath)) {
+                onReviewWarrantyDirect(doc);
                 return;
               }
               toast.error("No warranty document file available.");
