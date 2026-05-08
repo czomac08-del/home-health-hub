@@ -64,6 +64,7 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pendingAutoSave, setPendingAutoSave] = useState(false);
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -243,7 +244,31 @@ const SystemConfigScreen = () => {
     setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl } }));
   };
 
-  const handleSave = async () => {
+  const deletePhoto = async (photo: PhotoItem, index: number) => {
+    // Unsaved (no DB id) — just remove from local state.
+    if (!photo.id) {
+      if (photo.storagePath) {
+        await supabase.storage.from("system-photos").remove([photo.storagePath]).catch(() => {});
+      }
+      setPhotos((prev) => prev.filter((_, idx) => idx !== index));
+      return;
+    }
+    try {
+      const { error: dbErr } = await supabase.from("system_photos").delete().eq("id", photo.id);
+      if (dbErr) throw dbErr;
+      if (photo.storagePath) {
+        const { error: stErr } = await supabase.storage.from("system-photos").remove([photo.storagePath]);
+        if (stErr) console.warn("[SystemConfig] storage remove failed", stErr);
+      }
+      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+      toast.success("Photo deleted");
+    } catch (e: any) {
+      console.error("[SystemConfig] photo delete failed", e);
+      toast.error("Couldn't delete photo. Please try again.");
+    }
+  };
+
+  const handleSave = async (opts?: { silent?: boolean }) => {
     if (!user || !activeProperty) {
       toast.error("No active property. Please add a property first.");
       return;
@@ -325,8 +350,12 @@ const SystemConfigScreen = () => {
       }
     }
 
-    toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
-    navigate("/systems");
+    if (opts?.silent) {
+      toast.success("Filter setup saved");
+    } else {
+      toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
+      navigate("/systems");
+    }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
       toast.error("Couldn't save — please try again.");
@@ -334,6 +363,16 @@ const SystemConfigScreen = () => {
       setSaving(false);
     }
   };
+
+  // Auto-persist when the HVAC wizard completes its final step so setup_complete sticks
+  // even if the user never clicks "Save to Passport". Runs after specs state has flushed.
+  useEffect(() => {
+    if (!pendingAutoSave) return;
+    if (!specs["filterSize"]) return; // wait until setSpec has propagated
+    setPendingAutoSave(false);
+    void handleSave({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoSave, specs]);
 
   // Load existing data on mount
   useEffect(() => {
@@ -522,6 +561,7 @@ const SystemConfigScreen = () => {
                 if (!specs["filterType"]) setSpec("filterType", filterType);
                 if (!specs["changeFrequency"]) setSpec("changeFrequency", changeFrequency);
               }}
+              onSetupComplete={() => setPendingAutoSave(true)}
             />
           )}
 
@@ -570,12 +610,12 @@ const SystemConfigScreen = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-2">
                   {photos.map((p, i) => (
                     <div key={p.id || i} className="rounded-lg border border-border bg-card/50 overflow-hidden">
-                      <div className="relative w-full aspect-square">
-                        <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
-                        <button onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
-                          <X className="h-3 w-3 text-foreground" />
-                        </button>
-                      </div>
+                       <div className="relative w-full aspect-square">
+                         <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
+                         <button onClick={() => deletePhoto(p, i)} className="absolute top-1 right-1 bg-background/80 rounded-full p-1">
+                           <X className="h-3 w-3 text-foreground" />
+                         </button>
+                       </div>
                       <div className="p-2 space-y-1.5">
                         <p className="text-[10px] text-muted-foreground truncate">{p.label}</p>
                         {p.id ? (
@@ -721,7 +761,7 @@ const SystemConfigScreen = () => {
           {/* ═══ SAVE BUTTONS ═══ */}
           <div className="space-y-3 mt-6">
             <button
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={saving}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity glow-teal-strong flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >

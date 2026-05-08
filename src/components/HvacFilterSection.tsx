@@ -146,9 +146,10 @@ interface Props {
   onFilterSizeChange?: (size: string) => void;
   onHouseholdFactorsChange?: (factors: string[]) => void;
   onRecommendationChange?: (rec: { filterType: string; changeFrequency: string }) => void;
+  onSetupComplete?: () => void;
 }
 
-export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange }: Props) => {
+export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange, onSetupComplete }: Props) => {
   // If a filter size was already saved, treat setup as complete and render a compact summary instead of the wizard.
   const [setupComplete, setSetupComplete] = useState(!!filterSize);
   // Progressive disclosure steps
@@ -337,6 +338,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
               const filterType = rec.merv >= 13 ? "HEPA" : "Pleated";
               const changeFrequency = rec.days <= 45 ? "Monthly" : rec.days <= 90 ? "Every 3 Months" : "Every 6 Months";
               onRecommendationChange?.({ filterType, changeFrequency });
+              onSetupComplete?.();
             }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
