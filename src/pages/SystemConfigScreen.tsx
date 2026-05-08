@@ -105,6 +105,7 @@ const SystemConfigScreen = () => {
   const [septicSystems, setSepticSystems] = useState<SepticSystem[]>([{ name: "Main Septic", tankSize: "", tankMaterial: "", lastPumped: "", accessLocation: "", pumpCompany: "", pumpPhone: "", location: "", notes: "" }]);
   const [utilityContacts, setUtilityContacts] = useState<Record<string, string>>({});
   const [hvacHouseholdFactors, setHvacHouseholdFactors] = useState<string[]>([]);
+  const [systemDetailId, setSystemDetailId] = useState<string | null>(null);
 
   const { searching: manualSearching, search: searchManual } = useManualSearch({
     brand, model, onResult: setManualResult,
