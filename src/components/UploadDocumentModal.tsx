@@ -231,6 +231,7 @@ export default function UploadDocumentModal({
   const extractedEntries = Object.entries(extracted).filter(([, v]) => v != null && v !== "");
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
         className="max-w-lg p-0 gap-0 sm:rounded-2xl rounded-none flex flex-col overflow-hidden
