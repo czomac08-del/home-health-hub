@@ -512,6 +512,18 @@ serve(async (req) => {
       fieldConfidences: Object.fromEntries(
         Object.entries(result.fields).map(([k, f]) => [k, f.confidence])
       ),
+      // Per-field confidence labels — drives the AI confidence badges shown
+      // during second-pass system spec confirmation.
+      fieldConfidenceLevels: Object.fromEntries(
+        Object.entries(result.fields).map(([k, f]) => [
+          k,
+          (f.confidence ?? 0) >= 85 ? "high" : (f.confidence ?? 0) >= 70 ? "medium" : "low",
+        ])
+      ),
+      // Provenance tag — every spec written from this extraction must be
+      // stamped DOCUMENT_EXTRACTED so the dashboard scoring and Verification
+      // Summary correctly attribute it as document-derived (not AI-guessed).
+      source_tag: "DOCUMENT_EXTRACTED",
       // Inspection report findings (when applicable) — categorized into 4 urgency levels
       // with ASHI/InterNACHI/NFPA citations on Level 1 & 2 items.
       inspectionReport: inspectionFindings,
