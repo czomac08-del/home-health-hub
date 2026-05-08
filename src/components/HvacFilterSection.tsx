@@ -149,6 +149,8 @@ interface Props {
 }
 
 export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange }: Props) => {
+  // If a filter size was already saved, treat setup as complete and render a compact summary instead of the wizard.
+  const [setupComplete, setSetupComplete] = useState(!!filterSize);
   // Progressive disclosure steps
   const [knowsSize, setKnowsSize] = useState<"yes" | "no" | "">("");
   const [localFilterSize, setLocalFilterSize] = useState(filterSize);
@@ -218,6 +220,33 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         </div>
       </div>
 
+      {setupComplete && (
+        <div className="rounded-xl border border-border bg-card p-4 animate-fade-in">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Saved filter size</p>
+              <p className="text-base font-bold text-foreground mt-0.5">{localFilterSize}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Edit type, change frequency, and other details in the Specifications section below.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSetupComplete(false);
+                setSizeSubmitted(false);
+                setKnowsSize("yes");
+                setHouseholdConfirmed(true); // skip household re-ask on edit
+                setChangeFreq("auto");
+              }}
+              className="text-[11px] text-primary hover:underline whitespace-nowrap"
+            >
+              Change filter size
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!setupComplete && (
+        <>
       {/* ── Step 1: Filter Size ── */}
       {step === 1 && knowsSize === "" && (
         <div className="animate-fade-in space-y-3">
@@ -482,6 +511,8 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
 
           <AffiliateNote />
         </div>
+      )}
+        </>
       )}
     </div>
   );
