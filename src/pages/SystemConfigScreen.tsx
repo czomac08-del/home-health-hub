@@ -226,6 +226,53 @@ const SystemConfigScreen = () => {
     toast.success("AI scan data saved to form!");
   };
 
+  const analyzeUploadedPhoto = async (photo: AnalyzablePhoto) => {
+    setAnalyzingPhotoIds((prev) => new Set(prev).add(photo.id));
+    try {
+      const result = await analyzePhoto(photo);
+      const high: Record<string, any> = {};
+      const nextSpecs = { ...specs };
+      const nextTags = { ...sourceTags };
+      const add = (target: AiSuggestion["target"], key: string, label: string, value: string | null | undefined, confidenceKeys: string[], specKey?: string) => {
+        if (!value) return;
+        const current = target === "brand" ? brand : target === "model" ? model : target === "serial" ? serial : target === "installDate" ? installDate : target === "notes" ? notes : specKey ? specs[specKey] : undefined;
+        if (!isEmptyValue(current)) return;
+        if (isHighConfidence(result, confidenceKeys)) {
+          if (target === "brand") { high.brand = value; setBrand(value); nextTags.brand = "AI_INFERRED"; }
+          if (target === "model") { high.model = value; setModel(value); nextTags.model = "AI_INFERRED"; }
+          if (target === "serial") { high.serial_number = value; setSerial(value); nextTags.serial = "AI_INFERRED"; }
+          if (target === "installDate") { high.install_date = value; setInstallDate(value); nextTags.installDate = "AI_INFERRED"; }
+          if (target === "spec" && specKey) { nextSpecs[specKey] = value; nextTags[`spec:${specKey}`] = "AI_INFERRED"; }
+        } else {
+          upsertSuggestion({ key: `${photo.id}:${key}`, label, value, target, specKey });
+        }
+      };
+
+      add("brand", "brand", "Brand / Manufacturer", result.manufacturer || result.brand, ["manufacturer", "brand"]);
+      add("model", "model", "Model", result.modelNumber || result.model || result.modelName, ["modelNumber", "model", "modelName"]);
+      add("serial", "serial", "Serial Number", result.serialNumber || result.serial, ["serialNumber", "serial"]);
+      add("installDate", "manufactureYear", "Manufacture Year", result.manufactureYear, ["manufactureYear"]);
+      add("spec", "fuelType", "Fuel Type", result.fuelType, ["fuelType"], "fuelType");
+      add("spec", "capacity", "Capacity / Size", result.capacity || result.size, ["capacity", "size"], displayName.toLowerCase().includes("hvac") ? "hvacCapacity" : "capacity");
+
+      const observations = [result.condition && `Condition: ${result.condition}`, stringifyList(result.warningLabels) && `Warning labels: ${stringifyList(result.warningLabels)}`, stringifyList(result.visibleIssues) && `Visible issues: ${stringifyList(result.visibleIssues)}`].filter(Boolean).join(" • ");
+      if (observations && !notes) { high.notes = `[AI photo review] ${observations}`; setNotes(high.notes); nextTags.notes = "AI_INFERRED"; }
+
+      const { error: photoErr } = await supabase.from("system_photos" as any).update({ ai_analyzed: true, ai_analyzed_at: new Date().toISOString(), ai_analysis_result: result } as any).eq("id", photo.id);
+      if (photoErr) throw photoErr;
+      setSpecs(nextSpecs); setSourceTags(nextTags); setAiPhotoBanner(true);
+      if (photo.systemDetailId) {
+        const { error: detailErr } = await supabase.from("system_details").update({ ...high, specs: nextSpecs as any, source_tags: nextTags as any }).eq("id", photo.systemDetailId);
+        if (detailErr) throw detailErr;
+      }
+      setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, ai_analyzed: true } : p));
+    } catch (e) {
+      console.error("[SystemConfig] background photo AI failed", e);
+    } finally {
+      setAnalyzingPhotoIds((prev) => { const next = new Set(prev); next.delete(photo.id); return next; });
+    }
+  };
+
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
   const hasAiSource = (key: string) => isAiField(key) || sourceTags[key] === "AI_INFERRED";
 
