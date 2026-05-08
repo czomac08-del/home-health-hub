@@ -1849,6 +1849,7 @@ export type Database = {
           source_document_id: string | null
           status: string
           system_category: string | null
+          system_instance_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -1880,6 +1881,7 @@ export type Database = {
           source_document_id?: string | null
           status?: string
           system_category?: string | null
+          system_instance_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -1911,6 +1913,7 @@ export type Database = {
           source_document_id?: string | null
           status?: string
           system_category?: string | null
+          system_instance_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -1935,6 +1938,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_findings_system_instance_id_fkey"
+            columns: ["system_instance_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
             referencedColumns: ["id"]
           },
         ]
@@ -3330,6 +3340,53 @@ export type Database = {
           },
         ]
       }
+      property_structures: {
+        Row: {
+          added_by_permit: boolean
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          notes: string | null
+          permit_year: number | null
+          property_id: string
+          structure_type: Database["public"]["Enums"]["structure_type"]
+          updated_at: string
+        }
+        Insert: {
+          added_by_permit?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          notes?: string | null
+          permit_year?: number | null
+          property_id: string
+          structure_type?: Database["public"]["Enums"]["structure_type"]
+          updated_at?: string
+        }
+        Update: {
+          added_by_permit?: boolean
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          notes?: string | null
+          permit_year?: number | null
+          property_id?: string
+          structure_type?: Database["public"]["Enums"]["structure_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_structures_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_timeline_events: {
         Row: {
           category: string
@@ -4022,6 +4079,7 @@ export type Database = {
           health_score: number | null
           id: string
           install_date: string | null
+          instance_name: string | null
           last_service: string | null
           location_in_home: string | null
           model: string | null
@@ -4041,6 +4099,7 @@ export type Database = {
           warranty_exp: string | null
           warranty_provider: string | null
           well_type: string | null
+          zone_id: string | null
         }
         Insert: {
           brand?: string | null
@@ -4050,6 +4109,7 @@ export type Database = {
           health_score?: number | null
           id?: string
           install_date?: string | null
+          instance_name?: string | null
           last_service?: string | null
           location_in_home?: string | null
           model?: string | null
@@ -4069,6 +4129,7 @@ export type Database = {
           warranty_exp?: string | null
           warranty_provider?: string | null
           well_type?: string | null
+          zone_id?: string | null
         }
         Update: {
           brand?: string | null
@@ -4078,6 +4139,7 @@ export type Database = {
           health_score?: number | null
           id?: string
           install_date?: string | null
+          instance_name?: string | null
           last_service?: string | null
           location_in_home?: string | null
           model?: string | null
@@ -4097,6 +4159,7 @@ export type Database = {
           warranty_exp?: string | null
           warranty_provider?: string | null
           well_type?: string | null
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -4104,6 +4167,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_details_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "property_structures"
             referencedColumns: ["id"]
           },
         ]
@@ -4689,6 +4759,15 @@ export type Database = {
         | "contractor"
         | "investor"
       property_connection_status: "active" | "pending" | "revoked"
+      structure_type:
+        | "main_house"
+        | "addition"
+        | "attached_garage"
+        | "detached_garage"
+        | "adu"
+        | "workshop"
+        | "pool_house"
+        | "other"
       vault_record_source:
         | "homeowner"
         | "inspector"
@@ -4898,6 +4977,16 @@ export const Constants = {
         "investor",
       ],
       property_connection_status: ["active", "pending", "revoked"],
+      structure_type: [
+        "main_house",
+        "addition",
+        "attached_garage",
+        "detached_garage",
+        "adu",
+        "workshop",
+        "pool_house",
+        "other",
+      ],
       vault_record_source: [
         "homeowner",
         "inspector",
