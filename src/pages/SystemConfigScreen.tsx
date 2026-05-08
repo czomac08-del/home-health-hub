@@ -268,7 +268,7 @@ const SystemConfigScreen = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (opts?: { silent?: boolean }) => {
     if (!user || !activeProperty) {
       toast.error("No active property. Please add a property first.");
       return;
@@ -350,8 +350,12 @@ const SystemConfigScreen = () => {
       }
     }
 
-    toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
-    navigate("/systems");
+    if (opts?.silent) {
+      toast.success("Filter setup saved");
+    } else {
+      toast.success(`${displayName} details saved to your ComingHomeIQ profile!`);
+      navigate("/systems");
+    }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
       toast.error("Couldn't save — please try again.");
@@ -359,6 +363,16 @@ const SystemConfigScreen = () => {
       setSaving(false);
     }
   };
+
+  // Auto-persist when the HVAC wizard completes its final step so setup_complete sticks
+  // even if the user never clicks "Save to Passport". Runs after specs state has flushed.
+  useEffect(() => {
+    if (!pendingAutoSave) return;
+    if (!specs["filterSize"]) return; // wait until setSpec has propagated
+    setPendingAutoSave(false);
+    void handleSave({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoSave, specs]);
 
   // Load existing data on mount
   useEffect(() => {
