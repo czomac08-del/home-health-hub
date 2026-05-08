@@ -227,6 +227,19 @@ const SystemConfigScreen = () => {
   };
 
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
+  const hasAiSource = (key: string) => isAiField(key) || sourceTags[key] === "AI_INFERRED";
+
+  const applyAiSuggestion = (suggestion: AiSuggestion) => {
+    if (suggestion.target === "brand") setBrand(suggestion.value);
+    if (suggestion.target === "model") setModel(suggestion.value);
+    if (suggestion.target === "serial") setSerial(suggestion.value);
+    if (suggestion.target === "installDate") setInstallDate(suggestion.value);
+    if (suggestion.target === "notes") setNotes((prev) => prev ? `${prev}\n\n${suggestion.value}` : suggestion.value);
+    if (suggestion.target === "spec" && suggestion.specKey) setSpec(suggestion.specKey, suggestion.value);
+    setAiSuggestions((prev) => prev.filter((s) => s.key !== suggestion.key));
+  };
+
+  const dismissAiSuggestion = (key: string) => setAiSuggestions((prev) => prev.filter((s) => s.key !== key));
 
   // Completeness
   const completeness = useMemo(() => {
