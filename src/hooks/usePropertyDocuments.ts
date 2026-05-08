@@ -17,7 +17,8 @@ export interface UnifiedDocument {
     | "inspector_media"
     | "insurance_documents"
     | "fix_verifications"
-    | "system_photos";
+    | "system_photos"
+    | "warranties";
   category: DocCategory;
   title: string;
   fileType: "pdf" | "image" | "doc" | "other";
@@ -74,7 +75,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     setLoading(true);
     const all: UnifiedDocument[] = [];
 
-    const [recs, media, ins, fixes, sysPhotos] = await Promise.all([
+    const [recs, media, ins, fixes, sysPhotos, warrantyDocs] = await Promise.all([
       supabase
         .from("property_records")
         .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
@@ -98,6 +99,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .from("system_photos" as any)
         .select("id, url, storage_path, label, created_at, ai_analyzed, system_detail_id, system_details!inner(property_id, system_name)")
         .eq("system_details.property_id", propertyId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("warranties")
+        .select("id, warranty_type, provider_name, document_path, document_url, extended_doc_path, extended_doc_url, created_at, property_id")
+        .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -212,6 +218,40 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         systemDetailId: p.system_detail_id,
         raw: p,
       });
+    });
+
+    (warrantyDocs.data || []).forEach((w: any) => {
+      const label = `${(w.warranty_type || "warranty").replace(/_/g, " ")}${w.provider_name ? ` · ${w.provider_name}` : ""}`;
+      if (w.document_path || w.document_url) {
+        all.push({
+          id: w.id,
+          source_table: "warranties",
+          category: "warranty",
+          title: `Warranty — ${label}`,
+          fileType: inferFileType(w.document_path || w.document_url || ""),
+          uploadedAt: w.created_at,
+          url: w.document_url,
+          storagePath: w.document_path,
+          bucket: "warranty-documents",
+          recordType: w.warranty_type,
+          raw: w,
+        });
+      }
+      if (w.extended_doc_path || w.extended_doc_url) {
+        all.push({
+          id: `${w.id}-ext`,
+          source_table: "warranties",
+          category: "warranty",
+          title: `Extended warranty — ${label}`,
+          fileType: inferFileType(w.extended_doc_path || w.extended_doc_url || ""),
+          uploadedAt: w.created_at,
+          url: w.extended_doc_url,
+          storagePath: w.extended_doc_path,
+          bucket: "warranty-documents",
+          recordType: w.warranty_type,
+          raw: w,
+        });
+      }
     });
 
     all.sort((a, b) => +new Date(b.uploadedAt) - +new Date(a.uploadedAt));
