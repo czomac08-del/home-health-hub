@@ -41,6 +41,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const SESSION_PULSE_KEY = "missing-records-pulsed";
+const VIEW_KEY = "missing-records-view";
+
+type RecordView = "known" | "next";
 
 const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips, state }: Props) => {
   const { user } = useAuth();
@@ -51,6 +54,14 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeRecord, setActiveRecord] = useState<GapRecord | null>(null);
   const [hasPulsed, setHasPulsed] = useState(() => sessionStorage.getItem(SESSION_PULSE_KEY) === "1");
+  const [view, setView] = useState<RecordView>(
+    () => (localStorage.getItem(VIEW_KEY) as RecordView) || "known",
+  );
+  const [showAllGaps, setShowAllGaps] = useState(false);
+  const setViewPersist = (v: RecordView) => {
+    setView(v);
+    localStorage.setItem(VIEW_KEY, v);
+  };
 
   const builtYear = yearBuilt ? parseInt(yearBuilt) : null;
 
