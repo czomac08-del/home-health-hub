@@ -61,7 +61,7 @@ IMPORTANT RULES:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: AI_HONESTY_PREAMBLE + "\n\n" + systemPrompt },
           ...messages,
         ],
         stream: true,
