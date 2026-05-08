@@ -1,56 +1,43 @@
-## Pre-Launch Trust & Provenance Upgrades
+## Pre-Launch FTUX + Security Hardening
 
-Three connected upgrades: AI honesty rules, permanent provenance tagging, and user-submitted data acknowledgments. The codebase already has substantial scaffolding (`permanent_archive`, `archive-submit`, `verification_events`, `permanent_archive_disputes`, `ConfidenceBadge`, `SourceBadge`, `HonestNotFound`, `DisputeDialog`). This plan extends what exists rather than rebuilding.
-
----
-
-### Part 1 — AI Honesty Standard (system-prompt + UI rendering)
-
-**1a. Central AI honesty preamble**
-Create `supabase/functions/_shared/aiHonestyPrompt.ts` exporting a `AI_HONESTY_PREAMBLE` string with: verified-source whitelist (FEMA/NOAA/EPA/USDA/Census/RentCast/uploaded-doc-OCR/owner-confirmed), banned phrases ("your home likely has", "based on homes like yours", "it is probable", "your home appears to", any guess-as-fact), required replacement phrasing, the exact "I was not able to confirm…" sentence, and instructions to append a confidence label `🟢 VERIFIED`, `🟡 UNVERIFIED`, or `🔴 NOT FOUND` to every factual claim.
-
-**1b. Inject into all AI edge functions**
-Prepend `AI_HONESTY_PREAMBLE` to system prompts in: `insurance-chat`, `warranty-chat`, `record-research-chat`, `manual-finder`, `extract-document-data`, `ai-scan`, `verify-claim-document`. Also any HomeAIChat function (search for `lovable-ai` callers).
-
-**1c. Client-side label rendering**
-Add `src/components/AIConfidenceLabel.tsx` rendering the three colored pill labels. Add a small `src/lib/aiResponseFormat.ts` helper that scans an AI message for the inline tokens `🟢 VERIFIED` / `🟡 UNVERIFIED` / `🔴 NOT FOUND` and replaces them with the styled component. Wire into `HomeAIChat`, `WarrantyAIChat`, `InsuranceScreen` chat, research-chat surfaces.
+12 items spanning FTUX polish and security. I'll group into atomic, low-risk slices and call out items I'll **defer** (with reason) so we don't ship half-finished critical paths.
 
 ---
 
-### Part 2 — Permanent Record Provenance
+### Part 1 — First-Time User Experience
 
-**2a. DB migration** on `permanent_archive`:
-- Add enum `archive_source_tag` with values `GOVERNMENT_API`, `DOCUMENT_EXTRACTED`, `OWNER_PROVIDED`, `PROFESSIONAL_SUBMITTED`, `AI_INFERRED`.
-- Add columns: `source_tag archive_source_tag`, `property_address text`, `county_fips text`, `legal_acknowledgment_accepted boolean default false`, `acknowledgment_timestamp timestamptz`, `ai_inferred_flagged_at timestamptz` (for 90-day cleanup), `confirmed_by_owner_at timestamptz`.
-- Backfill `source_tag` from existing `evidence_sources`/`record_source` heuristics where possible; default `OWNER_PROVIDED` otherwise.
-- Confidence-tag CHECK trigger (not constraint) enforcing tag→range bands.
+**1. "What We Know" / "What To Find Next" toggle** — `MissingRecordsIntelligence.tsx`. Add a 2-tab toggle above the gap list. Default = "What We Know" (queries `permanent_archive` with `source_tag IN (GOVERNMENT_API, DOCUMENT_EXTRACTED, OWNER_PROVIDED, PROFESSIONAL_SUBMITTED)` ordered by confidence). "What To Find Next" reframes header to "Your Next 5 Actions", filters gaps to safety-critical first then highest-findability score, with a "Show all N gaps" expander. Safety-critical rows always render in both views.
 
-**2b. Update `archive-submit` edge function** to require and validate `source_tag`, store address + county_fips, and write a `verification_events` row capturing the acknowledgment.
+**2. First Win Screen** — new `src/pages/FirstWinScreen.tsx` at route `/first-win`. After the last onboarding step, redirect there before `/dashboard`. Picks one CTA based on what the scan returned (FEMA flood zone found → "See your flood zone"; else → "Add your HVAC system"; else → "View N verified records"). Single button. Dismissed via new `profiles.first_win_dismissed_at` column.
 
-**2c. Auto-archive helpers**
-- `src/lib/archiveProvenance.ts`: `archiveGovernmentRecord()`, `archiveDocumentExtraction()`, `archiveOwnerSubmission()`, `archiveProfessionalSubmission()`, `archiveAIInference()`. Each calls `archive_to_vault` RPC + inserts a `permanent_archive` row with the right tag.
-- Wire into existing flows: government-API responders (FEMA/NOAA/EPA/Census/RentCast edge functions return success → call from client), `extract-document-data` success → DOCUMENT_EXTRACTED, manual property-record entry → OWNER_PROVIDED, inspector/contractor submissions → PROFESSIONAL_SUBMITTED, AI auto-fill suggestions → AI_INFERRED.
+**3. Scanning result always non-empty** — `ScanningScreen.tsx`. Branch on the response: RentCast hit → "We found your property…"; RentCast fallback → "Found in N government sources…"; total miss → "We couldn't find public records yet — here's how to add what you know." Never route to a blank dashboard.
+
+**4. IQ Score trajectory** — `DashboardScreen.tsx`. For users with `account_age_days < 30`, render a small bar under the ring: "Today: X" → "After top 5 actions: ~Y" where Y = current + (sum of impact weights of top 5 gaps capped at 95).
 
 ---
 
-### Part 3 — Legal Acknowledgment + Source Badges + Dispute + AI Cleanup
+### Part 2 — Security Hardening
 
-**3a. `LegalAcknowledgmentDialog` component**
-One-time per (user × record_type × property) modal with the exact wording, single checkbox "I understand and confirm", "Save Record" button. Tracked in new `acknowledgment_log` table (user_id, property_id, record_type, accepted_at) — checked before showing again. On accept, also write a `verification_events` row.
+**5. Property claim verification** — `ClaimHomeScreen.tsx`. Two-step gate: (a) typed full address must exact-match (case-insensitive, whitespace-collapsed) the property's `formatted_address`; (b) one of: last-4 of zip + county OR a doc upload that gets OCR'd via existing `verify-claim-document` edge function which already checks address match and does not persist. Every attempt → `verification_events` with action `claim_attempt` + IP from edge function.
 
-**3b. Wire into save points**
-Document upload modal, manual record entry forms, system data forms — gate save on acknowledgment.
+**6. Archive immutability** — `permanent_archive` already has `enforce_archive_provenance_immutable` trigger covering `submitted_by_user_id`, `submitted_at`, `submitted_ip`, `legal_acknowledgment_text`, `provenance_locked`. Verify and extend trigger to also block `acknowledgment_timestamp` changes once set. No new migration needed beyond a small trigger update.
 
-**3c. Source badge component**
-Extend existing `SourceBadge` with the 5 tag variants (teal/blue/orange/gray/navy) and tooltips. Render on every record card: `PermanentArchive`, `TrueRecordCard`, `SystemCard`, `MissingRecordsIntelligence`, `RecordGapDrawer` resolved rows, document hub.
+**7. Report URL security**
+- Audit `shared_reports.id` — already `uuid PRIMARY KEY DEFAULT gen_random_uuid()` per existing `get_shared_report` function. ✅ no migration needed for ID format.
+- Add expiry UI to share dialog (7d / 30d / Never, default 30d) — find existing share component and wire `expires_at`.
+- 404 page for expired links — update report viewer to check `get_shared_report` returning empty → friendly "expired" state.
 
-**3d. Dispute flag**
-Re-use existing `permanent_archive_disputes` + `recompute_archive_dispute_state` trigger (already auto-suppresses on >1 unique disputer in 30 days). Add a small flag-icon button on every record card opening `DisputeDialog`. Disputed records get a "Disputed" pill, are filtered out of verified-gap counts in `MissingRecordsIntelligence`, and excluded from Home Passport report queries (`auto_suppressed=false AND dispute_count=0`).
+**8. Edge function JWT auth** — Add the same `getClaims()` guard already present in `insurance-chat` to: `fema-disasters`, `noaa-storms`, `epa-echo`, `drought-status`, `ai-scan`, `rentcast-lookup`, `extract-document-data`, `generate-insurance-report`, `warranty-chat`, `manual-finder`, `youtube-search`. **Excluded**: `geocode` (intentionally permissive for public address lookups per recent fix — flag to user, do not change). Returning 401 before any external API call.
 
-**3e. AI_INFERRED 90-day cleanup**
-- New SQL view `ai_inferred_unconfirmed` selecting `permanent_archive WHERE source_tag='AI_INFERRED' AND confirmed_by_owner_at IS NULL AND created_at < now() - interval '90 days'`.
-- Dashboard "This Week's IQ Updates" card surfaces count + CTA "Confirm AI estimates".
-- (Email-side hook stub left as TODO comment in monthly-pulse function if it exists; otherwise skipped — no email infra yet for pulse.)
+**9. Storage bucket RLS** — Audit each bucket:
+- `system-photos`: add per-photo privacy enforcement via `photo_privacy_setting` join-based policy.
+- `system-documents`, `insurance-documents`, `warranty-documents`, `property-records`, `inspector-media`, `fix-verification`: ensure path-based owner-only SELECT/INSERT/DELETE policies and no public flag. Migration tightens any missing policies. Confirm none are `public = true`.
+
+**10. Auth rate limiting** — **DEFER per project policy** (instructions explicitly say "Do not add rate limiting"). Will note this back to user, recommend Supabase Auth built-in attempt limits + workspace-level email-on-anomaly via separate notify function, but not implement custom counters.
+
+**11. Records-request letter — ownership check** — find the letter generator (likely in `record-research-chat` or a button in `RecordsRequestCard`). Add server-side check: input `property_id` must belong to `auth.uid()` in `properties` table; otherwise return 403 with the exact error string requested.
+
+**12. Address-keyed refresh cooldown** — `free-data-refresh` / `gated-data-pull` edge functions. Migration: add `refresh_logs.address_hash` (text, indexed) + `county_fips`. Cooldown query: `WHERE address_hash = $1 AND created_at > now() - interval '24 hours'`. If hit, return cached payload regardless of user_id. New rows write the hash on every refresh.
 
 ---
 
@@ -58,28 +45,26 @@ Re-use existing `permanent_archive_disputes` + `recompute_archive_dispute_state`
 
 ```text
 NEW
-  supabase/migrations/<ts>_provenance_and_ack.sql
-  supabase/functions/_shared/aiHonestyPrompt.ts
-  src/components/AIConfidenceLabel.tsx
-  src/components/LegalAcknowledgmentDialog.tsx
-  src/lib/archiveProvenance.ts
-  src/lib/aiResponseFormat.ts
+  src/pages/FirstWinScreen.tsx
+  src/components/RecordsKnownView.tsx        (View A renderer)
+  supabase/migrations/<ts>_security_hardening.sql
 
 EDITED
-  supabase/functions/{insurance-chat,warranty-chat,record-research-chat,
-    manual-finder,extract-document-data,ai-scan,verify-claim-document,
-    archive-submit}/index.ts
-  src/components/SourceBadge.tsx                 (+ 5 provenance variants)
-  src/components/PermanentArchive.tsx            (badges + flag + acknowledgment)
-  src/components/MissingRecordsIntelligence.tsx  (exclude disputed)
-  src/components/UploadDocumentModal.tsx         (acknowledgment gate)
-  src/components/HomeAIChat.tsx                  (label rendering)
-  src/components/WarrantyAIChat.tsx              (label rendering)
-  src/pages/InsuranceScreen.tsx                  (label rendering)
-  src/pages/DashboardScreen.tsx                  (AI-inferred cleanup CTA)
+  src/components/MissingRecordsIntelligence.tsx
+  src/pages/ScanningScreen.tsx
+  src/pages/DashboardScreen.tsx
+  src/pages/ClaimHomeScreen.tsx
+  src/pages/OnboardingWizard.tsx              (route to /first-win)
+  src/App.tsx                                  (register /first-win)
+  src/components/{share-report-component}.tsx  (expiry selector, find at impl time)
+  supabase/functions/{fema-disasters,noaa-storms,epa-echo,drought-status,
+    ai-scan,rentcast-lookup,extract-document-data,generate-insurance-report,
+    warranty-chat,manual-finder,youtube-search}/index.ts   (JWT guard)
+  supabase/functions/{free-data-refresh,gated-data-pull}/index.ts  (address-key cooldown)
+  supabase/functions/record-research-chat/index.ts         (ownership gate)
 ```
 
-### Out of Scope (will note for follow-up)
-- Backfilling provenance for legacy rows beyond a best-effort default.
-- Building the monthly Home Health Pulse email itself (no sender infra yet).
-- Admin review queue UI for auto-suppressed records.
+### Items I will defer + flag (not silently skipped)
+- **#10 Auth rate limiting** — project policy says do not implement; will recommend enabling Supabase's built-in protections instead.
+- **#9** — if any bucket has unusual policies or third-party integrations relying on path patterns, I'll surface findings before tightening.
+- **#7** — only the share-link expiry UI; the existing `shared_reports` schema already meets the UUID/expiry/revoke requirements.

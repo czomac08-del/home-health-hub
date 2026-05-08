@@ -10,7 +10,17 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const FREE_SOURCES = ["fema", "noaa", "epa_echo", "usda_drought"] as const;
-const REFRESH_INTERVAL_DAYS = 30;
+const REFRESH_INTERVAL_HOURS = 24;
+
+async function sha256Hex(s: string) {
+  const bytes = new TextEncoder().encode(s);
+  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function normAddress(a: string) {
+  return (a || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 async function geocode(address: string) {
   try {
@@ -96,7 +106,7 @@ Deno.serve(async (req) => {
     try { manual = await req.json(); } catch { manual = {}; }
   }
 
-  const cutoff = new Date(Date.now() - REFRESH_INTERVAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - REFRESH_INTERVAL_HOURS * 60 * 60 * 1000).toISOString();
 
   // Pick properties to refresh: those whose state row is missing OR older than cutoff.
   const { data: props } = await admin
@@ -110,16 +120,33 @@ Deno.serve(async (req) => {
 
   let refreshed = 0;
   for (const p of targets) {
+    const addressHash = await sha256Hex(normAddress(p.address || ""));
     for (const src of sources) {
-      const { data: state } = await admin
-        .from("data_source_refresh_state")
-        .select("last_refreshed_at")
-        .eq("property_id", p.id)
-        .eq("source_name", src)
-        .maybeSingle();
-      if (state && state.last_refreshed_at > cutoff && !manual.property_id) continue;
+      // Address-keyed cooldown: any user, any property at this address, any
+      // refresh of the same source within the cutoff window blocks a new
+      // upstream call.
+      if (!manual.property_id && addressHash) {
+        const { data: recent } = await admin
+          .from("refresh_logs")
+          .select("id")
+          .eq("address_hash", addressHash)
+          .contains("sources_queried", [src])
+          .gte("created_at", cutoff)
+          .limit(1);
+        if (recent && recent.length > 0) continue;
+      }
 
       const status = await refreshOne(p.id, p.address, src);
+      // Log address-keyed for cross-user cooldown enforcement
+      await admin.from("refresh_logs").insert({
+        property_id: p.id,
+        user_id: (await admin.from("properties").select("user_id").eq("id", p.id).maybeSingle()).data?.user_id,
+        refresh_scope: "free",
+        sources_queried: [src],
+        results_summary: { status },
+        triggered_by: "automatic",
+        address_hash: addressHash,
+      });
       await admin
         .from("data_source_refresh_state")
         .upsert(

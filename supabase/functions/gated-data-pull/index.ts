@@ -1,3 +1,4 @@
+import { requireJwt } from "../_shared/jwtGuard.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.102.1";
 
 const corsHeaders = {
@@ -20,6 +21,7 @@ function normAddress(a: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __unauth = await requireJwt(req); if (__unauth) return __unauth;
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,

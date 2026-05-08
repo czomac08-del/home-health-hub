@@ -41,6 +41,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const SESSION_PULSE_KEY = "missing-records-pulsed";
+const VIEW_KEY = "missing-records-view";
+
+type RecordView = "known" | "next";
 
 const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips, state }: Props) => {
   const { user } = useAuth();
@@ -51,6 +54,14 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeRecord, setActiveRecord] = useState<GapRecord | null>(null);
   const [hasPulsed, setHasPulsed] = useState(() => sessionStorage.getItem(SESSION_PULSE_KEY) === "1");
+  const [view, setView] = useState<RecordView>(
+    () => (localStorage.getItem(VIEW_KEY) as RecordView) || "known",
+  );
+  const [showAllGaps, setShowAllGaps] = useState(false);
+  const setViewPersist = (v: RecordView) => {
+    setView(v);
+    localStorage.setItem(VIEW_KEY, v);
+  };
 
   const builtYear = yearBuilt ? parseInt(yearBuilt) : null;
 
@@ -143,6 +154,31 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
     0,
   );
 
+  const totalKnown = allRecordTypes.filter(isResolved).length;
+
+  // "Your Next 5 Actions": safety-critical first, then by findability heuristic
+  // (records whose digitization year is more recent are easier to find).
+  const prioritizedGaps = useMemo(() => {
+    const open = allRecordTypes.filter(isOpenGap);
+    return open
+      .map((rt) => ({
+        rt,
+        priority:
+          (rt.safety_critical ? 1000 : 0) +
+          (getCutoffYear(rt) || 1900),
+      }))
+      .sort((a, b) => b.priority - a.priority)
+      .map((x) => x.rt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allRecordTypes, actionStatus, builtYear, stateAbbr]);
+
+  const top5 = prioritizedGaps.slice(0, 5);
+  // Always include safety-critical gaps not already in top5
+  const extraSafety = prioritizedGaps
+    .slice(5)
+    .filter((rt) => rt.safety_critical && !top5.includes(rt));
+  const nextActions = [...top5, ...extraSafety];
+
   const handleRowClick = (rt: MissingRecord) => {
     setActiveRecord({
       subcategory: rt.subcategory,
@@ -173,7 +209,29 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-4">
         <Search className="h-5 w-5 text-primary" />
-        <h3 className="font-bold text-foreground">What's Still Missing</h3>
+        <h3 className="font-bold text-foreground">
+          {view === "known" ? "What We Know" : "Your Next 5 Actions"}
+        </h3>
+      </div>
+
+      {/* View toggle */}
+      <div className="flex gap-1 p-1 mb-4 rounded-lg bg-secondary/40 border border-border">
+        <button
+          onClick={() => setViewPersist("known")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+            view === "known" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          What We Know <span className="ml-1 opacity-70">{totalKnown}</span>
+        </button>
+        <button
+          onClick={() => setViewPersist("next")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+            view === "next" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          What To Find Next <span className="ml-1 opacity-70">{totalGaps}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-5">
@@ -192,7 +250,53 @@ const MissingRecordsIntelligence = ({ propertyId, yearBuilt, county, countyFips,
       </div>
 
       <div className="space-y-1">
-        {categoryStats.map(({ category, total, missing, safetyCritical, types }) => {
+        {view === "next" && (
+          <div className="space-y-1.5 mb-2">
+            {nextActions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No open gaps remaining — your records are in great shape.
+              </p>
+            ) : (
+              (showAllGaps ? prioritizedGaps : nextActions).map((rt) => {
+                const status = getEffectiveStatus(rt);
+                const shouldPulse = !hasPulsed && rt.safety_critical;
+                return (
+                  <button
+                    key={rt.subcategory}
+                    onClick={() => handleRowClick(rt)}
+                    className={`group w-full flex items-start gap-2 px-3 py-2 rounded-lg text-xs text-left transition-all hover:bg-secondary/40 hover:border-primary/30 bg-amber-500/5 border border-amber-500/10 ${
+                      shouldPulse ? "animate-pulse-once ring-1 ring-destructive/40" : ""
+                    }`}
+                  >
+                    <AlertTriangle className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-amber-300">
+                        {rt.subcategory}
+                        {rt.safety_critical && (
+                          <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-destructive/20 text-destructive">Safety</span>
+                        )}
+                      </p>
+                      <p className="text-muted-foreground/80 mt-0.5 capitalize">
+                        {(CATEGORY_LABELS[rt.category] || rt.category).toLowerCase()}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-0.5 shrink-0" />
+                  </button>
+                );
+              })
+            )}
+            {prioritizedGaps.length > nextActions.length && (
+              <button
+                onClick={() => setShowAllGaps(!showAllGaps)}
+                className="w-full text-center text-xs text-primary hover:underline py-2"
+              >
+                {showAllGaps ? "Show top 5 only" : `Show all ${prioritizedGaps.length} gaps`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {view === "known" && categoryStats.map(({ category, total, missing, safetyCritical, types }) => {
           const isExpanded = expandedCategory === category;
           const gapCount = missing.length;
           const completeness = total > 0 ? Math.round(((total - gapCount) / total) * 100) : 100;

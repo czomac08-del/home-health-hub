@@ -1,3 +1,4 @@
+import { requireJwt } from "../_shared/jwtGuard.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -5,6 +6,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
+  const __unauth = await requireJwt(req); if (__unauth) return __unauth;
     return new Response("ok", { headers: corsHeaders });
   }
 
