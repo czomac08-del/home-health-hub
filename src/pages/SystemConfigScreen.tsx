@@ -17,6 +17,7 @@ import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhot
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import ChimneyIntelligence from "@/components/ChimneyIntelligence";
+import ChimneyFireplaceConfig from "@/components/ChimneyFireplaceConfig";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import SaveButtonMessage from "@/components/SaveButtonMessage";
 import RefreshButton from "@/components/RefreshButton";
@@ -756,11 +757,18 @@ const SystemConfigScreen = () => {
 
           {/* ── Chimney & Fireplace Intelligence ── */}
           {(displayName.toLowerCase().includes("chimney") || displayName.toLowerCase().includes("fireplace")) && (
-            <ChimneyIntelligence specs={specs} homeYearBuilt={activeProperty?.year_built} />
+            <>
+              <ChimneyFireplaceConfig
+                specs={specs}
+                setSpec={setSpec}
+                onMarkNotApplicable={() => saveIsApplicable(false)}
+              />
+              <ChimneyIntelligence specs={specs} homeYearBuilt={activeProperty?.year_built} />
+            </>
           )}
 
-          {/* ── Specifications (contextual fields based on type) — hidden for city water ── */}
-          {specFields.length > 0 && !(isWaterSource && waterType === "city") && (
+          {/* ── Specifications (contextual fields based on type) — hidden for city water + chimney (custom UI above) ── */}
+          {specFields.length > 0 && !(isWaterSource && waterType === "city") && !isChimneyOrFireplace && (
             <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
                 {specFields.map((field) => (
