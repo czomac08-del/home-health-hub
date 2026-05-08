@@ -20,6 +20,7 @@ import ChimneyIntelligence from "@/components/ChimneyIntelligence";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import SaveButtonMessage from "@/components/SaveButtonMessage";
 import RefreshButton from "@/components/RefreshButton";
+import SystemApplicabilityGate from "@/components/SystemApplicabilityGate";
 import type { RefreshScope } from "@/hooks/useDataRefresh";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
@@ -105,6 +106,30 @@ const SystemConfigScreen = () => {
   // Water/Sewer type selection state
   const isWaterSource = displayName.toLowerCase().includes("water source");
   const isSewerWaste = displayName.toLowerCase().includes("sewer");
+  // Conditional systems that may not exist on a property — show an applicability gate.
+  const lowerName = displayName.toLowerCase();
+  const isGasOrPropane = lowerName.includes("gas") || lowerName.includes("propane");
+  const isChimneyOrFireplace = lowerName.includes("chimney") || lowerName.includes("fireplace");
+  const gateConfig = isGasOrPropane
+    ? {
+        question: "Does this property use natural gas or propane?",
+        yesLabel: "Yes, we use gas or propane",
+        noLabel: "No gas or propane",
+        notApplicableLabel: "no gas or propane on this property",
+        inactiveBanner: "You've indicated this property doesn't use natural gas or propane. This section is inactive.",
+      }
+    : isChimneyOrFireplace
+    ? {
+        question: "Does this property have a fireplace or chimney?",
+        yesLabel: "Yes, we have a fireplace/chimney",
+        noLabel: "No fireplace or chimney",
+        notApplicableLabel: "no fireplace or chimney on this property",
+        inactiveBanner: "You've indicated this property doesn't have a fireplace or chimney. This section is inactive.",
+      }
+    : null;
+  const usesApplicabilityGate = gateConfig !== null;
+  const [isApplicable, setIsApplicable] = useState<boolean | null>(null);
+  const [gateLoaded, setGateLoaded] = useState(false);
   const [waterType, setWaterType] = useState<"city" | "well" | "">("");
   const [sewerType, setSewerType] = useState<"city" | "septic" | "">("");
   const [additionalWaterSources, setAdditionalWaterSources] = useState<Array<{ type: string; location: string; pumpDetails: string; serviceContact: string }>>([]);
@@ -484,6 +509,10 @@ const SystemConfigScreen = () => {
       if (data.service_company) setServiceCompany(data.service_company);
       if (data.service_phone) setServicePhone(data.service_phone);
       if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      if (usesApplicabilityGate) {
+        const s = (data.specs as Record<string, any> | null) || null;
+        if (s && typeof s.is_applicable === "boolean") setIsApplicable(s.is_applicable);
+      }
       if ((data as any).source_tags && typeof (data as any).source_tags === "object") setSourceTags((data as any).source_tags as Record<string, string>);
       // Restore water type from specs if saved
       if (displayName.toLowerCase().includes("water source")) {
@@ -514,7 +543,37 @@ const SystemConfigScreen = () => {
       }
     };
     load();
+    if (usesApplicabilityGate) setGateLoaded(true);
   }, [user, activeProperty, displayName]);
+
+  // Mark the gate as loaded even if there's no existing row (so the prompt can render).
+  useEffect(() => {
+    if (usesApplicabilityGate) setGateLoaded(true);
+  }, [usesApplicabilityGate]);
+
+  const saveIsApplicable = useCallback(async (next: boolean) => {
+    setIsApplicable(next);
+    if (!user || !activeProperty) return;
+    const nextSpecs = { ...specs, is_applicable: next };
+    setSpecs(nextSpecs as any);
+    const { data: existing } = await supabase
+      .from("system_details")
+      .select("id")
+      .eq("property_id", activeProperty.id)
+      .eq("system_name", displayName)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from("system_details").update({ specs: nextSpecs as any }).eq("id", existing.id);
+    } else {
+      await supabase.from("system_details").insert({
+        property_id: activeProperty.id,
+        user_id: user.id,
+        system_name: displayName,
+        specs: nextSpecs as any,
+      } as any);
+    }
+    toast.success(next ? "Marked as present on this property" : "Marked as not applicable to this property");
+  }, [user, activeProperty, displayName, specs]);
 
   // Whether we need a type selection first (progressive disclosure)
   const needsTypeSelection = isWaterSource || isSewerWaste;
@@ -598,6 +657,19 @@ const SystemConfigScreen = () => {
       )}
 
       {/* Records Status & Recovery Guide */}
+      {usesApplicabilityGate && gateLoaded && gateConfig && (
+        <SystemApplicabilityGate
+          question={gateConfig.question}
+          yesLabel={gateConfig.yesLabel}
+          noLabel={gateConfig.noLabel}
+          notApplicableLabel={gateConfig.notApplicableLabel}
+          inactiveBanner={gateConfig.inactiveBanner}
+          applicable={isApplicable}
+          onChange={saveIsApplicable}
+        />
+      )}
+
+      <div className={usesApplicabilityGate && isApplicable !== true ? "opacity-40 pointer-events-none select-none" : ""} aria-disabled={usesApplicabilityGate && isApplicable !== true}>
       <RecordsStatusSelector
         systemName={displayName}
         hasDocuments={Object.values(docs).some(d => d !== null && d !== undefined)}
@@ -898,6 +970,7 @@ const SystemConfigScreen = () => {
           <p className="text-sm text-muted-foreground">Select a type above to configure your {displayName.toLowerCase()}.</p>
         </div>
       )}
+      </div>
 
       {/* AI Photo Picker */}
       <AiPhotoPicker
