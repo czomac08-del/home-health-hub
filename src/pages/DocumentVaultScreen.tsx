@@ -34,7 +34,6 @@ import {
 } from "@/hooks/usePropertyDocuments";
 import UploadDocumentModal from "@/components/UploadDocumentModal";
 import AddToProfileModal from "@/components/AddToProfileModal";
-import { AnalyzePhotoButton, AiReviewedBadge } from "@/components/PhotoAiAnalyzer";
 
 const FILTERS: { value: "all" | DocCategory; label: string }[] = [
   { value: "all", label: "All" },
