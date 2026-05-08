@@ -139,10 +139,10 @@ export default function InspectionChecklistScreen({ mode }: Props) {
   return (
     <div className="min-h-screen pb-24 max-w-3xl mx-auto px-6 py-6">
       <button
-        onClick={() => navigate("/dashboard")}
+        onClick={() => navigate(-1)}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        <ArrowLeft className="h-4 w-4" /> Go Back
       </button>
 
       <div className="flex items-start gap-3 mb-4">
