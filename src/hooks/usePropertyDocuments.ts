@@ -17,7 +17,6 @@ export interface UnifiedDocument {
     | "inspector_media"
     | "insurance_documents"
     | "fix_verifications"
-    | "system_photos"
     | "warranties";
   category: DocCategory;
   title: string;
@@ -75,7 +74,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     setLoading(true);
     const all: UnifiedDocument[] = [];
 
-    const [recs, media, ins, fixes, sysPhotos, warrantyDocs] = await Promise.all([
+    const [recs, media, ins, fixes, warrantyDocs] = await Promise.all([
       supabase
         .from("property_records")
         .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
@@ -96,16 +95,24 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
       supabase
-        .from("system_photos" as any)
-        .select("id, url, storage_path, label, created_at, ai_analyzed, system_detail_id, system_details!inner(property_id, system_name)")
-        .eq("system_details.property_id", propertyId)
-        .order("created_at", { ascending: false }),
-      supabase
         .from("warranties")
         .select("id, warranty_type, provider_name, document_path, document_url, extended_doc_path, extended_doc_url, created_at, property_id")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
     ]);
+
+    // Diagnostic logging — remove once warranty visibility is confirmed.
+    console.info("[DocumentsVault] propertyId:", propertyId, {
+      property_records: { count: recs.data?.length ?? 0, error: recs.error?.message },
+      warranties: {
+        count: warrantyDocs.data?.length ?? 0,
+        error: warrantyDocs.error?.message,
+        rows: warrantyDocs.data,
+      },
+      warrantyTyped_property_records: (recs.data || []).filter(
+        (r: any) => (r.record_type || "").toLowerCase() === "warranty"
+      ).length,
+    });
 
     (recs.data || []).forEach((r: any) => {
       // Skip system-generated internal records that aren't real user documents.
@@ -198,25 +205,6 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           recordType: f.fix_type,
           raw: f,
         });
-      });
-    });
-
-    (sysPhotos.data || []).forEach((p: any) => {
-      const name = p.label || p.system_details?.system_name || "System photo";
-      all.push({
-        id: p.id,
-        source_table: "system_photos",
-        category: "other",
-        title: name,
-        fileType: "image",
-        uploadedAt: p.created_at,
-        url: p.url,
-        storagePath: p.storage_path,
-        bucket: "system-photos",
-        systemType: p.system_details?.system_name ?? null,
-        aiAnalyzed: !!p.ai_analyzed,
-        systemDetailId: p.system_detail_id,
-        raw: p,
       });
     });
 
