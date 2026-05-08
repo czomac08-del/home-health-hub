@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import InspectionFindingsReview, { type InspectionReportData } from "./InspectionFindingsReview";
 import FreeToReviewBanner from "./FreeToReviewBanner";
 import { recordRecentUpload } from "./RecentUploadBanner";
+import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -85,6 +86,12 @@ export default function UploadDocumentModal({
   const handleUpload = async () => {
     if (!file || !user || !activeProperty) {
       toast.error("Sign in and select a property first");
+      return;
+    }
+    // Gate first-time upload of this record_type for this property behind
+    // the legal acknowledgment dialog.
+    if (!ackPassed) {
+      setAckOpen(true);
       return;
     }
     const docMeta = DOC_TYPES.find((d) => d.value === docType) || DOC_TYPES[0];
