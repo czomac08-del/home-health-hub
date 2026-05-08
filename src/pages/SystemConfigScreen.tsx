@@ -13,7 +13,7 @@ import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from 
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
-import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhotosBanner, type AnalyzablePhoto } from "@/components/PhotoAiAnalyzer";
+import { AnalyzePhotoButton, BatchAnalyzeButton, AiReviewedBadge, UnanalyzedPhotosBanner, analyzePhoto, type AnalyzablePhoto, type PhotoReviewResult } from "@/components/PhotoAiAnalyzer";
 import { WaterFiltrationSection } from "@/components/WaterFiltrationSection";
 import { HvacFilterSection } from "@/components/HvacFilterSection";
 import ChimneyIntelligence from "@/components/ChimneyIntelligence";
@@ -44,6 +44,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
 
 interface PhotoItem { url: string; label: string; storagePath?: string; id?: string; ai_analyzed?: boolean; }
 interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
+interface AiSuggestion { key: string; label: string; value: string; target: "brand" | "model" | "serial" | "installDate" | "notes" | "spec"; specKey?: string; }
 
 // Small teal badge
 const AiBadge = () => (
@@ -64,7 +65,9 @@ const SystemConfigScreen = () => {
   const [aiApplied, setAiApplied] = useState(false);
   const [aiConfirmed, setAiConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pendingAutoSave, setPendingAutoSave] = useState(false);
+  const [aiPhotoBanner, setAiPhotoBanner] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([]);
+  const [analyzingPhotoIds, setAnalyzingPhotoIds] = useState<Set<string>>(new Set());
 
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
@@ -88,6 +91,7 @@ const SystemConfigScreen = () => {
 
   // Specs
   const [specs, setSpecs] = useState<Record<string, string | boolean | string[]>>({});
+  const [sourceTags, setSourceTags] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
@@ -133,6 +137,25 @@ const SystemConfigScreen = () => {
 
   const setSpec = (key: string, value: string | boolean | string[]) => {
     setSpecs((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const isEmptyValue = (value: unknown) => value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
+  const getConfidence = (result: PhotoReviewResult, keys: string[]) => {
+    const confidence = result.confidence || {};
+    for (const key of keys) {
+      const value = confidence[key];
+      if (value !== undefined && value !== null) return value;
+    }
+    return undefined;
+  };
+  const isHighConfidence = (result: PhotoReviewResult, keys: string[]) => {
+    const confidence = getConfidence(result, keys);
+    if (typeof confidence === "number") return confidence >= 0.8;
+    return confidence?.toString().toLowerCase() === "high";
+  };
+  const stringifyList = (items?: string[] | null) => Array.isArray(items) ? items.filter(Boolean).join(", ") : "";
+  const upsertSuggestion = (suggestion: AiSuggestion) => {
+    setAiSuggestions((prev) => prev.some((s) => s.key === suggestion.key) ? prev : [...prev, suggestion]);
   };
 
   // Reload saved photos (used after AI analysis to refresh ai_analyzed flag).
@@ -203,7 +226,67 @@ const SystemConfigScreen = () => {
     toast.success("AI scan data saved to form!");
   };
 
+  const analyzeUploadedPhoto = async (photo: AnalyzablePhoto) => {
+    setAnalyzingPhotoIds((prev) => new Set(prev).add(photo.id));
+    try {
+      const result = await analyzePhoto(photo);
+      const high: Record<string, any> = {};
+      const nextSpecs = { ...specs };
+      const nextTags = { ...sourceTags };
+      const add = (target: AiSuggestion["target"], key: string, label: string, value: string | null | undefined, confidenceKeys: string[], specKey?: string) => {
+        if (!value) return;
+        const current = target === "brand" ? brand : target === "model" ? model : target === "serial" ? serial : target === "installDate" ? installDate : target === "notes" ? notes : specKey ? specs[specKey] : undefined;
+        if (!isEmptyValue(current)) return;
+        if (isHighConfidence(result, confidenceKeys)) {
+          if (target === "brand") { high.brand = value; setBrand(value); nextTags.brand = "AI_INFERRED"; }
+          if (target === "model") { high.model = value; setModel(value); nextTags.model = "AI_INFERRED"; }
+          if (target === "serial") { high.serial_number = value; setSerial(value); nextTags.serial = "AI_INFERRED"; }
+          if (target === "installDate") { high.install_date = value; setInstallDate(value); nextTags.installDate = "AI_INFERRED"; }
+          if (target === "spec" && specKey) { nextSpecs[specKey] = value; nextTags[`spec:${specKey}`] = "AI_INFERRED"; }
+        } else {
+          upsertSuggestion({ key: `${photo.id}:${key}`, label, value, target, specKey });
+        }
+      };
+
+      add("brand", "brand", "Brand / Manufacturer", result.manufacturer || result.brand, ["manufacturer", "brand"]);
+      add("model", "model", "Model", result.modelNumber || result.model || result.modelName, ["modelNumber", "model", "modelName"]);
+      add("serial", "serial", "Serial Number", result.serialNumber || result.serial, ["serialNumber", "serial"]);
+      add("installDate", "manufactureYear", "Manufacture Year", result.manufactureYear, ["manufactureYear"]);
+      add("spec", "fuelType", "Fuel Type", result.fuelType, ["fuelType"], "fuelType");
+      add("spec", "capacity", "Capacity / Size", result.capacity || result.size, ["capacity", "size"], displayName.toLowerCase().includes("hvac") ? "hvacCapacity" : "capacity");
+
+      const observations = [result.condition && `Condition: ${result.condition}`, stringifyList(result.warningLabels) && `Warning labels: ${stringifyList(result.warningLabels)}`, stringifyList(result.visibleIssues) && `Visible issues: ${stringifyList(result.visibleIssues)}`].filter(Boolean).join(" • ");
+      if (observations && !notes) { high.notes = `[AI photo review] ${observations}`; setNotes(high.notes); nextTags.notes = "AI_INFERRED"; }
+
+      const { error: photoErr } = await supabase.from("system_photos" as any).update({ ai_analyzed: true, ai_analyzed_at: new Date().toISOString(), ai_analysis_result: result } as any).eq("id", photo.id);
+      if (photoErr) throw photoErr;
+      setSpecs(nextSpecs); setSourceTags(nextTags); setAiPhotoBanner(true);
+      if (photo.systemDetailId) {
+        const { error: detailErr } = await supabase.from("system_details").update({ ...high, specs: nextSpecs as any, source_tags: nextTags as any }).eq("id", photo.systemDetailId);
+        if (detailErr) throw detailErr;
+      }
+      setPhotos((prev) => prev.map((p) => p.id === photo.id ? { ...p, ai_analyzed: true } : p));
+    } catch (e) {
+      console.error("[SystemConfig] background photo AI failed", e);
+    } finally {
+      setAnalyzingPhotoIds((prev) => { const next = new Set(prev); next.delete(photo.id); return next; });
+    }
+  };
+
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
+  const hasAiSource = (key: string) => isAiField(key) || sourceTags[key] === "AI_INFERRED";
+
+  const applyAiSuggestion = (suggestion: AiSuggestion) => {
+    if (suggestion.target === "brand") setBrand(suggestion.value);
+    if (suggestion.target === "model") setModel(suggestion.value);
+    if (suggestion.target === "serial") setSerial(suggestion.value);
+    if (suggestion.target === "installDate") setInstallDate(suggestion.value);
+    if (suggestion.target === "notes") setNotes((prev) => prev ? `${prev}\n\n${suggestion.value}` : suggestion.value);
+    if (suggestion.target === "spec" && suggestion.specKey) setSpec(suggestion.specKey, suggestion.value);
+    setAiSuggestions((prev) => prev.filter((s) => s.key !== suggestion.key));
+  };
+
+  const dismissAiSuggestion = (key: string) => setAiSuggestions((prev) => prev.filter((s) => s.key !== key));
 
   // Completeness
   const completeness = useMemo(() => {
@@ -268,7 +351,58 @@ const SystemConfigScreen = () => {
     }
   };
 
-  const handleSave = async (opts?: { silent?: boolean }) => {
+  const buildSystemPayload = (overrideSpecs: Record<string, string | boolean | string[]> = {}) => ({
+    property_id: activeProperty!.id,
+    user_id: user!.id,
+    system_name: displayName,
+    brand: brand || null,
+    model: model || null,
+    serial_number: serial || null,
+    install_date: installDate || null,
+    purchase_date: purchaseDate || null,
+    warranty_exp: warrantyExp || null,
+    warranty_provider: warrantyProvider || null,
+    extended_warranty: extendedWarranty,
+    last_service: lastService || null,
+    next_service: nextService || null,
+    service_company: serviceCompany || null,
+    service_phone: servicePhone || null,
+    specs: { ...specs, ...overrideSpecs } as any,
+    notes: notes || null,
+    location_in_home: location || null,
+    source_tags: sourceTags as any,
+    status: "configured",
+  });
+
+  const saveSystemDetails = async (overrideSpecs: Record<string, string | boolean | string[]> = {}) => {
+    const payload = buildSystemPayload(overrideSpecs);
+    console.info("[SystemConfig] system_details write payload", { table: "system_details", property_id: payload.property_id, system_name: payload.system_name, payload });
+
+    const { data: existing, error: lookupErr } = await supabase
+      .from("system_details")
+      .select("id, property_id, user_id, system_name")
+      .eq("property_id", activeProperty!.id)
+      .eq("system_name", displayName)
+      .maybeSingle();
+    console.info("[SystemConfig] system_details lookup response", { queried_property_id: activeProperty!.id, data: existing, error: lookupErr });
+    if (lookupErr) throw lookupErr;
+
+    if (existing) {
+      const response = await supabase.from("system_details").update(payload).eq("id", existing.id).select("id, property_id, user_id, system_name").single();
+      console.info("[SystemConfig] system_details update response", response);
+      if (response.error) throw response.error;
+      setSystemDetailId(response.data.id);
+      return response.data.id;
+    }
+
+    const response = await supabase.from("system_details").insert(payload).select("id, property_id, user_id, system_name").single();
+    console.info("[SystemConfig] system_details insert response", response);
+    if (response.error) throw response.error;
+    setSystemDetailId(response.data.id);
+    return response.data.id;
+  };
+
+  const handleSave = async (opts?: { silent?: boolean; overrideSpecs?: Record<string, string | boolean | string[]> }) => {
     if (!user || !activeProperty) {
       toast.error("No active property. Please add a property first.");
       return;
@@ -276,46 +410,7 @@ const SystemConfigScreen = () => {
     if (saving) return;
     setSaving(true);
     try {
-    const payload = {
-      property_id: activeProperty.id,
-      user_id: user.id,
-      system_name: displayName,
-      brand: brand || null,
-      model: model || null,
-      serial_number: serial || null,
-      install_date: installDate || null,
-      purchase_date: purchaseDate || null,
-      warranty_exp: warrantyExp || null,
-      warranty_provider: warrantyProvider || null,
-      extended_warranty: extendedWarranty,
-      last_service: lastService || null,
-      next_service: nextService || null,
-      service_company: serviceCompany || null,
-      service_phone: servicePhone || null,
-      specs: specs as any,
-      notes: notes || null,
-      location_in_home: location || null,
-      status: "configured",
-    };
-
-    const { data: existing, error: lookupErr } = await supabase
-      .from("system_details")
-      .select("id")
-      .eq("property_id", activeProperty.id)
-      .eq("system_name", displayName)
-      .maybeSingle();
-    if (lookupErr) throw lookupErr;
-
-    let systemDetailId: string;
-    if (existing) {
-      const { error } = await supabase.from("system_details").update(payload).eq("id", existing.id);
-      if (error) throw error;
-      systemDetailId = existing.id;
-    } else {
-      const { data, error } = await supabase.from("system_details").insert(payload).select("id").single();
-      if (error) throw error;
-      systemDetailId = data.id;
-    }
+    const savedSystemDetailId = await saveSystemDetails(opts?.overrideSpecs || {});
 
     // Save new photos (skip already-saved ones loaded from DB)
     for (const photo of photos) {
@@ -323,7 +418,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_photos").select("id").eq("storage_path", photo.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_photos").insert({
-            system_detail_id: systemDetailId,
+            system_detail_id: savedSystemDetailId,
             user_id: user.id,
             storage_path: photo.storagePath,
             label: photo.label,
@@ -339,7 +434,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_documents").select("id").eq("storage_path", doc.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_documents").insert({
-            system_detail_id: systemDetailId,
+            system_detail_id: savedSystemDetailId,
             user_id: user.id,
             storage_path: doc.storagePath,
             doc_type: docType,
@@ -358,21 +453,11 @@ const SystemConfigScreen = () => {
     }
     } catch (e: any) {
       console.error("[SystemConfig] save failed", e);
-      toast.error("Couldn't save — please try again.");
+      toast.error(opts?.silent ? "Couldn't save your information — please try again." : "Couldn't save — please try again.");
     } finally {
       setSaving(false);
     }
   };
-
-  // Auto-persist when the HVAC wizard completes its final step so setup_complete sticks
-  // even if the user never clicks "Save to Passport". Runs after specs state has flushed.
-  useEffect(() => {
-    if (!pendingAutoSave) return;
-    if (!specs["filterSize"]) return; // wait until setSpec has propagated
-    setPendingAutoSave(false);
-    void handleSave({ silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingAutoSave, specs]);
 
   // Load existing data on mount
   useEffect(() => {
@@ -399,6 +484,7 @@ const SystemConfigScreen = () => {
       if (data.service_company) setServiceCompany(data.service_company);
       if (data.service_phone) setServicePhone(data.service_phone);
       if (data.specs && typeof data.specs === "object") setSpecs(data.specs as Record<string, string | boolean | string[]>);
+      if ((data as any).source_tags && typeof (data as any).source_tags === "object") setSourceTags((data as any).source_tags as Record<string, string>);
       // Restore water type from specs if saved
       if (displayName.toLowerCase().includes("water source")) {
         const s = data.specs as Record<string, any>;
@@ -492,6 +578,24 @@ const SystemConfigScreen = () => {
       {aiData && (
         <p className="text-[10px] text-muted-foreground/60 mb-6 italic">Data sourced from public records and permit history. Always verify with original documentation.</p>
       )}
+      {aiPhotoBanner && (
+        <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-start gap-3">
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-sm font-semibold text-primary">We identified some details from your photo — review them below.</p>
+        </div>
+      )}
+      {aiSuggestions.length > 0 && (
+        <div className="mb-4 rounded-xl border border-border bg-card px-4 py-3 space-y-2">
+          <p className="text-xs font-semibold text-foreground">AI suggestions to review</p>
+          {aiSuggestions.map((s) => (
+            <div key={s.key} className="flex items-center gap-2 text-xs">
+              <span className="flex-1 text-muted-foreground"><strong className="text-foreground">{s.label}:</strong> {s.value}</span>
+              <button type="button" onClick={() => applyAiSuggestion(s)} className="text-primary font-semibold">Accept</button>
+              <button type="button" onClick={() => dismissAiSuggestion(s.key)} className="text-muted-foreground">Dismiss</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Records Status & Recovery Guide */}
       <RecordsStatusSelector
@@ -561,7 +665,20 @@ const SystemConfigScreen = () => {
                 if (!specs["filterType"]) setSpec("filterType", filterType);
                 if (!specs["changeFrequency"]) setSpec("changeFrequency", changeFrequency);
               }}
-              onSetupComplete={() => setPendingAutoSave(true)}
+              onSetupComplete={async ({ filterSize, householdFactors, filterType, changeFrequency }) => {
+                const wizardSpecs = { ...specs, filterSize, householdFactors, filterType, changeFrequency, setup_complete: true };
+                setSpecs(wizardSpecs);
+                setHvacHouseholdFactors(householdFactors);
+                try {
+                  await saveSystemDetails(wizardSpecs);
+                  toast.success("Filter setup saved");
+                  return true;
+                } catch (e) {
+                  console.error("[SystemConfig] HVAC wizard save failed", e);
+                  toast.error("Couldn't save your information — please try again.");
+                  return false;
+                }
+              }}
             />
           )}
 
@@ -575,7 +692,7 @@ const SystemConfigScreen = () => {
             <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
                 {specFields.map((field) => (
-                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
+                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={hasAiSource(`spec:${field.key}`)} />
                 ))}
               </div>
             </CollapsibleSectionView>
@@ -787,13 +904,29 @@ const SystemConfigScreen = () => {
         open={showAiPicker}
         onClose={() => setShowAiPicker(false)}
         onPhotoSelected={async (file, preview) => {
-          if (!user) return;
+          if (!user || !activeProperty) return;
           const path = `${user.id}/${Date.now()}-${file.name}`;
           const { error } = await supabase.storage.from("system-photos").upload(path, file);
           if (error) { toast.error("Photo upload failed"); return; }
           const { data: signedData } = await supabase.storage.from("system-photos").createSignedUrl(path, 3600);
           if (!signedData?.signedUrl) { toast.error("Failed to get photo URL"); return; }
-          setPhotos((prev) => [...prev, { url: signedData.signedUrl, label: photoLabel, storagePath: path }]);
+          try {
+            const detailId = systemDetailId || await saveSystemDetails();
+            const { data: photoRow, error: photoErr } = await supabase.from("system_photos").insert({
+              system_detail_id: detailId,
+              user_id: user.id,
+              storage_path: path,
+              label: photoLabel,
+              url: signedData.signedUrl,
+            }).select("id, url, label, storage_path, ai_analyzed").single();
+            if (photoErr) throw photoErr;
+            const nextPhoto = { id: photoRow.id, url: photoRow.url, label: photoRow.label, storagePath: photoRow.storage_path, ai_analyzed: !!photoRow.ai_analyzed };
+            setPhotos((prev) => [...prev, nextPhoto]);
+            void analyzeUploadedPhoto({ id: photoRow.id, systemDetailId: detailId, url: photoRow.url, storagePath: photoRow.storage_path, label: photoRow.label, bucket: "system-photos", systemName: displayName });
+          } catch (e) {
+            console.error("[SystemConfig] photo metadata save failed", e);
+            toast.error("Photo uploaded, but couldn't save it to this system.");
+          }
         }}
         onScanComplete={handleScanResult}
         showReceiptMode

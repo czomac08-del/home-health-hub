@@ -60,13 +60,12 @@ function getRecommendation(factors: HouseholdFactor[]) {
   const reasons: string[] = [];
   let needsPurifier = false;
 
-  if (hasPets) { merv = Math.max(merv, 11); days = Math.min(days, 45); reasons.push("pets"); }
-  if (factors.includes("multiple_pets")) { days = Math.min(days, 30); }
-  if (hasAllergy) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("allergy sufferers"); needsPurifier = true; }
-  if (hasAsthma) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("asthma"); needsPurifier = true; }
-  if (hasKids) { merv = Math.max(merv, 11); days = Math.min(days, 45); reasons.push("young children"); needsPurifier = true; }
-  if (hasSmokers) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("smokers"); }
-  if (hasImmuno) { merv = Math.max(merv, 13); days = Math.min(days, 30); reasons.push("immunocompromised household member"); needsPurifier = true; }
+  if (hasPets) { merv = Math.max(merv, 13); days = 60; reasons.push("pets"); }
+  if (hasAllergy) { merv = Math.max(merv, 13); days = 60; reasons.push("allergy sufferers"); needsPurifier = true; }
+  if (hasAsthma) { merv = Math.max(merv, 13); days = 60; reasons.push("asthma"); needsPurifier = true; }
+  if (hasKids) { reasons.push("young children"); }
+  if (hasSmokers) { merv = Math.max(merv, 13); days = 60; reasons.push("smokers"); }
+  if (hasImmuno) { merv = Math.max(merv, 13); days = 60; reasons.push("immunocompromised household member"); needsPurifier = true; }
 
   return { merv, days, reasons, needsPurifier };
 }
@@ -146,7 +145,7 @@ interface Props {
   onFilterSizeChange?: (size: string) => void;
   onHouseholdFactorsChange?: (factors: string[]) => void;
   onRecommendationChange?: (rec: { filterType: string; changeFrequency: string }) => void;
-  onSetupComplete?: () => void;
+  onSetupComplete?: (setup: { filterSize: string; householdFactors: string[]; filterType: string; changeFrequency: string }) => Promise<boolean | void> | boolean | void;
 }
 
 export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouseholdFactorsChange, onRecommendationChange, onSetupComplete }: Props) => {
@@ -159,7 +158,9 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const [householdFactors, setHouseholdFactors] = useState<HouseholdFactor[]>([]);
   const [householdConfirmed, setHouseholdConfirmed] = useState(false);
   const [changeFreq, setChangeFreq] = useState<ChangeFrequency | "">("");
+  const [frequencyConfirmed, setFrequencyConfirmed] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [savingSetup, setSavingSetup] = useState(false);
   const toggle = (k: string) => setExpanded(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   const sizeReady = sizeSubmitted;
@@ -169,9 +170,9 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   const step = useMemo(() => {
     if (!sizeReady) return 1; // ask filter size
     if (!householdConfirmed) return 2; // ask household
-    if (!changeFreq) return 3; // ask frequency
+    if (!frequencyConfirmed) return 3; // ask frequency
     return 4; // show results
-  }, [sizeReady, householdConfirmed, changeFreq]);
+  }, [sizeReady, householdConfirmed, frequencyConfirmed]);
 
   const recommendation = useMemo(() => {
     if (householdFactors.length === 0) return null;
@@ -184,6 +185,33 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
   }, [recommendation, localFilterSize]);
 
   const effectiveSize = localFilterSize || filterSize;
+
+  const getFilterTypeLabel = (merv: number) => merv >= 13 ? "HEPA" : "MERV-8";
+  const getFrequencyLabel = (recDays: number, selected: ChangeFrequency | "") => {
+    if (selected === "1mo") return "Every 30 Days";
+    if (selected === "2mo") return "Every 60 Days";
+    if (selected === "3mo") return "Every 90 Days";
+    if (selected === "6mo") return "Every 6 Months";
+    return recDays <= 60 ? "Every 60 Days" : "Every 90 Days";
+  };
+
+  const completeSetup = async () => {
+    if (!recommendation) return;
+    setSavingSetup(true);
+    try {
+      const filterType = getFilterTypeLabel(recommendation.merv);
+      const changeFrequency = getFrequencyLabel(recommendation.days, changeFreq);
+      const ok = await onSetupComplete?.({
+        filterSize: effectiveSize,
+        householdFactors,
+        filterType,
+        changeFrequency,
+      });
+      if (ok !== false) setSetupComplete(true);
+    } finally {
+      setSavingSetup(false);
+    }
+  };
 
   const toggleFactor = (f: HouseholdFactor) => {
     setHouseholdFactors(prev => {
@@ -334,11 +362,6 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
             <button onClick={() => {
               setHouseholdConfirmed(true);
               onHouseholdFactorsChange?.(householdFactors);
-              const rec = getRecommendation(householdFactors);
-              const filterType = rec.merv >= 13 ? "HEPA" : "Pleated";
-              const changeFrequency = rec.days <= 45 ? "Monthly" : rec.days <= 90 ? "Every 3 Months" : "Every 6 Months";
-              onRecommendationChange?.({ filterType, changeFrequency });
-              onSetupComplete?.();
             }} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors animate-fade-in">
               Continue
             </button>
@@ -351,7 +374,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">How often do you want to change your filter?</p>
-            <button onClick={() => { setHouseholdConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
+            <button onClick={() => { setHouseholdConfirmed(false); setFrequencyConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Back</button>
           </div>
           <div className="space-y-2">
             {FREQUENCY_OPTIONS.map(opt => (
@@ -361,6 +384,14 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
               </TapCard>
             ))}
           </div>
+          <button
+            type="button"
+            disabled={!changeFreq}
+            onClick={() => setFrequencyConfirmed(true)}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            Continue
+          </button>
         </div>
       )}
 
@@ -369,7 +400,7 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
         <div className="animate-fade-in space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground">Filter size: {localFilterSize}</p>
-            <button onClick={() => { setChangeFreq(""); }} className="text-[10px] text-primary hover:underline">← Edit preferences</button>
+            <button onClick={() => { setFrequencyConfirmed(false); }} className="text-[10px] text-primary hover:underline">← Edit preferences</button>
           </div>
 
           {/* Recommendation Summary */}
@@ -491,6 +522,15 @@ export const HvacFilterSection = ({ filterSize = "", onFilterSizeChange, onHouse
           </div>
 
           <AffiliateNote />
+
+          <button
+            type="button"
+            onClick={completeSetup}
+            disabled={savingSetup}
+            className="w-full rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            {savingSetup ? "Saving…" : "Save Filter Setup"}
+          </button>
         </div>
       )}
         </>
