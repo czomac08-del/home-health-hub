@@ -8,6 +8,11 @@ export const MULTI_INSTANCE_SYSTEM_NAMES = new Set<string>([
   "HVAC",
   "Water Heater",
   "Electrical Panel",
+  "Refrigerator",
+  "Washer / Dryer",
+  "Dishwasher",
+  "Garage Door Opener",
+  "Water Softener",
 ]);
 
 export interface SystemInstance {
@@ -259,6 +264,16 @@ function kindOptionsFor(systemName: string): string[] {
       ];
     case "Electrical Panel":
       return ["Main Panel", "Sub-Panel", "Disconnect Panel"];
+    case "Refrigerator":
+      return ["Standard Fridge", "French Door", "Side-by-Side", "Mini Fridge", "Wine Fridge", "Chest Freezer", "Upright Freezer"];
+    case "Washer / Dryer":
+      return ["Washer", "Dryer", "Stacked Combo", "All-in-One"];
+    case "Dishwasher":
+      return ["Built-in", "Drawer", "Portable"];
+    case "Garage Door Opener":
+      return ["Chain Drive", "Belt Drive", "Screw Drive", "Direct Drive"];
+    case "Water Softener":
+      return ["Salt-based", "Salt-free", "Dual-tank", "Magnetic"];
     default:
       return [];
   }
@@ -272,6 +287,16 @@ function defaultNameSuggestion(systemName: string): string {
       return "Addition Tankless";
     case "Electrical Panel":
       return "Addition Sub-Panel";
+    case "Refrigerator":
+      return "Garage Fridge";
+    case "Washer / Dryer":
+      return "ADU Stackable";
+    case "Dishwasher":
+      return "Bar Dishwasher";
+    case "Garage Door Opener":
+      return "Second Bay Opener";
+    case "Water Softener":
+      return "Workshop Softener";
     default:
       return systemName;
   }

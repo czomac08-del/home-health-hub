@@ -256,9 +256,37 @@ const SystemsScreen = () => {
       <div className="mb-8">
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
         <div className="rounded-xl border border-border bg-card px-4">
-          {filterItems(appliances).map((item) => (
-            <SystemRow key={item.name} item={item} documented={isDocumented(item)} flagged={isFlagged(item)} notApplicable={isNotApplicable(item)} summary={summaryFor(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
-          ))}
+          {filterItems(appliances).map((item) => {
+            const insts = instancesFor(item);
+            return (
+              <div key={item.name}>
+                <SystemRow
+                  item={{ ...item, name: insts.length >= 2 ? `${item.name} (${insts.length})` : item.name }}
+                  documented={isDocumented(item) && (insts.length === 0 || insts.every((i) => i.documented))}
+                  flagged={isFlagged(item)}
+                  notApplicable={isNotApplicable(item)}
+                  summary={summaryFor(item)}
+                  onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)}
+                />
+                {insts.length >= 2 && (
+                  <div className="ml-[52px] mb-3 -mt-1 flex flex-wrap gap-2">
+                    {insts.map((i) => (
+                      <button
+                        key={i.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/system-config/${encodeURIComponent(item.name)}?instance=${i.id}`);
+                        }}
+                        className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary transition-colors"
+                      >
+                        {i.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
