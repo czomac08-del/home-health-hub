@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      acknowledgment_log: {
+        Row: {
+          accepted_at: string
+          accepted_ip: string | null
+          acknowledgment_text: string
+          id: string
+          property_id: string
+          record_type: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_ip?: string | null
+          acknowledgment_text: string
+          id?: string
+          property_id: string
+          record_type: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_ip?: string | null
+          acknowledgment_text?: string
+          id?: string
+          property_id?: string
+          record_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acknowledgment_log_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       address_refresh_cache: {
         Row: {
           address_hash: string | null
@@ -2357,9 +2395,13 @@ export type Database = {
       }
       permanent_archive: {
         Row: {
+          acknowledgment_timestamp: string | null
           ai_analysis: string | null
+          ai_inferred_flagged_at: string | null
           auto_suppressed: boolean
           confidence_score: number
+          confirmed_by_owner_at: string | null
+          county_fips: string | null
           created_at: string
           description: string | null
           dispute_count: number
@@ -2369,12 +2411,15 @@ export type Database = {
           existed_until: string | null
           homeowner_notes: string | null
           id: string
+          legal_acknowledgment_accepted: boolean
           legal_acknowledgment_text: string | null
+          property_address: string | null
           property_id: string
           provenance_locked: boolean
           record_type: string
           removal_reason: string | null
           satellite_images: Json | null
+          source_tag: Database["public"]["Enums"]["archive_source_tag"] | null
           status: string
           submitted_at: string | null
           submitted_by_user_id: string | null
@@ -2385,9 +2430,13 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          acknowledgment_timestamp?: string | null
           ai_analysis?: string | null
+          ai_inferred_flagged_at?: string | null
           auto_suppressed?: boolean
           confidence_score?: number
+          confirmed_by_owner_at?: string | null
+          county_fips?: string | null
           created_at?: string
           description?: string | null
           dispute_count?: number
@@ -2397,12 +2446,15 @@ export type Database = {
           existed_until?: string | null
           homeowner_notes?: string | null
           id?: string
+          legal_acknowledgment_accepted?: boolean
           legal_acknowledgment_text?: string | null
+          property_address?: string | null
           property_id: string
           provenance_locked?: boolean
           record_type: string
           removal_reason?: string | null
           satellite_images?: Json | null
+          source_tag?: Database["public"]["Enums"]["archive_source_tag"] | null
           status?: string
           submitted_at?: string | null
           submitted_by_user_id?: string | null
@@ -2413,9 +2465,13 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          acknowledgment_timestamp?: string | null
           ai_analysis?: string | null
+          ai_inferred_flagged_at?: string | null
           auto_suppressed?: boolean
           confidence_score?: number
+          confirmed_by_owner_at?: string | null
+          county_fips?: string | null
           created_at?: string
           description?: string | null
           dispute_count?: number
@@ -2425,12 +2481,15 @@ export type Database = {
           existed_until?: string | null
           homeowner_notes?: string | null
           id?: string
+          legal_acknowledgment_accepted?: boolean
           legal_acknowledgment_text?: string | null
+          property_address?: string | null
           property_id?: string
           provenance_locked?: boolean
           record_type?: string
           removal_reason?: string | null
           satellite_images?: Json | null
+          source_tag?: Database["public"]["Enums"]["archive_source_tag"] | null
           status?: string
           submitted_at?: string | null
           submitted_by_user_id?: string | null
@@ -2479,6 +2538,13 @@ export type Database = {
           resolved_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "permanent_archive_disputes_archive_id_fkey"
+            columns: ["archive_id"]
+            isOneToOne: false
+            referencedRelation: "ai_inferred_unconfirmed"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "permanent_archive_disputes_archive_id_fkey"
             columns: ["archive_id"]
@@ -4119,7 +4185,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ai_inferred_unconfirmed: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          property_id: string | null
+          record_type: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          property_id?: string | null
+          record_type?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          property_id?: string | null
+          record_type?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permanent_archive_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       archive_to_vault: {
@@ -4199,6 +4299,12 @@ export type Database = {
         | "inspector"
         | "contractor"
         | "investor"
+      archive_source_tag:
+        | "GOVERNMENT_API"
+        | "DOCUMENT_EXTRACTED"
+        | "OWNER_PROVIDED"
+        | "PROFESSIONAL_SUBMITTED"
+        | "AI_INFERRED"
       data_source_type:
         | "inspector_verified"
         | "county_record"
@@ -4387,6 +4493,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["homeowner", "realtor", "inspector", "contractor", "investor"],
+      archive_source_tag: [
+        "GOVERNMENT_API",
+        "DOCUMENT_EXTRACTED",
+        "OWNER_PROVIDED",
+        "PROFESSIONAL_SUBMITTED",
+        "AI_INFERRED",
+      ],
       data_source_type: [
         "inspector_verified",
         "county_record",

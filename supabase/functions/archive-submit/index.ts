@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
     evidence_sources, satellite_images, documents,
     ai_analysis, homeowner_notes, confidence_score,
     legal_acknowledgment_text,
+    source_tag, property_address, county_fips,
   } = body || {};
 
   if (!property_id || !record_type || !title) {
@@ -49,6 +50,12 @@ Deno.serve(async (req) => {
   if (!legal_acknowledgment_text || legal_acknowledgment_text.trim() !== REQUIRED_LEGAL_TEXT) {
     return json(400, { error: "Legal acknowledgment text does not match the required version" });
   }
+
+  const ALLOWED_TAGS = new Set([
+    "GOVERNMENT_API", "DOCUMENT_EXTRACTED", "OWNER_PROVIDED",
+    "PROFESSIONAL_SUBMITTED", "AI_INFERRED",
+  ]);
+  const tag = ALLOWED_TAGS.has(source_tag) ? source_tag : "OWNER_PROVIDED";
 
   // Verify the user owns this property
   const { data: prop, error: pErr } = await userClient
@@ -83,6 +90,11 @@ Deno.serve(async (req) => {
       submitted_ip: ip,
       legal_acknowledgment_text,
       provenance_locked: true,
+      source_tag: tag,
+      property_address: property_address ?? null,
+      county_fips: county_fips ?? null,
+      legal_acknowledgment_accepted: true,
+      acknowledgment_timestamp: new Date().toISOString(),
     })
     .select("id")
     .single();

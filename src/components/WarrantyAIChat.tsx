@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import AIConfidenceStrip from "@/components/AIConfidenceStrip";
 
 interface Message {
   role: "assistant" | "user";

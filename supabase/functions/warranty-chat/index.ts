@@ -1,3 +1,4 @@
+import { AI_HONESTY_PREAMBLE } from "../_shared/aiHonestyPrompt.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -61,7 +62,7 @@ IMPORTANT RULES:
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        messages: [{ role: "system", content: AI_HONESTY_PREAMBLE + "\n\n" + systemPrompt }, ...messages],
         stream: true,
       }),
     });

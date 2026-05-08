@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Sparkles, X, Send, Mic } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import AIConfidenceStrip from "@/components/AIConfidenceStrip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -308,6 +309,7 @@ const HomeAIChat = () => {
               {msg.role === "assistant" ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <AIConfidenceStrip text={msg.content} />
                 </div>
               ) : (
                 msg.content
