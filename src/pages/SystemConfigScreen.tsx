@@ -31,7 +31,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
   isOpen: boolean; title: string; onToggle: () => void; children: React.ReactNode;
 }) => (
   <div className="mb-4 overflow-hidden">
-    <button onClick={onToggle} className="w-full flex items-center justify-between py-2 mb-2">
+    <button type="button" onClick={onToggle} className="w-full flex items-center justify-between py-2 mb-2">
       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
       <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} />
     </button>
@@ -378,15 +378,6 @@ const SystemConfigScreen = () => {
     });
   };
 
-  const CollapsibleSection = ({ id, title, children }: { id: string; title: string; children: React.ReactNode; defaultOpen?: boolean }) => (
-    <CollapsibleSectionView
-      isOpen={expandedSections.has(id)}
-      title={title}
-      onToggle={() => toggleSection(id)}
-    >
-      {children}
-    </CollapsibleSectionView>
-  );
 
   return (
     <div className="min-h-screen pb-32 max-w-lg lg:max-w-5xl mx-auto px-4 py-6">
@@ -509,17 +500,17 @@ const SystemConfigScreen = () => {
 
           {/* ── Specifications (contextual fields based on type) — hidden for city water ── */}
           {specFields.length > 0 && !(isWaterSource && waterType === "city") && (
-            <CollapsibleSection id="specs" title="Specifications">
+            <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
                 {specFields.map((field) => (
                   <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={isAiField(`spec:${field.key}`)} />
                 ))}
               </div>
-            </CollapsibleSection>
+            </CollapsibleSectionView>
           )}
 
           {/* ── Photos ── */}
-          <CollapsibleSection id="photos" title="Photos">
+          <CollapsibleSectionView isOpen={expandedSections.has("photos")} title="Photos" onToggle={() => toggleSection("photos")}>
             <div className="mb-2">
               <select value={photoLabel} onChange={(e) => setPhotoLabel(e.target.value)}
                 className="rounded-lg border border-border bg-card py-2 px-3 text-xs text-foreground w-full mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50">
@@ -546,11 +537,11 @@ const SystemConfigScreen = () => {
                 ))}
               </div>
             )}
-          </CollapsibleSection>
+          </CollapsibleSectionView>
 
           {/* ── Basic Info — hidden for Water/Sewer ── */}
           {!hideBasicInfo && (
-            <CollapsibleSection id="basic" title="Basic Info">
+            <CollapsibleSectionView isOpen={expandedSections.has("basic")} title="Basic Info" onToggle={() => toggleSection("basic")}>
               <div className="space-y-3">
                 <FieldWithScan label="Brand / Manufacturer" value={brand} onChange={setBrand} placeholder="e.g. Carrier, Rheem, LG" ai={isAiField("brand")} scanField="brand" />
                 <FieldWithScan label="Model Number" value={model} onChange={setModel} placeholder="e.g. 24ACC636A003" ai={isAiField("model")} scanField="model" />
@@ -565,7 +556,7 @@ const SystemConfigScreen = () => {
                 )}
                 <ManualSearchIndicator searching={manualSearching} />
               </div>
-            </CollapsibleSection>
+            </CollapsibleSectionView>
           )}
 
           {/* Manual Search Result */}
@@ -587,7 +578,7 @@ const SystemConfigScreen = () => {
           )}
 
           {/* ── Service & Warranty ── */}
-          <CollapsibleSection id="service" title="Service & Warranty">
+          <CollapsibleSectionView isOpen={expandedSections.has("service")} title="Service & Warranty" onToggle={() => toggleSection("service")}>
             <div className="space-y-3">
               <Field label="Warranty Expiration Date" value={warrantyExp} onChange={setWarrantyExp} type="date" ai={isAiField("warrantyExp")} />
               <Field label="Warranty Provider" value={warrantyProvider} onChange={setWarrantyProvider} ai={isAiField("warrantyProvider")} />
@@ -598,7 +589,7 @@ const SystemConfigScreen = () => {
               <Field label="Service Company Phone" value={servicePhone} onChange={setServicePhone} placeholder="(555) 123-4567" ai={isAiField("servicePhone")} />
               <WarrantyStatusBadge warrantyExp={warrantyExp} />
             </div>
-          </CollapsibleSection>
+          </CollapsibleSectionView>
 
           {/* AI Warranty Info */}
           {warrantyInfo && (
@@ -608,7 +599,7 @@ const SystemConfigScreen = () => {
           )}
 
           {/* ── Documents ── */}
-          <CollapsibleSection id="docs" title="Documents & Manuals">
+          <CollapsibleSectionView isOpen={expandedSections.has("docs")} title="Documents & Manuals" onToggle={() => toggleSection("docs")}>
             <div className="space-y-2">
               {DOC_TYPES.map((docType) => {
                 const doc = docs[docType];
@@ -627,10 +618,10 @@ const SystemConfigScreen = () => {
                 );
               })}
             </div>
-          </CollapsibleSection>
+          </CollapsibleSectionView>
 
           {/* ── Location ── */}
-          <CollapsibleSection id="location" title="Location in Home">
+          <CollapsibleSectionView isOpen={expandedSections.has("location")} title="Location in Home" onToggle={() => toggleSection("location")}>
             <div>
               <div className="relative">
                 {isAiField("location") && <div className="absolute right-3 top-1/2 -translate-y-1/2"><AiBadge /></div>}
@@ -642,20 +633,20 @@ const SystemConfigScreen = () => {
             {displayName.toLowerCase().includes("water heater") && <WaterHeaterLocation data={locationTracking} onChange={setLocationTracking} />}
             {(displayName.toLowerCase().includes("hvac") || displayName.toLowerCase().includes("heating")) && <HvacLocation data={locationTracking} onChange={setLocationTracking} />}
             {(displayName.toLowerCase().includes("well") || displayName.toLowerCase().includes("water source") || displayName.toLowerCase().includes("plumbing")) && <WaterSystemLocation data={locationTracking} onChange={setLocationTracking} />}
-          </CollapsibleSection>
+          </CollapsibleSectionView>
 
           {/* ── Notes ── */}
-          <CollapsibleSection id="notes" title="Notes">
+          <CollapsibleSectionView isOpen={expandedSections.has("notes")} title="Notes" onToggle={() => toggleSection("notes")}>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="Any additional details, service provider info, etc." rows={3}
               className="w-full rounded-xl border border-border bg-card py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
-          </CollapsibleSection>
+          </CollapsibleSectionView>
 
           {/* ── Additional Water Sources (collapsed by default) ── */}
           {isWaterSource && waterType && (
-            <CollapsibleSection id="additional-water" title="Additional Water Sources">
+            <CollapsibleSectionView isOpen={expandedSections.has("additional-water")} title="Additional Water Sources" onToggle={() => toggleSection("additional-water")}>
               <AdditionalWaterSources sources={additionalWaterSources} onChange={setAdditionalWaterSources} />
-            </CollapsibleSection>
+            </CollapsibleSectionView>
           )}
 
           {/* ═══ SAVE BUTTONS ═══ */}
