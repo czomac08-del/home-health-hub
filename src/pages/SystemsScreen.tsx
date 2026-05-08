@@ -4,6 +4,7 @@ import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Wav
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
+import { summarizeChimneyState } from "@/components/ChimneyFireplaceConfig";
 
 type SystemStatus = "documented" | "unconfigured";
 
@@ -107,6 +108,7 @@ const SystemsScreen = () => {
   const [documentedNames, setDocumentedNames] = useState<Set<string>>(new Set());
   const [flaggedNames, setFlaggedNames] = useState<Set<string>>(new Set());
   const [notApplicableNames, setNotApplicableNames] = useState<Set<string>>(new Set());
+  const [systemSummaries, setSystemSummaries] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { user, activeProperty } = useAuth();
 
@@ -122,6 +124,7 @@ const SystemsScreen = () => {
         const next = new Set<string>();
         const flags = new Set<string>();
         const inactive = new Set<string>();
+        const summaries: Record<string, string> = {};
         (data as SystemDetailSummary[] | null)?.forEach((record) => {
           if (hasRealSystemData(record)) next.add(record.system_name);
           if (record.status === "needs_attention") flags.add(record.system_name);
@@ -133,11 +136,16 @@ const SystemsScreen = () => {
             if (specs.is_applicable === false) {
               inactive.add(record.system_name);
             }
+            if (record.system_name.toLowerCase().includes("chimney") || record.system_name.toLowerCase().includes("fireplace")) {
+              const summary = summarizeChimneyState(specs);
+              if (summary) summaries[record.system_name] = summary;
+            }
           }
         });
         setDocumentedNames(next);
         setFlaggedNames(flags);
         setNotApplicableNames(inactive);
+        setSystemSummaries(summaries);
       });
   }, [user, activeProperty]);
 
@@ -150,6 +158,7 @@ const SystemsScreen = () => {
     return possibleNames.some((name) => flaggedNames.has(name));
   };
   const isNotApplicable = (item: SystemItem) => notApplicableNames.has(item.name);
+  const summaryFor = (item: SystemItem): string | undefined => systemSummaries[item.name];
 
   const filterItems = (items: SystemItem[]) =>
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
@@ -192,6 +201,7 @@ const SystemsScreen = () => {
               documented={isDocumented(item)}
               flagged={isFlagged(item)}
               notApplicable={isNotApplicable(item)}
+              summary={summaryFor(item)}
               onClick={() => {
                 if (item.route) navigate(item.route);
                 else navigate(`/system-config/${encodeURIComponent(item.name)}`);
@@ -205,7 +215,7 @@ const SystemsScreen = () => {
         <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3">Appliances & Extras</h2>
         <div className="rounded-xl border border-border bg-card px-4">
           {filterItems(appliances).map((item) => (
-            <SystemRow key={item.name} item={item} documented={isDocumented(item)} flagged={isFlagged(item)} notApplicable={isNotApplicable(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
+            <SystemRow key={item.name} item={item} documented={isDocumented(item)} flagged={isFlagged(item)} notApplicable={isNotApplicable(item)} summary={summaryFor(item)} onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)} />
           ))}
         </div>
       </div>
