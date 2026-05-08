@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Clock } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Clock, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import RefreshButton from "@/components/RefreshButton";
+import WarrantyAIChat from "@/components/WarrantyAIChat";
+import WarrantyReviewModal from "@/components/WarrantyReviewModal";
 
 interface WarrantyRow {
   id: string;
@@ -37,11 +39,14 @@ type FilterType = "all" | "appliances" | "systems" | "expiring" | "expired";
 
 const WarrantyDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, activeProperty } = useAuth();
   const [warranties, setWarranties] = useState<WarrantyRow[]>([]);
   const [systems, setSystems] = useState<Record<string, SystemRow>>({});
   const [filter, setFilter] = useState<FilterType>("all");
   const [loading, setLoading] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [detailRow, setDetailRow] = useState<WarrantyRow | null>(null);
+  const [detailDoc, setDetailDoc] = useState<{ fileName?: string | null; storagePath?: string | null; bucket?: string | null; url?: string | null } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -73,6 +78,45 @@ const WarrantyDashboard = () => {
   const expiring = warranties.filter(w => getStatus(w.coverage_end).label === "Expiring Soon");
   const expired = warranties.filter(w => getStatus(w.coverage_end).label === "Expired");
 
+  // Build a portfolio-level warranty context for the AI assistant.
+  const warrantyContext = warranties.map(w => {
+    const sys = w.system_detail_id ? systems[w.system_detail_id] : null;
+    const status = getStatus(w.coverage_end).label;
+    const parts = [
+      sys?.system_name ? `${sys.system_name}${sys.brand ? ` (${sys.brand})` : ""}` : (w.provider_name || "Warranty"),
+      `type: ${w.warranty_type.replace(/_/g, " ")}`,
+      w.provider_name ? `provider: ${w.provider_name}` : null,
+      w.coverage_start ? `start: ${w.coverage_start}` : null,
+      w.coverage_end ? `end: ${w.coverage_end}` : "end: unknown",
+      `status: ${status}`,
+    ].filter(Boolean);
+    return `- ${parts.join(", ")}`;
+  }).join("\n");
+
+  const propertyAddress = activeProperty?.address || "your property";
+  const portfolioSystemContext = `Property: ${propertyAddress}\nTotals — Active: ${active.length}, Expiring soon: ${expiring.length}, Expired: ${expired.length}, Total warranties: ${warranties.length}`;
+
+  const portfolioChips = [
+    "What warranties are about to expire?",
+    "Which of my systems have no warranty?",
+    "How do I file a warranty claim?",
+    "Can I transfer warranties when I sell?",
+    "What typically voids a home warranty?",
+  ];
+
+  const openWarrantyDetail = (w: WarrantyRow) => {
+    const sys = w.system_detail_id ? systems[w.system_detail_id] : null;
+    setDetailRow({ ...w, /* enrich for context */ });
+    setDetailDoc({
+      fileName: w.document_path?.split("/").pop() || w.provider_name || "Warranty",
+      storagePath: w.document_path,
+      bucket: "property-records",
+      url: null,
+    });
+    // attach system_name onto detailRow via state setter using closure data
+    setDetailRow(prev => prev ? ({ ...prev, system_name: sys?.system_name || null } as any) : prev);
+  };
+
   const filters: { key: FilterType; label: string }[] = [
     { key: "all", label: "All" },
     { key: "systems", label: "Systems" },
@@ -91,6 +135,35 @@ const WarrantyDashboard = () => {
       </h1>
       <p className="text-sm text-muted-foreground mb-4">All warranties across your home in one place.</p>
       <RefreshButton scope="warranties" variant="compact" className="mb-6" />
+
+      {/* AI Assistant — collapsed by default */}
+      <div className="mb-6 rounded-xl border border-border bg-card overflow-hidden">
+        <button
+          onClick={() => setAiOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/40 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Ask AI about your warranties ✨
+          </span>
+          {aiOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+        {aiOpen && (
+          <div className="border-t border-border p-3">
+            <WarrantyAIChat
+              warrantyContext={warrantyContext}
+              systemContext={portfolioSystemContext}
+              systemInfo={null}
+              chips={portfolioChips}
+              openingMessage={
+                warranties.length > 0
+                  ? `I have ${warranties.length} warrantie${warranties.length === 1 ? "" : "s"} on file for ${propertyAddress}. ${active.length} active, ${expiring.length} expiring soon, ${expired.length} expired. What would you like to know?`
+                  : `I don't see any warranties on file yet for ${propertyAddress}. Add warranties from your system detail screens or upload them in the Document Vault. I can still answer general warranty questions.`
+              }
+            />
+          </div>
+        )}
+      </div>
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -127,7 +200,11 @@ const WarrantyDashboard = () => {
             const s = getStatus(w.coverage_end);
             const sys = w.system_detail_id ? systems[w.system_detail_id] : null;
             return (
-              <div key={w.id} className="rounded-xl border border-border bg-card p-4">
+              <button
+                key={w.id}
+                onClick={() => openWarrantyDetail(w)}
+                className="w-full text-left rounded-xl border border-border bg-card p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors"
+              >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     {s.label === "Active" && <ShieldCheck className="h-4 w-4 text-emerald-500" />}
@@ -154,7 +231,7 @@ const WarrantyDashboard = () => {
                     <Progress value={Math.min(100, (s.days / 365) * 100)} className="h-1" />
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -188,6 +265,14 @@ const WarrantyDashboard = () => {
           </button>
         </div>
       )}
+
+      <WarrantyReviewModal
+        open={!!detailRow}
+        onOpenChange={(v) => { if (!v) { setDetailRow(null); setDetailDoc(null); } }}
+        recordId={null}
+        directDoc={detailDoc}
+        warrantyRow={detailRow as any}
+      />
     </div>
   );
 };
