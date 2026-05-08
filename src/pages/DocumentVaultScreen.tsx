@@ -480,24 +480,6 @@ function DocCard({
             )}
           </button>
         )}
-        {doc.source_table === "system_photos" && doc.systemDetailId && (
-          doc.aiAnalyzed ? (
-            <AiReviewedBadge />
-          ) : (
-            <AnalyzePhotoButton
-              photo={{
-                id: doc.id,
-                systemDetailId: doc.systemDetailId,
-                url: doc.url || "",
-                storagePath: doc.storagePath,
-                label: doc.title,
-                bucket: "system-photos",
-              }}
-              onAnalyzed={onReanalyzed}
-              className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
-            />
-          )
-        )}
       </div>
     </div>
   );
