@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Wind, ShoppingCart, Check, ChevronRight, AlertTriangle, Sparkles, Dog, Cat, Baby, Cigarette, ShieldAlert, Heart, Users, Leaf } from "lucide-react";
 
 /* ───────── types ───────── */
