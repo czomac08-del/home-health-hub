@@ -110,14 +110,14 @@ export async function writeSystemField(args: {
   if (existing) {
     await supabase
       .from("system_details")
-      .update(update)
+      .update(update as any)
       .eq("id", existing.id);
   } else {
     await supabase.from("system_details").insert({
       property_id: propertyId,
       user_id: userId,
       system_name: systemName,
-      data_status: source === "OWNER_PROVIDED" ? "owner_submitted" : "ai_extracted",
+      data_status: source === "OWNER_PROVIDED" ? "confirmed" : "ai_extracted",
       ...update,
     } as any);
   }
