@@ -56,7 +56,6 @@ const WarrantyDashboard = () => {
         supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
         supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
       ]);
-      setWarranties((wData as WarrantyRow[]) || []);
       // Deduplicate: one row per source_record_id, then per document_path
       const seen = new Set<string>();
       const deduped = ((wData as WarrantyRow[]) || []).filter((w) => {
