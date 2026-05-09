@@ -49,11 +49,11 @@ const WarrantyDashboard = () => {
   const [detailDoc, setDetailDoc] = useState<{ fileName?: string | null; storagePath?: string | null; bucket?: string | null; url?: string | null } | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !activeProperty) return;
     (async () => {
       const [{ data: wData }, { data: sData }] = await Promise.all([
-        supabase.from("warranties").select("*").eq("user_id", user.id),
-        supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id),
+        supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
+        supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
       ]);
       setWarranties((wData as WarrantyRow[]) || []);
       const map: Record<string, SystemRow> = {};
@@ -61,7 +61,7 @@ const WarrantyDashboard = () => {
       setSystems(map);
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, activeProperty]);
 
   const coreNames = ["hvac", "plumbing", "electrical", "roof", "water heater", "septic", "sewer"];
   const filtered = warranties.filter(w => {
