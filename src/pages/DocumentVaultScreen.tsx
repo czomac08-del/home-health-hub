@@ -33,6 +33,7 @@ import {
   type UnifiedDocument,
   type DocCategory,
 } from "@/hooks/usePropertyDocuments";
+import { tierBadgeClasses } from "@/lib/documentCredit";
 import UploadDocumentModal from "@/components/UploadDocumentModal";
 import AddToProfileModal from "@/components/AddToProfileModal";
 import WarrantyReviewModal from "@/components/WarrantyReviewModal";
