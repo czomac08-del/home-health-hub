@@ -17,6 +17,7 @@ interface WarrantyRow {
   system_detail_id: string | null;
   is_transferable: boolean | null;
   document_path: string | null;
+  source_record_id?: string | null;
 }
 
 interface SystemRow {
@@ -55,7 +56,15 @@ const WarrantyDashboard = () => {
         supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
         supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
       ]);
-      setWarranties((wData as WarrantyRow[]) || []);
+      // Deduplicate: one row per source_record_id, then per document_path
+      const seen = new Set<string>();
+      const deduped = ((wData as WarrantyRow[]) || []).filter((w) => {
+        const key = w.source_record_id || w.document_path || w.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setWarranties(deduped);
       const map: Record<string, SystemRow> = {};
       (sData || []).forEach((s: SystemRow) => { map[s.id] = s; });
       setSystems(map);

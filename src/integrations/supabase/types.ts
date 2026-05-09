@@ -4861,6 +4861,7 @@ export type Database = {
           is_transferable: boolean | null
           property_id: string
           provider_name: string | null
+          source_record_id: string | null
           system_detail_id: string | null
           updated_at: string
           user_id: string
@@ -4882,6 +4883,7 @@ export type Database = {
           is_transferable?: boolean | null
           property_id: string
           provider_name?: string | null
+          source_record_id?: string | null
           system_detail_id?: string | null
           updated_at?: string
           user_id: string
@@ -4903,6 +4905,7 @@ export type Database = {
           is_transferable?: boolean | null
           property_id?: string
           provider_name?: string | null
+          source_record_id?: string | null
           system_detail_id?: string | null
           updated_at?: string
           user_id?: string
@@ -4914,6 +4917,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranties_source_record_id_fkey"
+            columns: ["source_record_id"]
+            isOneToOne: false
+            referencedRelation: "property_records"
             referencedColumns: ["id"]
           },
           {

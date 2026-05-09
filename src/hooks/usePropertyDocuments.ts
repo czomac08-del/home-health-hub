@@ -128,7 +128,10 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         rt === "rentcast_snapshot";
       const hasNoRealFile = !r.file_name && !r.storage_path && !r.url;
       const isImage = /\.(jpe?g|png|heic|webp|gif)$/i.test(r.file_name || "");
-      if (isSystemGenerated || hasNoRealFile || isImage) return;
+      // Skip warranty rows that have already been promoted to the warranties table
+      // (avoids showing the same document twice in the vault).
+      const isWarrantyAlreadySynced = rt === "warranty" && !!r.ai_verified;
+      if (isSystemGenerated || hasNoRealFile || isImage || isWarrantyAlreadySynced) return;
 
       const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
       const rep = ext && (r.ai_extracted_data as any).inspection_report;
