@@ -451,7 +451,12 @@ const SystemConfigScreen = () => {
     next_service: nextService || null,
     service_company: serviceCompany || null,
     service_phone: servicePhone || null,
-    specs: { ...specs, ...overrideSpecs } as any,
+    specs: {
+      ...specs,
+      ...(waterType ? { waterType } : {}),
+      ...(sewerType ? { sewerType } : {}),
+      ...overrideSpecs,
+    } as any,
     notes: notes || null,
     location_in_home: location || null,
     source_tags: sourceTags as any,
