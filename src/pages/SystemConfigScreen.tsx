@@ -417,7 +417,51 @@ const SystemConfigScreen = () => {
     if (error) { toast.error("Document upload failed"); return; }
     const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
     if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
-    setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl } }));
+
+    const needsRouting =
+      siblingSystems.length > 1 ||
+      (hasAdditionalStructures && siblingSystems.length >= 1) ||
+      /\d/.test(displayName);
+
+    if (needsRouting && siblingSystems.length > 1) {
+      // Default to the system this screen represents.
+      setPendingTargetId(systemDetailId || siblingSystems[0]?.id || "");
+      setPendingDoc({ docType, fileName: file.name, storagePath: path, signedUrl: signedData.signedUrl });
+      // Clear input so the same file can be re-picked if cancelled.
+      e.target.value = "";
+      return;
+    }
+
+    setDocs((prev) => ({
+      ...prev,
+      [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl },
+    }));
+    e.target.value = "";
+  };
+
+  const confirmPendingDoc = () => {
+    if (!pendingDoc) return;
+    setDocs((prev) => ({
+      ...prev,
+      [pendingDoc.docType]: {
+        name: pendingDoc.fileName,
+        date: new Date().toLocaleDateString(),
+        storagePath: pendingDoc.storagePath,
+        url: pendingDoc.signedUrl,
+        targetSystemDetailId: pendingTargetId || undefined,
+      },
+    }));
+    setPendingDoc(null);
+    setPendingTargetId("");
+  };
+
+  const cancelPendingDoc = async () => {
+    if (pendingDoc?.storagePath) {
+      // Best-effort cleanup of the uploaded file the user backed out of.
+      await supabase.storage.from("system-documents").remove([pendingDoc.storagePath]).catch(() => {});
+    }
+    setPendingDoc(null);
+    setPendingTargetId("");
   };
 
   const deletePhoto = async (photo: PhotoItem, index: number) => {
