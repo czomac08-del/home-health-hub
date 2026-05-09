@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX, ArrowLeft, Clock, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,28 +49,34 @@ const WarrantyDashboard = () => {
   const [detailRow, setDetailRow] = useState<WarrantyRow | null>(null);
   const [detailDoc, setDetailDoc] = useState<{ fileName?: string | null; storagePath?: string | null; bucket?: string | null; url?: string | null } | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!user || !activeProperty) return;
-    (async () => {
-      const [{ data: wData }, { data: sData }] = await Promise.all([
-        supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
-        supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
-      ]);
-      // Deduplicate: one row per source_record_id, then per document_path
-      const seen = new Set<string>();
-      const deduped = ((wData as WarrantyRow[]) || []).filter((w) => {
-        const key = w.source_record_id || w.document_path || w.id;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      setWarranties(deduped);
-      const map: Record<string, SystemRow> = {};
-      (sData || []).forEach((s: SystemRow) => { map[s.id] = s; });
-      setSystems(map);
-      setLoading(false);
-    })();
+    const [{ data: wData }, { data: sData }] = await Promise.all([
+      supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
+      supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
+    ]);
+    // Deduplicate: one row per source_record_id, then per document_path
+    const seen = new Set<string>();
+    const deduped = ((wData as WarrantyRow[]) || []).filter((w) => {
+      const key = w.source_record_id || w.document_path || w.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    setWarranties(deduped);
+    const map: Record<string, SystemRow> = {};
+    (sData || []).forEach((s: SystemRow) => { map[s.id] = s; });
+    setSystems(map);
+    setLoading(false);
   }, [user, activeProperty]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    const handleFocus = () => { if (user && activeProperty) loadData(); };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [user, activeProperty, loadData]);
 
   const coreNames = ["hvac", "plumbing", "electrical", "roof", "water heater", "septic", "sewer"];
   const filtered = warranties.filter(w => {
