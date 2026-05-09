@@ -25,23 +25,29 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
 }`,
-  septic: `Extract these fields from this septic system document. For each field, rate confidence 0-100. Return JSON only:
+  septic: `Extract these fields from this septic system document (install record, pump receipt, inspection, or permit). For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
-    "tank_size_gallons": { "value": number or null, "confidence": 90 },
-    "tank_material": { "value": string or null, "confidence": 85 },
-    "system_type": { "value": string or null, "confidence": 90 },
-    "installation_date": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
-    "contractor_name": { "value": string or null, "confidence": 90 },
-    "leach_field_size": { "value": string or null, "confidence": 80 },
-    "leach_field_type": { "value": string or null, "confidence": 80 },
-    "address": { "value": string or null, "confidence": 95 }
+    "tankSize": { "value": number or null, "confidence": 90 },
+    "tankCount": { "value": number or null, "confidence": 85 },
+    "systemType": { "value": "conventional|aerobic|mound|chamber" or null, "confidence": 90 },
+    "lastPumpDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "drainFieldCondition": { "value": "good|fair|poor|failing" or null, "confidence": 80 },
+    "permitNumber": { "value": string or null, "confidence": 90 },
+    "installDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "technicianName": { "value": string or null, "confidence": 80 },
+    "company": { "value": string or null, "confidence": 85 },
+    "conditionRating": { "value": "pass|fail|needs attention" or null, "confidence": 80 },
+    "propertyAddress": { "value": string or null, "confidence": 95 },
+    "notes": { "value": string or null, "confidence": 70 }
   },
   "overall_confidence": 88,
   "document_quality": "good|fair|poor|damaged",
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
-}`,
+}
+
+tankSize is in gallons. Only return values explicitly present in the document — do not infer.`,
   permit: `Extract these fields from this building/construction permit. For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
