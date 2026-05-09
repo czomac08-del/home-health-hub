@@ -495,34 +495,34 @@ const OnboardingWizard = () => {
       case 1:
         if (scanPhase !== "idle") {
           const scanItems = [
-            { label: "Contacting county assessor", phase: "connecting" },
-            { label: "Searching property tax records", phase: "extracting" },
-            { label: "Extracting structure details", phase: "extracting" },
-            { label: "Checking FEMA & environmental data", phase: "extracting" },
+            { label: "Contacting county assessor",            doneOn: ["extracting", "complete"] },
+            { label: "Searching property tax records",        doneOn: ["complete"] },
+            { label: "Extracting structure & parcel details", doneOn: ["complete"] },
+            { label: "Checking FEMA & environmental data",    doneOn: [] as string[] },
           ];
-          const phaseOrder = ["connecting", "extracting", "complete"];
-          const currentPhaseIdx = phaseOrder.indexOf(scanPhase);
 
-          if (scanPhase === "complete" && scanResults) {
+          if (scanPhase === "complete") {
             const fields = [
-              scanResults.propertyType && { label: "Property type", value: scanResults.propertyType },
-              scanResults.yearBuilt    && { label: "Year built",    value: String(scanResults.yearBuilt) },
-              scanResults.squareFootage && { label: "Square footage", value: `${scanResults.squareFootage.toLocaleString()} sq ft` },
-              scanResults.bedrooms != null && { label: "Bedrooms", value: String(scanResults.bedrooms) },
-              scanResults.bathrooms != null && { label: "Bathrooms", value: String(scanResults.bathrooms) },
-              scanResults.lastSalePrice && { label: "Last sale", value: `$${scanResults.lastSalePrice.toLocaleString()}${scanResults.lastSaleDate ? ` (${scanResults.lastSaleDate.slice(0,4)})` : ""}` },
-              scanResults.parcelId && { label: "Parcel ID", value: scanResults.parcelId },
+              scanResults?.propertyType   && { label: "Property type",   value: scanResults.propertyType },
+              scanResults?.yearBuilt      && { label: "Year built",       value: String(scanResults.yearBuilt) },
+              scanResults?.squareFootage  && { label: "Square footage",   value: `${Number(scanResults.squareFootage).toLocaleString()} sq ft` },
+              scanResults?.bedrooms  != null && { label: "Bedrooms",      value: String(scanResults.bedrooms) },
+              scanResults?.bathrooms != null && { label: "Bathrooms",     value: String(scanResults.bathrooms) },
+              scanResults?.lastSalePrice  && { label: "Last sale",        value: `$${Number(scanResults.lastSalePrice).toLocaleString()}${scanResults.lastSaleDate ? ` (${scanResults.lastSaleDate.slice(0,4)})` : ""}` },
+              scanResults?.parcelId       && { label: "Parcel ID",        value: scanResults.parcelId },
             ].filter(Boolean) as { label: string; value: string }[];
 
             return (
-              <div className="flex flex-col items-center gap-6 animate-fade-in py-4">
+              <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
                 <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-xl font-bold text-foreground">Public records found!</h2>
+                  <h2 className="text-xl font-bold text-foreground">Records found!</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    We pre-filled your home profile. You'll only be asked about what we couldn't find.
+                    {fields.length > 0
+                      ? "We pre-filled what we found. You'll only be asked about the rest."
+                      : "No detailed records found — we'll ask a few quick questions."}
                   </p>
                 </div>
                 {fields.length > 0 && (
@@ -536,9 +536,9 @@ const OnboardingWizard = () => {
                   </div>
                 )}
                 {fields.length === 0 && (
-                  <div className="rounded-xl border border-border bg-card p-4 text-center">
-                    <p className="text-sm text-muted-foreground">No detailed records found — we'll ask a few quick questions.</p>
-                  </div>
+                  <p className="text-sm text-muted-foreground text-center rounded-xl border border-border bg-card p-4">
+                    No property records found for this address. We'll ask a few quick questions instead.
+                  </p>
                 )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -549,7 +549,7 @@ const OnboardingWizard = () => {
           }
 
           return (
-            <div className="flex flex-col items-center gap-6 animate-fade-in py-4">
+            <div className="flex flex-col items-center gap-6 animate-fade-in py-2">
               <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
                 <Sparkles className="h-8 w-8 text-primary animate-pulse" />
               </div>
@@ -559,34 +559,27 @@ const OnboardingWizard = () => {
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1 max-w-xs">
                   {scanPhase === "connecting"
-                    ? "Connecting to public records for " + (selectedMatch?.county ?? "your area")
+                    ? `Connecting to public records${selectedMatch?.county ? ` for ${selectedMatch.county}` : ""}…`
                     : "Reading assessor records, tax history, and structure details"}
                 </p>
               </div>
               <div className="w-full flex flex-col gap-2">
                 {scanItems.map((item, i) => {
-                  const itemPhaseIdx = phaseOrder.indexOf(item.phase);
-                  const isDone = currentPhaseIdx > itemPhaseIdx || (currentPhaseIdx === itemPhaseIdx && i < 2);
-                  const isActive = currentPhaseIdx === itemPhaseIdx && !isDone;
+                  const isDone = item.doneOn.includes(scanPhase);
+                  const isActive = !isDone && (
+                    (scanPhase === "connecting" && i === 0) ||
+                    (scanPhase === "extracting" && i >= 1 && i <= 2)
+                  );
                   return (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${
-                        isDone
-                          ? "border-green-500/30 bg-green-500/5"
-                          : isActive
-                          ? "border-primary/40 bg-primary/5"
-                          : "border-border bg-card opacity-40"
-                      }`}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                      ) : isActive ? (
-                        <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                      )}
-                      <span className={`text-sm ${isDone || isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                    <div key={i} className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all ${
+                      isDone   ? "border-green-500/30 bg-green-500/5" :
+                      isActive ? "border-primary/40 bg-primary/5" :
+                                 "border-border bg-card opacity-40"
+                    }`}>
+                      {isDone   ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" /> :
+                       isActive ? <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" /> :
+                                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />}
+                      <span className={`text-sm ${!isDone && !isActive ? "text-muted-foreground" : "text-foreground"}`}>
                         {item.label}
                       </span>
                     </div>
@@ -608,7 +601,7 @@ const OnboardingWizard = () => {
               </p>
               <h1 className="text-2xl font-bold text-foreground">First, let's find your home.</h1>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Enter your property address and we'll pull everything we know about it from public records.
+                Enter your address and we'll search public records to pre-fill your home profile automatically.
               </p>
             </div>
 
@@ -650,8 +643,8 @@ const OnboardingWizard = () => {
             {selectedMatch && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <div className="text-xs text-foreground">
-                  <p className="font-semibold text-primary">Address verified</p>
+                <div className="text-xs">
+                  <p className="font-semibold text-primary">Address confirmed</p>
                   {selectedMatch.county && (
                     <p className="text-muted-foreground mt-0.5">
                       {selectedMatch.county}{selectedMatch.state ? `, ${selectedMatch.state}` : ""}
@@ -661,16 +654,6 @@ const OnboardingWizard = () => {
               </div>
             )}
 
-            {selectedMatch && (
-              <button
-                type="button"
-                onClick={saveAddressAndContinue}
-                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
-              >
-                <Sparkles className="h-4 w-4" />Search Public Records &amp; Continue
-              </button>
-            )}
-
             {geocodeError && !selectedMatch && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
@@ -678,15 +661,17 @@ const OnboardingWizard = () => {
               </div>
             )}
 
+            {selectedMatch && (
+              <button type="button" onClick={saveAddressAndContinue}
+                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Search Public Records &amp; Continue
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => {
-                // Skip address entirely — no save, no scan
-                setSelectedMatch(null);
-                setAddressInput("");
-                setScanSummary(null);
-                setStep(2);
-              }}
+              onClick={() => { setSelectedMatch(null); setAddressInput(""); setScanSummary(null); setStep(2); }}
               className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors self-center"
             >
               Skip for now — I'll add my address later
