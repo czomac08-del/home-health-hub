@@ -208,6 +208,7 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
       const insertPayload: any = {
         user_id: user.id,
         property_id: record.property_id || activeProperty?.id,
+        source_record_id: record.id,
         warranty_type: (warranty.warranty_type as string) || "manufacturer",
         provider_name: providerLabel,
         coverage_start: warranty.coverage_start || null,
@@ -219,7 +220,9 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         document_path: record.storage_path || null,
         document_url: record.url || null,
       };
-      const { error } = await supabase.from("warranties").insert(insertPayload);
+      const { error } = await supabase
+        .from("warranties")
+        .upsert(insertPayload, { onConflict: "source_record_id", ignoreDuplicates: true });
       if (error) throw error;
       // Flip the vault card to "Added to Profile" too.
       await supabase
