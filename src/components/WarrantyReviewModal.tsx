@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,7 @@ function looksLikeWarranty(w: WarrantyExtraction): boolean {
 
 export default function WarrantyReviewModal({ open, onOpenChange, recordId, directDoc, warrantyRow }: Props) {
   const { user, activeProperty } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -215,6 +217,14 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         warranty.product_name ||
         filenameLabel ||
         "Warranty";
+      // Refresh the signed URL so we don't store a stale/expired one.
+      let freshDocUrl = record.url || null;
+      if (record.storage_path) {
+        const { data: urlData } = await supabase.storage
+          .from("property-records")
+          .createSignedUrl(record.storage_path, 60 * 60 * 24 * 365);
+        if (urlData?.signedUrl) freshDocUrl = urlData.signedUrl;
+      }
       const insertPayload: any = {
         user_id: user.id,
         property_id: record.property_id || activeProperty?.id,
@@ -228,7 +238,8 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         claim_notes: warranty.coverage_summary || null,
         is_transferable: warranty.is_transferable ?? null,
         document_path: record.storage_path || null,
-        document_url: record.url || null,
+        document_url: freshDocUrl,
+        document_bucket: "property-records",
       };
       const { error } = await supabase
         .from("warranties")
@@ -239,7 +250,12 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         .from("property_records")
         .update({ ai_verified: true })
         .eq("id", record.id);
-      toast.success("Synced to your Warranties");
+      toast.success("Synced to your Warranties", {
+        action: {
+          label: "View Warranties →",
+          onClick: () => navigate("/warranties"),
+        },
+      });
       setSynced(true);
     } catch (e: any) {
       console.error(e);
