@@ -144,7 +144,7 @@ const HandoverWizardScreen = () => {
       case 2: return <StepRatings stayingItems={stayingItems} ratings={ratings} setRatings={setRatings} ratingNotes={ratingNotes} setRatingNotes={setRatingNotes} confirmed={ratingsConfirmed} setConfirmed={setRatingsConfirmed} />;
       case 3: return <StepWelcome welcomeNote={welcomeNote} setWelcomeNote={setWelcomeNote} plumber={plumber} setPlumber={setPlumber} hvacContact={hvacContact} setHvacContact={setHvacContact} trashDay={trashDay} setTrashDay={setTrashDay} hoa={hoa} setHoa={setHoa} quirks={quirks} setQuirks={setQuirks} />;
       case 4: return <StepGenerate stayingItems={stayingItems} welcomeNote={welcomeNote} onGenerate={next} />;
-      case 5: return <StepTransfer email={email} setEmail={setEmail} transferDone={transferDone} setTransferDone={setTransferDone} showRemoveConfirm={showRemoveConfirm} setShowRemoveConfirm={setShowRemoveConfirm} navigate={navigate} />;
+      case 5: return <StepTransfer email={email} setEmail={setEmail} transferDone={transferDone} setTransferDone={setTransferDone} showRemoveConfirm={showRemoveConfirm} setShowRemoveConfirm={setShowRemoveConfirm} navigate={navigate} stayingItems={stayingItems} welcomeNote={welcomeNote} ratings={ratings} ratingNotes={ratingNotes} />;
       default: return null;
     }
   };
@@ -373,7 +373,7 @@ const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems:
 };
 
 /* ═══ Step 6: Transfer Method ═══ */
-const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void }) => {
+const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate, stayingItems, welcomeNote, ratings, ratingNotes }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void; stayingItems: SystemEntry[]; welcomeNote: string; ratings: Record<string, number>; ratingNotes: Record<string, string> }) => {
   const { activeProperty } = useAuth();
   if (transferDone) {
     return (
@@ -449,16 +449,75 @@ const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemo
           </div>
           <button onClick={async () => {
             try {
-              const { data: codeRow } = await supabase
-                .from("referral_codes")
-                .select("code")
-                .maybeSingle();
+              if (!activeProperty?.id) throw new Error("No active property");
+              const propId = activeProperty.id;
+              const [
+                { data: codeRow },
+                { data: profile },
+                { data: sysDetails },
+                { data: docs },
+                { data: findings },
+              ] = await Promise.all([
+                supabase.from("referral_codes").select("code").maybeSingle(),
+                supabase.from("profiles").select("full_name").maybeSingle(),
+                supabase
+                  .from("system_details")
+                  .select("system_name, install_date, last_service, specs, data_status")
+                  .eq("property_id", propId),
+                supabase
+                  .from("property_records")
+                  .select("id, record_type")
+                  .eq("property_id", propId),
+                supabase
+                  .from("inspection_findings")
+                  .select("source")
+                  .eq("property_id", propId),
+              ]);
+
+              // Build systems list using staying items as source-of-truth, enriched
+              const sysMap = new Map<string, any>();
+              (sysDetails || []).forEach((s: any) =>
+                sysMap.set(String(s.system_name).toLowerCase(), s),
+              );
+              const pdfSystems = stayingItems.map((s) => {
+                const row = sysMap.get(s.name.toLowerCase());
+                const rating = ratings[s.name];
+                const ratingHealth = rating ? rating * 20 : s.health;
+                const note = ratingNotes[s.name];
+                return {
+                  name: s.name,
+                  health: ratingHealth,
+                  lastService: row?.last_service
+                    ? formatDate(row.last_service)
+                    : row?.install_date
+                      ? `Installed ${formatDate(row.install_date)}`
+                      : note || s.lastService,
+                };
+              });
+
+              const govSet = new Set<string>();
+              (findings || []).forEach((f: any) => {
+                const src = String(f.source || "").toUpperCase();
+                if (/FEMA|NOAA|EPA|USDA|CENSUS/.test(src)) {
+                  if (src.includes("FEMA")) govSet.add("FEMA");
+                  if (src.includes("NOAA")) govSet.add("NOAA");
+                  if (src.includes("EPA")) govSet.add("EPA");
+                  if (src.includes("USDA")) govSet.add("USDA");
+                  if (src.includes("CENSUS")) govSet.add("Census");
+                }
+              });
+
               await generatePassportPdf({
-                propertyId: activeProperty?.id || "unknown",
-                address: activeProperty?.address || "Your Home",
+                propertyId: propId,
+                address: activeProperty.address || "Your Home",
                 yearBuilt: (activeProperty as any)?.year_built ?? null,
                 healthScore: (activeProperty as any)?.health_score ?? null,
-                systems: [],
+                systems: pdfSystems,
+                documentsCount: docs?.length ?? 0,
+                verifiedRecords: findings?.length ?? 0,
+                govSourcesFound: Array.from(govSet),
+                welcomeNote: welcomeNote || undefined,
+                sellerName: profile?.full_name || undefined,
                 referralCode: codeRow?.code ?? null,
               });
               toast.success("PDF downloaded!");
