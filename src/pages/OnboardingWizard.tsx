@@ -323,21 +323,23 @@ const OnboardingWizard = () => {
               filled.add("homeAge");
             }
 
-            if (json?.propertyType) {
-              const pt = (json.propertyType as string).toLowerCase().replace(/[_\-]+/g, " ").trim();
-              let homeTypeId = "";
-              if (pt.includes("single") || pt.includes("sfr") || pt.includes("sfd") || pt === "residential" || pt.includes("1 family") || pt.includes("one family") || pt.includes("res improved") || pt.includes("dwelling")) {
+            {
+              const ptRaw = json?.propertyType;
+              const pt = (ptRaw == null ? "" : String(ptRaw)).toLowerCase().replace(/[_\-]+/g, " ").trim();
+              const isMatch = (list: string[]) => list.some(v => pt === v || pt.includes(v));
+              let homeTypeId = "single_family";
+              if (!pt) {
                 homeTypeId = "single_family";
-              } else if (pt.includes("condo") || pt.includes("condominium") || pt.includes("unit")) {
+              } else if (isMatch(["multi family", "multifamily", "duplex", "2-4 units", "2 4 units", "02", "03", "200", "300"])) {
+                homeTypeId = "multi_unit";
+              } else if (isMatch(["condo", "condominium", "cn", "04", "400"])) {
                 homeTypeId = "condo";
-              } else if (pt.includes("townhouse") || pt.includes("townhome") || pt.includes("town home")) {
+              } else if (isMatch(["townhouse", "row house", "th"])) {
                 homeTypeId = "townhouse";
-              } else if (pt.includes("multi") || pt.includes("duplex") || pt.includes("triplex") || pt.includes("quadplex") || pt.includes("2 family") || pt.includes("3 family") || pt.includes("4 family")) {
-                homeTypeId = "multi_family";
-              } else if (pt.includes("mobile") || pt.includes("manufactured") || pt.includes("mfh")) {
+              } else if (isMatch(["mobile home", "manufactured", "mh", "07"])) {
                 homeTypeId = "manufactured";
-              } else if (pt.includes("land") || pt.includes("lot") || pt.includes("vacant") || pt.includes("agricultural") || pt.includes("farm")) {
-                homeTypeId = "land";
+              } else if (isMatch(["single family", "sfr", "residential", "res", "r1", "r", "01", "100"])) {
+                homeTypeId = "single_family";
               } else {
                 homeTypeId = "single_family";
               }
