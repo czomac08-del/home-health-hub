@@ -99,7 +99,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .order("created_at", { ascending: false }),
       supabase
         .from("warranties")
-        .select("id, warranty_type, provider_name, document_path, document_url, extended_doc_path, extended_doc_url, created_at, property_id")
+        .select("id, warranty_type, provider_name, document_path, document_url, extended_doc_path, extended_doc_url, created_at, property_id, source_record_id")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
     ]);
@@ -117,6 +117,12 @@ export function usePropertyDocuments(propertyId: string | undefined) {
       ).length,
     });
 
+    const syncedRecordIds = new Set(
+      (warrantyDocs.data || [])
+        .map((w: any) => w.source_record_id)
+        .filter(Boolean)
+    );
+
     (recs.data || []).forEach((r: any) => {
       // Skip system-generated internal records that aren't real user documents.
       // These are placeholder rows created by data-refresh / civic pulls.
@@ -129,8 +135,10 @@ export function usePropertyDocuments(propertyId: string | undefined) {
       const hasNoRealFile = !r.file_name && !r.storage_path && !r.url;
       const isImage = /\.(jpe?g|png|heic|webp|gif)$/i.test(r.file_name || "");
       // Skip warranty rows that have already been promoted to the warranties table
-      // (avoids showing the same document twice in the vault).
-      const isWarrantyAlreadySynced = rt === "warranty" && !!r.ai_verified;
+      // (avoids showing the same document twice in the vault). We detect this via
+      // the warranties.source_record_id back-reference, NOT ai_verified — which is
+      // also flipped on simple upload confirms.
+      const isWarrantyAlreadySynced = rt === "warranty" && syncedRecordIds.has(r.id);
       if (isSystemGenerated || hasNoRealFile || isImage || isWarrantyAlreadySynced) return;
 
       const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
