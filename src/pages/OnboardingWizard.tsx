@@ -208,11 +208,155 @@ const OnboardingWizard = () => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
         setShowRegridSuggestions(false);
+        setShowGoogleSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  /** Lazy-load the Google Maps JS API (Places library) once. Resolves to the
+   *  `google.maps` namespace, or `null` if no API key / load failure — in which
+   *  case the Regrid fallback continues to work. */
+  const loadGoogleMaps = (): Promise<any | null> => {
+    if (typeof window === "undefined") return Promise.resolve(null);
+    const w = window as any;
+    if (w.google?.maps?.places) return Promise.resolve(w.google);
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+    if (!apiKey) return Promise.resolve(null);
+    if (w.__googleMapsLoading) return w.__googleMapsLoading;
+    w.__googleMapsLoading = new Promise<any | null>((resolve) => {
+      const existing = document.querySelector<HTMLScriptElement>(
+        'script[data-google-maps="1"]',
+      );
+      const onReady = () => resolve((window as any).google || null);
+      if (existing) {
+        existing.addEventListener("load", onReady);
+        existing.addEventListener("error", () => resolve(null));
+        return;
+      }
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+        apiKey,
+      )}&libraries=places&v=weekly`;
+      s.async = true;
+      s.defer = true;
+      s.dataset.googleMaps = "1";
+      s.onload = onReady;
+      s.onerror = () => resolve(null);
+      document.head.appendChild(s);
+    });
+    return w.__googleMapsLoading;
+  };
+
+  /** Google Places Autocomplete — primary suggestion source. Restricted to US
+   *  addresses. Silently no-ops on errors so Regrid + plain-text fallback keep
+   *  working. */
+  const fetchGoogleSuggestions = async (q: string) => {
+    if (q.trim().length < 3) {
+      setGooglePredictions([]);
+      setShowGoogleSuggestions(false);
+      return;
+    }
+    try {
+      const google = await loadGoogleMaps();
+      if (!google?.maps?.places) {
+        setGooglePredictions([]);
+        setShowGoogleSuggestions(false);
+        return;
+      }
+      if (!googleAutocompleteRef.current) {
+        googleAutocompleteRef.current = new google.maps.places.AutocompleteService();
+      }
+      if (!googleSessionTokenRef.current) {
+        googleSessionTokenRef.current =
+          new google.maps.places.AutocompleteSessionToken();
+      }
+      googleAutocompleteRef.current.getPlacePredictions(
+        {
+          input: q,
+          types: ["address"],
+          componentRestrictions: { country: "us" },
+          sessionToken: googleSessionTokenRef.current,
+        },
+        (predictions: any[] | null, status: string) => {
+          if (
+            status !== google.maps.places.PlacesServiceStatus.OK ||
+            !predictions?.length
+          ) {
+            setGooglePredictions([]);
+            setShowGoogleSuggestions(false);
+            return;
+          }
+          const list = predictions.slice(0, 8).map((p) => ({
+            place_id: p.place_id,
+            description: p.description,
+          }));
+          setGooglePredictions(list);
+          setShowGoogleSuggestions(true);
+          // Hide other dropdowns when Google has results
+          setShowRegridSuggestions(false);
+          setShowSuggestions(false);
+        },
+      );
+    } catch {
+      setGooglePredictions([]);
+      setShowGoogleSuggestions(false);
+    }
+  };
+
+  /** User tapped a Google prediction — fetch place details to capture the
+   *  formatted address + place_id, then run the existing geocode flow so
+   *  Continue can resolve a `selectedMatch`. */
+  const selectGooglePrediction = async (pred: {
+    place_id: string;
+    description: string;
+  }) => {
+    setShowGoogleSuggestions(false);
+    setGooglePredictions([]);
+    setShowRegridSuggestions(false);
+    setShowSuggestions(false);
+
+    let formatted = pred.description;
+    try {
+      const google = await loadGoogleMaps();
+      if (google?.maps?.places) {
+        if (!googlePlacesServiceRef.current) {
+          googlePlacesServiceRef.current = new google.maps.places.PlacesService(
+            document.createElement("div"),
+          );
+        }
+        formatted = await new Promise<string>((resolve) => {
+          googlePlacesServiceRef.current.getDetails(
+            {
+              placeId: pred.place_id,
+              fields: ["formatted_address", "place_id"],
+              sessionToken: googleSessionTokenRef.current,
+            },
+            (place: any, status: string) => {
+              if (
+                status === google.maps.places.PlacesServiceStatus.OK &&
+                place?.formatted_address
+              ) {
+                resolve(place.formatted_address);
+              } else {
+                resolve(pred.description);
+              }
+            },
+          );
+        });
+        // Reset session token after a getDetails call (Google billing best practice)
+        googleSessionTokenRef.current = null;
+      }
+    } catch {
+      /* fall through with `formatted = pred.description` */
+    }
+
+    setAddressInput(formatted);
+    setGooglePlaceId(pred.place_id);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    fetchSuggestions(formatted);
+  };
 
   /** Regrid address typeahead — proxied via the regrid-typeahead edge
    *  function so the API token stays server-side. Always degrades to a no-op
