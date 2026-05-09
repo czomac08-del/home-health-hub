@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
 import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 
 const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
 const RENTCAST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup`;
@@ -65,6 +65,7 @@ interface WizardData {
   hasSmartHome: boolean;
   hasChimney: boolean;
   manufacturedFields: Record<string, string | boolean>;
+  hasAdditionalStructures: boolean | null;
 }
 
 const defaultData: WizardData = {
@@ -75,6 +76,7 @@ const defaultData: WizardData = {
   hasGarage: false, garageDoors: 1, hasPool: false, hasSecurity: false, hasSmartHome: false,
   hasChimney: false,
   manufacturedFields: {},
+  hasAdditionalStructures: null,
 };
 
 const ageRanges = [
