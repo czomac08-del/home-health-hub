@@ -136,6 +136,19 @@ const OnboardingWizard = () => {
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
   const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
+  const [scanPhase, setScanPhase] = useState<"idle" | "connecting" | "extracting" | "complete">("idle");
+  const [scanResults, setScanResults] = useState<{
+    yearBuilt?: number | null;
+    propertyType?: string | null;
+    squareFootage?: number | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    lastSaleDate?: string | null;
+    lastSalePrice?: number | null;
+    parcelId?: string | null;
+    found?: boolean;
+  } | null>(null);
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set());
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
@@ -209,12 +222,11 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
   };
 
-  const [scanning, setScanning] = useState(false);
-
-  /** Save address, AWAIT public-records scan, pre-fill wizard answers, then advance. */
+  /** Save address, run blocking public-records scan with animated phases, pre-fill wizard. */
   const saveAddressAndContinue = async () => {
     if (!user || !selectedMatch) return;
-    setSavingAddress(true);
+
+    setScanPhase("connecting");
     try {
       const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
       const insertRow = {
@@ -228,7 +240,6 @@ const OnboardingWizard = () => {
         county: selectedMatch.county || null,
         county_fips: selectedMatch.countyFips || null,
       };
-      // Use .select("id") so we get the new property's ID back for the patch
       const { data: inserted, error } = await supabase
         .from("properties")
         .insert(insertRow as any)
@@ -236,12 +247,11 @@ const OnboardingWizard = () => {
         .single();
       if (error) throw error;
       await refreshProperties();
-
       const propertyId = inserted?.id;
 
-      // ── BLOCKING scan: wait for public-records results before advancing ──
-      setSavingAddress(false);
-      setScanning(true);
+      await new Promise(r => setTimeout(r, 800));
+      setScanPhase("extracting");
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token && propertyId) {
@@ -251,48 +261,50 @@ const OnboardingWizard = () => {
           );
           if (res.ok) {
             const json = await res.json();
+            setScanResults(json);
 
-            // ── Patch property row with everything we found ──
             const patch: Record<string, unknown> = {};
-            if (json?.yearBuilt)     patch.year_built      = String(json.yearBuilt);
-            if (json?.squareFootage) patch.square_footage  = json.squareFootage;
-            if (json?.propertyType)  patch.property_type   = json.propertyType;
-            if (json?.bedrooms  != null) patch.bedrooms    = json.bedrooms;
-            if (json?.bathrooms != null) patch.bathrooms   = json.bathrooms;
-            if (json?.lotSize)       patch.lot_size        = json.lotSize;
-            if (json?.lastSaleDate)  patch.last_sale_date  = json.lastSaleDate;
-            if (json?.lastSalePrice) patch.last_sale_price = json.lastSalePrice;
-            if (json?.parcelId)      patch.parcel_id       = json.parcelId;
-            if (json?.rentcastId)    patch.rentcast_id     = json.rentcastId;
-
+            if (json?.yearBuilt)        patch.year_built      = String(json.yearBuilt);
+            if (json?.squareFootage)    patch.square_footage  = json.squareFootage;
+            if (json?.propertyType)     patch.property_type   = json.propertyType;
+            if (json?.bedrooms  != null) patch.bedrooms       = json.bedrooms;
+            if (json?.bathrooms != null) patch.bathrooms      = json.bathrooms;
+            if (json?.lotSize)          patch.lot_size        = json.lotSize;
+            if (json?.lastSaleDate)     patch.last_sale_date  = json.lastSaleDate;
+            if (json?.lastSalePrice)    patch.last_sale_price = json.lastSalePrice;
+            if (json?.parcelId)         patch.parcel_id       = json.parcelId;
+            if (json?.rentcastId)       patch.rentcast_id     = json.rentcastId;
             if (Object.keys(patch).length > 0) {
               await supabase.from("properties").update(patch as any).eq("id", propertyId);
             }
 
-            // ── Pre-fill wizard answers so user just verifies ──
+            const filled = new Set<string>();
+
             if (json?.yearBuilt) {
               const yr = Number(json.yearBuilt);
               let ageRange = "Built before 1950";
-              if (yr >= 2020) ageRange = "2020 or newer";
+              if (yr >= 2020)      ageRange = "2020 or newer";
               else if (yr >= 2010) ageRange = "2010–2020";
               else if (yr >= 1990) ageRange = "1990–2010";
               else if (yr >= 1970) ageRange = "1970–1990";
               else if (yr >= 1950) ageRange = "1950–1970";
               update("homeAge", ageRange);
+              filled.add("homeAge");
             }
 
             if (json?.propertyType) {
               const pt = (json.propertyType as string).toLowerCase();
               let homeTypeId = "";
               if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
-              else if (pt.includes("condo"))                     homeTypeId = "condo";
+              else if (pt.includes("condo"))                      homeTypeId = "condo";
               else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
               else if (pt.includes("multi") || pt.includes("duplex"))       homeTypeId = "multi_family";
               else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
-              if (homeTypeId) update("homeType", homeTypeId);
+              if (homeTypeId) { update("homeType", homeTypeId); filled.add("homeType"); }
             }
 
-            // ── Build scan summary badge ──
+            setPrefilledFields(filled);
+
             const found: string[] = [];
             if (json?.found) found.push("Property records");
             if (selectedMatch.countyFips) {
@@ -305,16 +317,15 @@ const OnboardingWizard = () => {
           }
         }
       } catch (scanErr) {
-        console.warn("Public records scan failed (non-blocking):", scanErr);
-        // Don't block the user — just advance without pre-fill
-      } finally {
-        setScanning(false);
+        console.warn("Scan error (non-blocking):", scanErr);
       }
 
+      setScanPhase("complete");
+      await new Promise(r => setTimeout(r, 2000));
       setStep(2);
     } catch (e) {
       toast.error("Could not save your address. Please try again.");
-      setSavingAddress(false);
+      setScanPhase("idle");
     }
   };
 
@@ -329,7 +340,7 @@ const OnboardingWizard = () => {
     if (step === 1) return !savingAddress; // address is optional
     if (step === 2) {
       // If public records filled it in, the confirmation card always passes through
-      if (publicRecordsData && (data.homeType || data.homeAge)) return true;
+      if (prefilledFields.size > 0 && (data.homeType || data.homeAge)) return true;
       return !!data.homeType && !!data.homeAge;
     }
     if (step === 3) return !!data.waterSource;
@@ -465,6 +476,110 @@ const OnboardingWizard = () => {
     switch (step) {
       /* STEP 1 — Welcome + Address capture */
       case 1:
+        if (scanPhase !== "idle") {
+          const scanItems = [
+            { label: "Contacting county assessor", phase: "connecting" },
+            { label: "Searching property tax records", phase: "extracting" },
+            { label: "Extracting structure details", phase: "extracting" },
+            { label: "Checking FEMA & environmental data", phase: "extracting" },
+          ];
+          const phaseOrder = ["connecting", "extracting", "complete"];
+          const currentPhaseIdx = phaseOrder.indexOf(scanPhase);
+
+          if (scanPhase === "complete" && scanResults) {
+            const fields = [
+              scanResults.propertyType && { label: "Property type", value: scanResults.propertyType },
+              scanResults.yearBuilt    && { label: "Year built",    value: String(scanResults.yearBuilt) },
+              scanResults.squareFootage && { label: "Square footage", value: `${scanResults.squareFootage.toLocaleString()} sq ft` },
+              scanResults.bedrooms != null && { label: "Bedrooms", value: String(scanResults.bedrooms) },
+              scanResults.bathrooms != null && { label: "Bathrooms", value: String(scanResults.bathrooms) },
+              scanResults.lastSalePrice && { label: "Last sale", value: `$${scanResults.lastSalePrice.toLocaleString()}${scanResults.lastSaleDate ? ` (${scanResults.lastSaleDate.slice(0,4)})` : ""}` },
+              scanResults.parcelId && { label: "Parcel ID", value: scanResults.parcelId },
+            ].filter(Boolean) as { label: string; value: string }[];
+
+            return (
+              <div className="flex flex-col items-center gap-6 animate-fade-in py-4">
+                <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-green-500" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-foreground">Public records found!</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    We pre-filled your home profile. You'll only be asked about what we couldn't find.
+                  </p>
+                </div>
+                {fields.length > 0 && (
+                  <div className="w-full rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+                    {fields.map((f, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-xs text-muted-foreground">{f.label}</span>
+                        <span className="text-xs font-semibold text-foreground">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {fields.length === 0 && (
+                  <div className="rounded-xl border border-border bg-card p-4 text-center">
+                    <p className="text-sm text-muted-foreground">No detailed records found — we'll ask a few quick questions.</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Continuing to setup…
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="flex flex-col items-center gap-6 animate-fade-in py-4">
+              <div className="h-16 w-16 rounded-2xl bg-primary/20 flex items-center justify-center">
+                <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+              </div>
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-foreground">
+                  {scanPhase === "connecting" ? "Locating your property…" : "Extracting property data…"}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+                  {scanPhase === "connecting"
+                    ? "Connecting to public records for " + (selectedMatch?.county ?? "your area")
+                    : "Reading assessor records, tax history, and structure details"}
+                </p>
+              </div>
+              <div className="w-full flex flex-col gap-2">
+                {scanItems.map((item, i) => {
+                  const itemPhaseIdx = phaseOrder.indexOf(item.phase);
+                  const isDone = currentPhaseIdx > itemPhaseIdx || (currentPhaseIdx === itemPhaseIdx && i < 2);
+                  const isActive = currentPhaseIdx === itemPhaseIdx && !isDone;
+                  return (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${
+                        isDone
+                          ? "border-green-500/30 bg-green-500/5"
+                          : isActive
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border bg-card opacity-40"
+                      }`}
+                    >
+                      {isDone ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      ) : isActive ? (
+                        <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                      )}
+                      <span className={`text-sm ${isDone || isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className="flex flex-col gap-6 animate-fade-in">
             <div className="flex flex-col items-center text-center gap-3">
@@ -515,7 +630,7 @@ const OnboardingWizard = () => {
               )}
             </div>
 
-            {selectedMatch && !scanning && (
+            {selectedMatch && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="text-xs text-foreground">
@@ -529,37 +644,13 @@ const OnboardingWizard = () => {
               </div>
             )}
 
-            {scanning && (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
-                  <p className="text-sm font-semibold text-primary">Searching public records…</p>
-                </div>
-                <div className="flex flex-col gap-1.5 pl-6">
-                  {["Property tax & ownership records","County assessor data","Environmental & FEMA risk data","Parcel & structure details"].map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {selectedMatch && (
               <button
                 type="button"
                 onClick={saveAddressAndContinue}
-                disabled={savingAddress || scanning}
                 className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
               >
-                {scanning ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" />Searching public records…</>
-                ) : savingAddress ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" />Saving…</>
-                ) : (
-                  <><Sparkles className="h-4 w-4" />Search Public Records &amp; Continue</>
-                )}
+                <Sparkles className="h-4 w-4" />Search Public Records &amp; Continue
               </button>
             )}
 
@@ -590,7 +681,7 @@ const OnboardingWizard = () => {
       case 2: {
         const selectedPropType = propertyTypes.find(p => p.id === data.homeType);
         const isManufactured = selectedPropType?.isManufactured;
-        const hasPublicRecords = !!publicRecordsData && (!!data.homeType || !!data.homeAge);
+        const hasPublicRecords = prefilledFields.size > 0 && (!!data.homeType || !!data.homeAge);
         if (hasPublicRecords) {
           return (
             <div className="flex flex-col gap-6 animate-fade-in">
@@ -636,7 +727,7 @@ const OnboardingWizard = () => {
                 )}
               </div>
               <button
-                onClick={() => setPublicRecordsData(null)}
+                onClick={() => setPrefilledFields(new Set())}
                 className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 self-center transition-colors"
               >
                 Something looks wrong — let me correct it
@@ -894,55 +985,18 @@ const OnboardingWizard = () => {
       </div>
 
       {/* footer nav */}
-      {step < TOTAL_STEPS && (
+      {step < TOTAL_STEPS && step !== 1 && scanPhase === "idle" && (
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
-          {step === 1 ? (
-            <>
-            {selectedMatch && scanning && (
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Searching public records for this property…
-              </div>
-            )}
-            {publicRecordsData && Object.keys(publicRecordsData).length > 0 && (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
-                <p className="font-semibold text-primary mb-1">✓ Public records found — answers pre-filled</p>
-                <ul className="text-xs text-muted-foreground space-y-0.5">
-                  {publicRecordsData.yearBuilt && <li>Year built: {publicRecordsData.yearBuilt}</li>}
-                  {publicRecordsData.waterSource && <li>Water source: {publicRecordsData.waterSource === "well" ? "Well water" : "City water"}</li>}
-                  {publicRecordsData.hvacType && <li>Heating/cooling detected</li>}
-                  {publicRecordsData.septicOrSewer && <li>Sewer: {publicRecordsData.septicOrSewer}</li>}
-                </ul>
-                <p className="text-xs text-muted-foreground mt-1 italic">You can review and change any of these as you go through setup.</p>
-              </div>
-            )}
-            <button
-              onClick={() => {
-                if (selectedMatch) {
-                  void saveAddressAndContinue();
-                } else {
-                  // No address selected — advance without saving or scanning
-                  setStep(2);
-                }
-              }}
-              disabled={savingAddress || scanning}
-              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {scanning ? (<><Loader2 className="h-4 w-4 animate-spin" /> Scanning records...</>) : savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
+          <div className="flex gap-3">
+            <button onClick={back}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
+              <ChevronLeft className="h-4 w-4" /> Back
             </button>
-            </>
-          ) : (
-            <div className="flex gap-3">
-              <button onClick={back}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
-                <ChevronLeft className="h-4 w-4" /> Back
-              </button>
-              <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
-                className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
-                {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
-              </button>
-            </div>
-          )}
+            <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
+              className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
+              {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       )}
     </div>
