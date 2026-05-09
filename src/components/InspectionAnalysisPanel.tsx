@@ -165,6 +165,30 @@ export default function InspectionAnalysisPanel({
             userId: u.user.id,
             findings: rep.findings as any,
           });
+          // Auto-apply structured extraction (HVAC, Roof, Electrical, Water Heater)
+          // straight to system_details with DOCUMENT_EXTRACTED tag.
+          try {
+            const overall = data?.classification?.overall_confidence ?? rep.overall_confidence ?? 100;
+            if ((overall ?? 100) > 60) {
+              const { applyInspectionExtractionToSystems } = await import("@/lib/seedSystems");
+              const res = await applyInspectionExtractionToSystems({
+                propertyId,
+                userId: u.user.id,
+                extracted: merged,
+                sourceRecordId: propertyRecordId,
+              });
+              if (res.updated > 0) {
+                window.dispatchEvent(new CustomEvent("system-details-updated"));
+                window.dispatchEvent(
+                  new CustomEvent("inspection-auto-applied", {
+                    detail: { count: res.updated, systems: res.systems },
+                  }),
+                );
+              }
+            }
+          } catch (autoErr) {
+            console.warn("auto-apply inspection extraction failed", autoErr);
+          }
         }
       } catch (sysErr) {
         console.warn("System fan-out failed (non-fatal):", sysErr);
