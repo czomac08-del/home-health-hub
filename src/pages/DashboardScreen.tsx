@@ -21,6 +21,7 @@ import ShareAndSaveWidget from "@/components/ShareAndSaveWidget";
 import PendingRewardsCard from "@/components/PendingRewardsCard";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
 import InspectionAutoAppliedBanner from "@/components/InspectionAutoAppliedBanner";
+import VerifyConflictsBanner from "@/components/VerifyConflictsBanner";
 import DocumentHub from "@/components/DocumentHub";
 import RecentUploadBanner from "@/components/RecentUploadBanner";
 import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
@@ -220,6 +221,7 @@ const DashboardScreen = () => {
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
         <InspectionNotificationBanner variant="homeowner" />
         <InspectionAutoAppliedBanner />
+        <VerifyConflictsBanner />
         <RecentUploadBanner />
 
         {hasNoProperty ? (

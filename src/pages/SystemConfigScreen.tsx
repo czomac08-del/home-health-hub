@@ -56,6 +56,16 @@ const AiBadge = () => (
   </span>
 );
 
+// Grey "Estimated" badge — for AI inferences from regional patterns (not from a confirmed source)
+const EstimatedBadge = () => (
+  <span
+    title="AI estimate based on regional patterns. Not a confirmed record for this property."
+    className="inline-flex items-center gap-0.5 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wide leading-none"
+  >
+    <Sparkles className="h-2.5 w-2.5" /> ~Est
+  </span>
+);
+
 const SystemConfigScreen = () => {
   const { name } = useParams<{ name: string }>();
   const [searchParams] = useSearchParams();
@@ -309,6 +319,16 @@ const SystemConfigScreen = () => {
 
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
   const hasAiSource = (key: string) => isAiField(key) || sourceTags[key] === "AI_INFERRED";
+  // Map UI form-keys to canonical source_tags keys written by seedSystems / systemFieldWrite
+  const SEED_KEY_MAP: Record<string, string> = {
+    installDate: "install_date",
+    purchaseDate: "purchase_date",
+    serial: "serial_number",
+  };
+  const isEstField = (key: string) => {
+    const stKey = SEED_KEY_MAP[key] ?? key;
+    return !isAiField(key) && (sourceTags[stKey] === "AI_INFERRED" || sourceTags[key] === "AI_INFERRED");
+  };
 
   const applyAiSuggestion = (suggestion: AiSuggestion) => {
     if (suggestion.target === "brand") setBrand(suggestion.value);
@@ -855,9 +875,13 @@ const SystemConfigScreen = () => {
           {specFields.length > 0 && !(isWaterSource && waterType === "city") && !isChimneyOrFireplace && (
             <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
-                {specFields.map((field) => (
-                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={hasAiSource(`spec:${field.key}`)} />
-                ))}
+                {specFields.map((field) => {
+                  const aiNow = isAiField(`spec:${field.key}`);
+                  const estNow = !aiNow && (sourceTags[`spec:${field.key}`] === "AI_INFERRED" || sourceTags[field.key] === "AI_INFERRED");
+                  return (
+                    <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={aiNow} est={estNow} />
+                  );
+                })}
               </div>
             </CollapsibleSectionView>
           )}
@@ -1117,34 +1141,34 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 const HONEST_EMPTY_PLACEHOLDER = "Unknown — tap to add";
 
-const Field = ({ label, value, onChange, placeholder, type = "text", ai = false }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean;
+const Field = ({ label, value, onChange, placeholder, type = "text", ai = false, est = false }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean; est?: boolean;
 }) => {
   // Honest empty: when no value and no AI source, show "Unknown — tap to add"
-  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  const effectivePlaceholder = !value && !ai && !est ? HONEST_EMPTY_PLACEHOLDER : placeholder;
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-        {label} {ai && <AiBadge />}
+        {label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
       </label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
-        className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+        className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border"}`} />
     </div>
   );
 };
 
-const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, scanField }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; scanField: string;
+const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, est = false, scanField }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; est?: boolean; scanField: string;
 }) => {
-  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  const effectivePlaceholder = !value && !ai && !est ? HONEST_EMPTY_PLACEHOLDER : placeholder;
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-        {label} {ai && <AiBadge />}
+        {label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
       </label>
       <div className="flex gap-2">
         <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
-          className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+          className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border"}`} />
         <AiFieldScanButton fieldName={scanField} onResult={onChange} />
       </div>
     </div>
@@ -1160,13 +1184,13 @@ const ToggleRow = ({ label, checked, onChange }: {
   </div>
 );
 
-const SpecFieldInput = ({ field, value, onChange, ai = false }: {
-  field: SpecField; value: string | boolean | string[] | undefined; onChange: (v: string | boolean | string[]) => void; ai?: boolean;
+const SpecFieldInput = ({ field, value, onChange, ai = false, est = false }: {
+  field: SpecField; value: string | boolean | string[] | undefined; onChange: (v: string | boolean | string[]) => void; ai?: boolean; est?: boolean;
 }) => {
-  const borderClass = ai ? "border-primary/40" : "border-border";
+  const borderClass = ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border";
   const labelEl = (
     <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-      {field.label}{field.suffix ? ` (${field.suffix})` : ""} {ai && <AiBadge />}
+      {field.label}{field.suffix ? ` (${field.suffix})` : ""} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
     </label>
   );
 
@@ -1212,7 +1236,7 @@ const SpecFieldInput = ({ field, value, onChange, ai = false }: {
     case "toggle":
       return (
         <div className={`flex items-center justify-between rounded-xl border ${borderClass} bg-card px-4 py-3`}>
-          <span className="text-sm text-foreground flex items-center gap-1.5">{field.label} {ai && <AiBadge />}</span>
+          <span className="text-sm text-foreground flex items-center gap-1.5">{field.label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}</span>
           <Switch checked={!!value} onCheckedChange={(v) => onChange(v)} />
         </div>
       );
