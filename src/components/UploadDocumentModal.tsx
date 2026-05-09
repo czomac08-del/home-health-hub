@@ -12,6 +12,7 @@ import { recordRecentUpload } from "./RecentUploadBanner";
 import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { writeSystemFields } from "@/lib/systemFieldWrite";
+import { STRUCTURE_OPTIONS, isLegacyAssignment } from "./StructureAssignmentSelector";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -62,6 +63,11 @@ export default function UploadDocumentModal({
   const [warrantyName, setWarrantyName] = useState("");
   const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
   const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
+  // When uploading from the general Document Vault and the property has more
+  // than one system of the detected type, the user must pick which one this
+  // document belongs to before extraction is fanned out.
+  const [instanceOptions, setInstanceOptions] = useState<Array<{ id: string; system_name: string; structure: string | null }>>([]);
+  const [selectedInstanceName, setSelectedInstanceName] = useState<string>("");
 
   const AI_MESSAGES = [
     "AI is reading your document...",
@@ -99,6 +105,8 @@ export default function UploadDocumentModal({
     setWarrantyName("");
     setDetectedSystem(null);
     setDetectedSystemName(null);
+    setInstanceOptions([]);
+    setSelectedInstanceName("");
   };
 
   const handleClose = (next: boolean) => {
