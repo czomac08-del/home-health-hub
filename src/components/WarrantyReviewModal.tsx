@@ -241,10 +241,28 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
         document_url: freshDocUrl,
         document_bucket: "property-records",
       };
+      // Check if already synced
+      const { data: existing } = await supabase
+        .from("warranties")
+        .select("id")
+        .eq("source_record_id", record.id)
+        .maybeSingle();
+      if (existing) {
+        toast.success("Already in your Warranties");
+        setSynced(true);
+        await supabase
+          .from("property_records")
+          .update({ ai_verified: true })
+          .eq("id", record.id);
+        return;
+      }
       const { error } = await supabase
         .from("warranties")
-        .upsert(insertPayload, { onConflict: "source_record_id", ignoreDuplicates: true });
-      if (error) throw error;
+        .insert(insertPayload);
+      if (error) {
+        console.error("Warranty insert error:", error);
+        throw error;
+      }
       // Flip the vault card to "Added to Profile" too.
       await supabase
         .from("property_records")
