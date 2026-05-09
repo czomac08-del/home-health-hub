@@ -136,7 +136,6 @@ const OnboardingWizard = () => {
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
   const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
-  const [scanning, setScanning] = useState(false);
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
@@ -150,16 +149,14 @@ const OnboardingWizard = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const initialSkipDone = useRef(false);
 
-  // If the user already has a property with an address, skip Step 1 — but
-  // only on initial mount. Otherwise the Back button gets trapped (step
-  // becomes 1 → effect bumps it back to 2, infinite loop).
+  // Skip Step 1 on initial load only if property already exists — NOT on back navigation.
   useEffect(() => {
     if (!initialSkipDone.current && properties.length > 0 && properties[0].address) {
       initialSkipDone.current = true;
       setStep(2);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — run once on mount only
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -212,13 +209,15 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
   };
 
-  /** Save the address and run a blocking public-records scan to pre-fill the wizard. */
+  const [scanning, setScanning] = useState(false);
+
+  /** Save address, AWAIT public-records scan, pre-fill wizard answers, then advance. */
   const saveAddressAndContinue = async () => {
     if (!user || !selectedMatch) return;
     setSavingAddress(true);
     try {
-      const { city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
-      const { error } = await supabase.from("properties").insert({
+      const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
+      const insertRow = {
         user_id: user.id,
         address: selectedMatch.matchedAddress,
         label: "Primary Residence",
@@ -228,104 +227,94 @@ const OnboardingWizard = () => {
         zip: zip || null,
         county: selectedMatch.county || null,
         county_fips: selectedMatch.countyFips || null,
-      } as any);
+      };
+      // Use .select("id") so we get the new property's ID back for the patch
+      const { data: inserted, error } = await supabase
+        .from("properties")
+        .insert(insertRow as any)
+        .select("id")
+        .single();
       if (error) throw error;
       await refreshProperties();
 
-      // Blocking public records scan
+      const propertyId = inserted?.id;
+
+      // ── BLOCKING scan: wait for public-records results before advancing ──
+      setSavingAddress(false);
       setScanning(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
+        if (session?.access_token && propertyId) {
           const res = await fetch(
             `${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`,
-            { headers: { Authorization: `Bearer ${session.access_token}` } }
+            { headers: { Authorization: `Bearer ${session.access_token}` } },
           );
           if (res.ok) {
             const json = await res.json();
 
-            // Get the property row we just created
-            const { data: prop } = await supabase
-              .from("properties")
-              .select("id")
-              .eq("user_id", user.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
+            // ── Patch property row with everything we found ──
+            const patch: Record<string, unknown> = {};
+            if (json?.yearBuilt)     patch.year_built      = String(json.yearBuilt);
+            if (json?.squareFootage) patch.square_footage  = json.squareFootage;
+            if (json?.propertyType)  patch.property_type   = json.propertyType;
+            if (json?.bedrooms  != null) patch.bedrooms    = json.bedrooms;
+            if (json?.bathrooms != null) patch.bathrooms   = json.bathrooms;
+            if (json?.lotSize)       patch.lot_size        = json.lotSize;
+            if (json?.lastSaleDate)  patch.last_sale_date  = json.lastSaleDate;
+            if (json?.lastSalePrice) patch.last_sale_price = json.lastSalePrice;
+            if (json?.parcelId)      patch.parcel_id       = json.parcelId;
+            if (json?.rentcastId)    patch.rentcast_id     = json.rentcastId;
 
-            if (prop?.id && json?.found) {
-              const updatePayload: Record<string, any> = {};
-              if (json.yearBuilt) updatePayload.year_built = String(json.yearBuilt);
-              if (json.squareFootage) updatePayload.square_footage = String(json.squareFootage);
-              if (json.propertyType) updatePayload.property_type = json.propertyType;
-              if (json.bedrooms) updatePayload.bedrooms = json.bedrooms;
-              if (json.bathrooms) updatePayload.bathrooms = json.bathrooms;
-              if (json.lotSize) updatePayload.lot_size = json.lotSize;
-              if (json.lastSaleDate) updatePayload.last_sale_date = json.lastSaleDate;
-              if (json.lastSalePrice) updatePayload.last_sale_price = json.lastSalePrice;
-              if (json.parcelId) {
-                updatePayload.parcel_id = json.parcelId;
-                updatePayload.assessor_id = json.parcelId;
-              }
-              if (json.rentcastId) updatePayload.rentcast_id = json.rentcastId;
-              if (json.legalDescription) updatePayload.legal_description = json.legalDescription;
-              if (json.subdivision) updatePayload.subdivision = json.subdivision;
-              if (Object.keys(updatePayload).length > 0) {
-                await supabase.from("properties").update(updatePayload as any).eq("id", prop.id);
-                await refreshProperties();
-              }
+            if (Object.keys(patch).length > 0) {
+              await supabase.from("properties").update(patch as any).eq("id", propertyId);
             }
 
-            if (json?.found) {
-              // Map raw yearBuilt → wizard age range string
-              if (json.yearBuilt) {
-                const yr = Number(json.yearBuilt);
-                let ageRange = "";
-                if (yr < 1950) ageRange = "Built before 1950";
-                else if (yr < 1970) ageRange = "1950–1970";
-                else if (yr < 1990) ageRange = "1970–1990";
-                else if (yr < 2010) ageRange = "1990–2010";
-                else if (yr < 2020) ageRange = "2010–2020";
-                else ageRange = "2020 or newer";
-                update("homeAge", ageRange);
-              }
-              // Map RentCast propertyType → wizard homeType id
-              if (json.propertyType) {
-                const pt = String(json.propertyType).toLowerCase();
-                let homeTypeId = "";
-                if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
-                else if (pt.includes("condo")) homeTypeId = "condo";
-                else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
-                else if (pt.includes("multi") || pt.includes("duplex")) homeTypeId = "multi_family";
-                else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
-                else if (pt.includes("land") || pt.includes("lot")) homeTypeId = "land";
-                if (homeTypeId) update("homeType", homeTypeId);
-              }
-              const foundItems: string[] = [];
-              if (json.yearBuilt) foundItems.push(`Year built: ${json.yearBuilt}`);
-              if (json.squareFootage) foundItems.push(`${Number(json.squareFootage).toLocaleString()} sq ft`);
-              if (json.bedrooms) foundItems.push(`${json.bedrooms} bed`);
-              if (json.bathrooms) foundItems.push(`${json.bathrooms} bath`);
-              if (json.parcelId) foundItems.push(`Parcel ID: ${json.parcelId}`);
-              if (json.lastSaleDate) foundItems.push(`Last sold: ${new Date(json.lastSaleDate).getFullYear()}`);
-              setScanSummary({ sources: foundItems.length, details: foundItems });
-              setPublicRecordsData({
-                yearBuilt: json.yearBuilt ? String(json.yearBuilt) : undefined,
-                sqft: json.squareFootage ?? undefined,
-                bedrooms: json.bedrooms ?? undefined,
-                bathrooms: json.bathrooms ?? undefined,
-              });
+            // ── Pre-fill wizard answers so user just verifies ──
+            if (json?.yearBuilt) {
+              const yr = Number(json.yearBuilt);
+              let ageRange = "Built before 1950";
+              if (yr >= 2020) ageRange = "2020 or newer";
+              else if (yr >= 2010) ageRange = "2010–2020";
+              else if (yr >= 1990) ageRange = "1990–2010";
+              else if (yr >= 1970) ageRange = "1970–1990";
+              else if (yr >= 1950) ageRange = "1950–1970";
+              update("homeAge", ageRange);
             }
+
+            if (json?.propertyType) {
+              const pt = (json.propertyType as string).toLowerCase();
+              let homeTypeId = "";
+              if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
+              else if (pt.includes("condo"))                     homeTypeId = "condo";
+              else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
+              else if (pt.includes("multi") || pt.includes("duplex"))       homeTypeId = "multi_family";
+              else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
+              if (homeTypeId) update("homeType", homeTypeId);
+            }
+
+            // ── Build scan summary badge ──
+            const found: string[] = [];
+            if (json?.found) found.push("Property records");
+            if (selectedMatch.countyFips) {
+              found.push("FEMA disaster history");
+              found.push("NOAA storm records");
+              found.push("USDA drought monitor");
+            }
+            if (selectedMatch.coordinates) found.push("EPA environmental data");
+            setScanSummary({ sources: found.length, details: found });
           }
         }
-      } catch { /* scan is best-effort */ }
-      setScanning(false);
+      } catch (scanErr) {
+        console.warn("Public records scan failed (non-blocking):", scanErr);
+        // Don't block the user — just advance without pre-fill
+      } finally {
+        setScanning(false);
+      }
+
       setStep(2);
-    } catch {
+    } catch (e) {
       toast.error("Could not save your address. Please try again.");
-    } finally {
       setSavingAddress(false);
-      setScanning(false);
     }
   };
 
@@ -526,7 +515,7 @@ const OnboardingWizard = () => {
               )}
             </div>
 
-            {selectedMatch && (
+            {selectedMatch && !scanning && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="text-xs text-foreground">
@@ -538,6 +527,40 @@ const OnboardingWizard = () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {scanning && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+                  <p className="text-sm font-semibold text-primary">Searching public records…</p>
+                </div>
+                <div className="flex flex-col gap-1.5 pl-6">
+                  {["Property tax & ownership records","County assessor data","Environmental & FEMA risk data","Parcel & structure details"].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMatch && (
+              <button
+                type="button"
+                onClick={saveAddressAndContinue}
+                disabled={savingAddress || scanning}
+                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+              >
+                {scanning ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Searching public records…</>
+                ) : savingAddress ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Saving…</>
+                ) : (
+                  <><Sparkles className="h-4 w-4" />Search Public Records &amp; Continue</>
+                )}
+              </button>
             )}
 
             {geocodeError && !selectedMatch && (
@@ -623,6 +646,15 @@ const OnboardingWizard = () => {
         }
         return (
           <div className="flex flex-col gap-6 animate-fade-in">
+            {scanSummary && (data.homeType || data.homeAge) && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs text-foreground">
+                  <p className="font-semibold text-primary">Pre-filled from public records — just verify</p>
+                  <p className="text-muted-foreground mt-0.5">Found data from {scanSummary.sources} source{scanSummary.sources !== 1 ? "s" : ""}. Adjust anything that looks wrong.</p>
+                </div>
+              </div>
+            )}
             <h2 className="text-xl font-bold text-foreground">What type of property do you have?</h2>
             <div className="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
               {propertyTypes.map(h => (
