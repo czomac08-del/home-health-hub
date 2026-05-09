@@ -1,113 +1,64 @@
-# Selling Mode — Implementation Plan
+## Goal
 
-A 5-part feature spanning seller entry, real data wiring, disclosure generation, share package, and realtor receive flow. ~10 files + 1 migration + 1 edge function.
+Make every document upload — onboarding, Document Vault, system card, FAB — funnel through one identical AI-extraction → review → save flow. No upload point silently writes fields. The document is always saved to the vault even if review is skipped.
 
----
+## Current state (what exists)
 
-## Part 1 — Subtle Dashboard Entry
+- `UploadDocumentModal.tsx` (~1,000 lines) — the most complete flow today: handles upload, calls `extract-document-data`, shows multi-instance picker, renders `AiExtractionResults`, calls `writeSystemFields` on confirm.
+- `DocumentHub.tsx`, `UploadDocumentFab.tsx`, `DocumentVaultScreen.tsx` — entry points that already open `UploadDocumentModal` (vault path is consistent).
+- `OnboardingWizard.tsx` — has its own inline upload steps that call extraction directly and write fields without a unified review screen.
+- `systemFieldWrite.ts` — already does conflict detection and trust-ranked writes.
+- `documentCredit.ts` — already classifies extraction quality (`clear` / `partial` / `trouble` / `none`).
+- `AiExtractionResults.tsx` — currently a 4-tier component; not aligned with the spec the user wants (✅ / ✏️ / ⚠️ per-field rows + confidence header + Save / Complete Later).
 
-**`src/pages/DashboardScreen.tsx`**
-- Add a `<SellingPromptCard />` rendered below the systems overview, conditional on:
-  - `iqScore > 60`
-  - `localStorage.getItem('selling_prompt_dismissed_until')` is null or in the past
-  - Not already shown this session (sessionStorage flag)
-- Card style: muted border (`border-border`), neutral bg, no orange. Copy per spec. CTA → `/handover`.
-- Dismiss `X` writes `Date.now() + 30d` to localStorage.
+## Target unified flow
 
-**`src/pages/ProfileScreen.tsx`**
-- Add a "What's Next?" section with quiet text link "Selling your home? →" → `/handover`.
+1. **Upload**: file uploaded to storage + `documents` row created → record exists in vault immediately.
+2. **Extract**: call `extract-document-data` edge function (already shared).
+3. **Assess**: run `assessExtraction` → confidence tier (`clear` / `partial` / `trouble`).
+4. **Review screen** (single component, used everywhere):
+   - Header banner: "AI read this clearly / partially / had trouble" + colored.
+   - System target line ("Saving to: Main House — Septic"). If multi-instance, structure picker.
+   - List of expected spec fields for the document's system type (driven by `systemSpecFields.ts`), each row in one of three states:
+     - ✅ **Confirmed** — pre-filled value, editable inline.
+     - ✏️ **Empty** — AI didn't find it; input box, optional.
+     - ⚠️ **Conflict** — current value vs new value; radio choice required to save that field (otherwise skipped).
+   - Footer: **Save to [System Name]** (writes only filled rows; conflicts respect user's choice) and **Complete Later** (closes; vault row already exists and is tagged `needs_review`).
+5. **Write**: confirmed/edited fields go through `writeSystemFields` with `OWNER_PROVIDED` for any user-edited row, `DOCUMENT_EXTRACTED` for accepted-as-is rows. Empty rows are skipped.
+6. **Mark vault entry**: if user clicks Complete Later or leaves blanks, set `needs_review = true` on the document so it shows the existing "Review & Complete" badge in the vault.
 
-**`src/pages/PropertyDetailScreen.tsx`**
-- Confirm/extend existing Sell/Transfer area with link to `/handover`.
+## Files to add/edit
 
----
+**New**
+- `src/components/UnifiedDocumentReview.tsx` — the single review UI described above. Props: `{ propertyId, userId, systemName, systemType, fileName, extracted, conflicts, confidenceTier, onSaved, onCompleteLater }`. Internally builds the row list from `systemSpecFields[systemType]` + extracted values, fetches current `system_details` to detect conflicts, renders ✅ / ✏️ / ⚠️ states, calls `writeSystemFields`.
+- `src/lib/documentReviewFlow.ts` — small helper: `prepareReview(extracted, currentSpecs)` returning `{ confirmed, empty, conflicts }` row buckets, plus a `markDocumentNeedsReview(documentId)` helper.
 
-## Part 2 — Wire HandoverWizard to Real Data
+**Edit**
+- `src/components/UploadDocumentModal.tsx` — replace the bespoke review block + final confirm step with `<UnifiedDocumentReview />`. Keep upload + multi-instance picker logic; delete the duplicated row-rendering code that's now in the new component.
+- `src/pages/OnboardingWizard.tsx` — every place that currently extracts + writes silently is updated to (a) save the document to the vault, (b) open `UnifiedDocumentReview` in a modal/sheet, (c) advance the wizard either on Save or Complete Later. Keep wizard navigation untouched otherwise.
+- `src/components/DocumentHub.tsx`, `UploadDocumentFab.tsx` — already use `UploadDocumentModal`; verify they still work after the modal swap. No logic change expected.
+- `src/pages/DocumentVaultScreen.tsx` — vault uploads already use `UploadDocumentModal`. Ensure "Review & Complete" button on existing low-confidence documents opens `UnifiedDocumentReview` directly with the stored extracted JSON.
 
-**`src/pages/HandoverWizardScreen.tsx`**
-- On mount, with active property id, parallel fetch:
-  - `system_details` (name, install_date, last_service_date, condition, specs)
-  - `warranties`
-  - `system_documents` + `property_records` (permits, inspections, manuals)
-  - `inspections` for findings
-- Compute per-system health score using existing logic (import from `src/logic/system-health-scoring` or equivalent helper if present; otherwise simple condition→score mapping).
-- Step 1 "What's Staying": render real systems with health score + last service date.
-- Step 3 "Rate Systems": pre-fill stars from health score (e.g. 80+ = 5, 60+ = 4, 40+ = 3, else 2).
-- Step 5 "Generate": passport PDF/data uses real specs, install dates, last service, inspection findings, warranty coverage.
+**Leave as-is**
+- `extract-document-data` edge function (already shared).
+- `systemFieldWrite.ts`, `documentCredit.ts`, `StructureAssignmentSelector.tsx`.
+- `AiExtractionResults.tsx` stays but is no longer used by the upload flow (used elsewhere for inline AI hints). Mark for later cleanup.
 
----
+## Non-goals
 
-## Part 3 — Seller Disclosure Auto-Generation
+- No DB schema changes. `documents` table already has fields for `extracted_fields`, `extraction_confidence`, and a "needs review" flag (or we use existing `extraction_tier` from the credit work).
+- No edge function changes.
+- No styling overhaul beyond the new review component.
 
-**New route `src/pages/SellerDisclosureScreen.tsx`** at `/handover/disclosure`.
-- Read state from active property → query `state_disclosure_requirements`.
-- For each required field, attempt auto-fill from:
-  - Defects ← open inspection findings (level 1/2)
-  - System ages ← `system_details.install_date` for HVAC/Roof/WaterHeater/Electrical
-  - Permits ← `property_records` filtered to permits
-  - Environmental ← FEMA/EPA flags on property record
-  - HOA ← onboarding data on property
-  - Well/Septic ← `system_details` for water/sewer slugs
-- Render fields grouped by category. Unknown fields highlighted yellow with input.
-- Header shows "X% complete — N fields need your input".
-- "Download Disclosure PDF" button → generates client-side PDF (jsPDF or existing report util).
+## Risks / things I'll verify while implementing
 
-Route registered in `src/App.tsx`.
+- Onboarding has multiple distinct upload spots — I'll audit each before swapping.
+- `writeSystemFields` uses `OWNER_PROVIDED` to mean "user typed it." I'll pass that explicitly for any field the user edits in the review screen so it never gets auto-overwritten later.
+- The "Complete Later" path must not roll back the vault row.
 
----
+## Acceptance check
 
-## Part 4 — One-Click Realtor Share
-
-**Migration** — new table:
-```
-property_shares (id, property_id, user_id, token uuid unique, recipient_email,
-  created_at, expires_at, revoked_at, documents_included jsonb)
-```
-RLS: owner can select/insert/update own; public select via SECURITY DEFINER function `get_shared_property(_token)` returning non-revoked, non-expired rows.
-
-**HandoverWizard Step 6 + Disclosure page**: "Share with Realtor" dialog with two tabs:
-- Generate link → insert row, copy `/share/{token}` URL.
-- Email realtor → insert row + invoke edge function `send-realtor-share` (uses Lovable Emails / existing transactional infra) with branded copy.
-
-**New edge function `supabase/functions/send-realtor-share/index.ts`** — sends share email via existing email queue.
-
-**New page `src/pages/SharedPropertyView.tsx`** at `/share/:token` (public, no auth):
-- Calls `get_shared_property` RPC.
-- Shows owner name, address, document package by category (passport, disclosure, warranties, inspections, permits).
-- Signed URLs for documents fetched via edge function (since viewer is unauthenticated).
-
-**Profile page**: add "Active Shares" list with revoke button (sets `revoked_at`).
-
----
-
-## Part 5 — Realtor Receive Flow
-
-**`src/pages/RealtorDashboard.tsx`**
-- Query `property_shares` where `recipient_email = current user email` and not revoked/expired.
-- Notification banner: "{owner} shared their property record with you".
-- Clicking opens detail view (reuse `SharedPropertyView` layout).
-- Replace generic Digital Disclosure hardcoded list with data from the shared package's disclosure (when one is selected).
-- "Request Missing Documents" button → modal with checkbox list of standard items; submit creates an `inspection_notifications` row (or new `share_requests` if needed) for the owner.
-
-**Owner Dashboard**: surface incoming requests as a banner with "Upload" / "Share" actions.
-
-For request notifications, reuse existing `inspection_notifications` table with a new notification_type if the enum allows; otherwise add a small `share_document_requests` table in the same migration.
-
----
-
-## Technical Notes
-
-- Health score helper: reuse `src/logic` if available; else inline mapping.
-- PDF: prefer existing report generation utility; fall back to jsPDF.
-- Public share viewer fetches signed URLs through a thin edge function (`get-share-documents`) that validates the token server-side and returns 1-hour signed URLs from private buckets.
-- All new tables get RLS; owner-scoped policies plus a SECURITY DEFINER read function for the public token path.
-
-## Out of Scope / Deferred
-
-- Localized disclosure form layouts beyond field-by-field rendering (we render generically; per-state PDF templates can come later).
-- Push notifications — using in-app banners only.
-- Realtor-side write-back to disclosure (read-only for now; request flow handles gaps).
-
-## Risk
-
-~10 file edits, 2 new pages, 1 migration, 1–2 edge functions. Largest risks: state_disclosure_requirements schema variance and PDF fidelity. I'll re-read each target file before editing and ship in this order: migration → wizard data wiring → disclosure page → share infra → realtor receive → dashboard entry.
+- Uploading the same septic PDF from (a) onboarding, (b) vault, (c) a system card produces an identical review screen.
+- Saving with blanks does not wipe existing values.
+- Conflict rows force a choice; skipping leaves the existing value.
+- Closing the review without saving still leaves the document in the vault tagged "Needs Review."

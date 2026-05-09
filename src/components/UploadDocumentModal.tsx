@@ -12,6 +12,7 @@ import { recordRecentUpload } from "./RecentUploadBanner";
 import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { writeSystemFields } from "@/lib/systemFieldWrite";
+import UnifiedDocumentReview from "./UnifiedDocumentReview";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -586,6 +587,26 @@ export default function UploadDocumentModal({
   const extractedEntries = Object.entries(extracted).filter(([, v]) => v != null && v !== "");
   const extractionEmpty = extractedEntries.length === 0 && !inspectionReport;
 
+  // The unified review owns its own Save / Complete Later buttons, so we hide
+  // the modal's footer in that case to avoid duplicate actions.
+  const SYSTEM_NAME_MAP: Record<string, string> = {
+    water_filtration: "Water Filtration", plumbing: "Plumbing", hvac: "HVAC",
+    electrical: "Electrical", structural: "Structural", roof: "Roof",
+    appliance: "Appliances", water_heater: "Water Heater", well: "Well",
+    septic: "Septic System", sewer_waste: "Septic System",
+  };
+  const unifiedTargetName =
+    selectedInstanceName ||
+    detectedSystemName ||
+    (defaultSystemType ? SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()] : "") ||
+    (detectedSystem ? SYSTEM_NAME_MAP[detectedSystem] : "") ||
+    "";
+  const usingUnifiedReview =
+    !inspectionReport &&
+    !extractionEmpty &&
+    !!unifiedTargetName &&
+    !(instanceOptions.length > 1 && !selectedInstanceName);
+
   const handleReanalyze = async () => {
     if (!recordId) return;
     setReanalyzing(true);
@@ -851,7 +872,56 @@ export default function UploadDocumentModal({
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
               <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
-            ) : (
+            ) : (() => {
+              // Determine target system name for the unified review.
+              const SYSTEM_NAME_MAP: Record<string, string> = {
+                water_filtration: "Water Filtration",
+                plumbing: "Plumbing",
+                hvac: "HVAC",
+                electrical: "Electrical",
+                structural: "Structural",
+                roof: "Roof",
+                appliance: "Appliances",
+                water_heater: "Water Heater",
+                well: "Well",
+                septic: "Septic System",
+                sewer_waste: "Septic System",
+              };
+              const targetSystemName =
+                selectedInstanceName ||
+                detectedSystemName ||
+                (defaultSystemType && SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()]) ||
+                (detectedSystem && SYSTEM_NAME_MAP[detectedSystem]) ||
+                "";
+
+              const showInstancePicker = instanceOptions.length > 1 && !selectedInstanceName;
+              if (!showInstancePicker && targetSystemName && activeProperty?.id && user?.id && !extractionEmpty) {
+                return (
+                  <UnifiedDocumentReview
+                    propertyId={activeProperty.id}
+                    userId={user.id}
+                    systemName={targetSystemName}
+                    fileName={file?.name || "Document"}
+                    recordId={recordId}
+                    extracted={extracted}
+                    onSaved={() => {
+                      try {
+                        recordRecentUpload({
+                          id: recordId || "",
+                          name: file?.name || "Document",
+                          uploadedAt: new Date().toISOString(),
+                          category: docType,
+                          url: null,
+                        });
+                      } catch {}
+                      setStep("saved");
+                      setTimeout(() => handleClose(false), 1200);
+                    }}
+                    onCompleteLater={() => handleClose(false)}
+                  />
+                );
+              }
+              return (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Extracted details {confidence && <span className="ml-1 normal-case font-normal">({confidence} confidence)</span>}
@@ -935,7 +1005,8 @@ export default function UploadDocumentModal({
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -963,14 +1034,14 @@ export default function UploadDocumentModal({
         </div>
 
         {/* Pinned footer — primary action always visible */}
-        {(step === "form" || step === "review" || step === "error") && (
+        {(step === "form" || step === "error" || (step === "review" && !usingUnifiedReview)) && (
           <div className="shrink-0 border-t border-border px-6 py-3 bg-background">
             {step === "form" && (
               <Button onClick={handleUpload} disabled={!file} className="w-full">
                 Upload & Analyze
               </Button>
             )}
-            {step === "review" && (
+            {step === "review" && !usingUnifiedReview && (
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
                   Save file only
