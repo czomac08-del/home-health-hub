@@ -962,12 +962,48 @@ export default function UploadDocumentModal({
                 "";
 
               const showInstancePicker = instanceOptions.length > 1 && !selectedInstanceName;
+
+              // Step 2 — only triggered for systems instances we know about
+              // (we have an id) that haven't yet been linked to a structure.
+              // Skip when there's no instance row at all (the bare detected
+              // system without a system_details record yet).
+              const needsStructurePrompt =
+                !!selectedInstanceId &&
+                !selectedInstanceStructure &&
+                !showInstancePicker;
+
+              if (!showInstancePicker && needsStructurePrompt) {
+                return (
+                  <UploadStructurePrompt
+                    systemDetailId={selectedInstanceId!}
+                    systemName={targetSystemName || selectedInstanceName}
+                    onResolved={({ value, isLegacy }) => {
+                      setSelectedInstanceStructure(value);
+                      setSelectedInstanceLegacy(isLegacy);
+                      // Update the corresponding instanceOptions entry too so
+                      // the dropdown reflects the new assignment if reopened.
+                      setInstanceOptions((prev) =>
+                        prev.map((o) => (o.id === selectedInstanceId ? { ...o, structure: value } : o)),
+                      );
+                    }}
+                  />
+                );
+              }
+
+              const structureSubtitle = selectedInstanceStructure
+                ? selectedInstanceLegacy
+                  ? `Legacy (${selectedInstanceStructure})`
+                  : selectedInstanceStructure
+                : null;
+
               if (!showInstancePicker && targetSystemName && activeProperty?.id && user?.id && !extractionEmpty) {
                 return (
                   <UnifiedDocumentReview
                     propertyId={activeProperty.id}
                     userId={user.id}
                     systemName={targetSystemName}
+                    subtitle={structureSubtitle}
+                    isLegacy={selectedInstanceLegacy}
                     fileName={file?.name || "Document"}
                     recordId={recordId}
                     extracted={extracted}
