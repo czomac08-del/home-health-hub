@@ -533,6 +533,15 @@ const OnboardingWizard = () => {
         await supabase.from("properties").update({ year_built: data.homeAge }).eq("id", propId);
       }
 
+      // Persist whether the homeowner indicated additional structures beyond the main home
+      try {
+        await supabase.from("properties")
+          .update({ has_additional_structures: data.hasAdditionalStructures === true })
+          .eq("id", propId);
+      } catch (e) {
+        console.warn("failed to write has_additional_structures", e);
+      }
+
       // build system list
       const systems: string[] = [];
       if (data.hvacType && data.hvacType !== "none") systems.push("HVAC");
