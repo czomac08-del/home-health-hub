@@ -587,6 +587,26 @@ export default function UploadDocumentModal({
   const extractedEntries = Object.entries(extracted).filter(([, v]) => v != null && v !== "");
   const extractionEmpty = extractedEntries.length === 0 && !inspectionReport;
 
+  // The unified review owns its own Save / Complete Later buttons, so we hide
+  // the modal's footer in that case to avoid duplicate actions.
+  const SYSTEM_NAME_MAP: Record<string, string> = {
+    water_filtration: "Water Filtration", plumbing: "Plumbing", hvac: "HVAC",
+    electrical: "Electrical", structural: "Structural", roof: "Roof",
+    appliance: "Appliances", water_heater: "Water Heater", well: "Well",
+    septic: "Septic System", sewer_waste: "Septic System",
+  };
+  const unifiedTargetName =
+    selectedInstanceName ||
+    detectedSystemName ||
+    (defaultSystemType ? SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()] : "") ||
+    (detectedSystem ? SYSTEM_NAME_MAP[detectedSystem] : "") ||
+    "";
+  const usingUnifiedReview =
+    !inspectionReport &&
+    !extractionEmpty &&
+    !!unifiedTargetName &&
+    !(instanceOptions.length > 1 && !selectedInstanceName);
+
   const handleReanalyze = async () => {
     if (!recordId) return;
     setReanalyzing(true);
