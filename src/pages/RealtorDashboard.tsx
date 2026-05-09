@@ -8,6 +8,7 @@ import InspectionProgressCard from "@/components/InspectionProgressCard";
 import { FolderOpen } from "lucide-react";
 import ComplianceDisclaimer from "@/components/ComplianceDisclaimer";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
+import RealtorInbox from "@/components/RealtorInbox";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
@@ -330,6 +331,7 @@ const RealtorDashboard = () => {
         path="/realtor"
       />
       <InspectionNotificationBanner variant="realtor" />
+      <RealtorInbox />
       <h1 className="text-xl font-bold text-foreground mb-1">Welcome, {profile?.full_name || "Agent"}</h1>
       <p className="text-xs text-muted-foreground mb-6">{profile?.role === "realtor" ? "Licensed Real Estate Agent" : "Realtor Dashboard"}</p>
 
