@@ -1,0 +1,2 @@
+alter table public.warranties add column if not exists source_record_id uuid references public.property_records(id) on delete set null;
+create unique index if not exists warranties_source_record_id_key on public.warranties(source_record_id) where source_record_id is not null;
