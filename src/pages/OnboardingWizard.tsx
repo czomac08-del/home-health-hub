@@ -271,6 +271,8 @@ const OnboardingWizard = () => {
             const json = await res.json();
             setScanResults(json);
 
+            const hasPropertyData = json?.found === true && (json?.yearBuilt || json?.propertyType || json?.squareFootage);
+
             const patch: Record<string, unknown> = {};
             if (json?.yearBuilt)        patch.year_built      = String(json.yearBuilt);
             if (json?.squareFootage)    patch.square_footage  = json.squareFootage;
@@ -304,7 +306,7 @@ const OnboardingWizard = () => {
 
             const filled = new Set<string>();
 
-            if (json?.yearBuilt) {
+            if (hasPropertyData && json?.yearBuilt) {
               const yr = Number(json.yearBuilt);
               let ageRange = "Built before 1950";
               if (yr >= 2020)      ageRange = "2020 or newer";
@@ -316,7 +318,7 @@ const OnboardingWizard = () => {
               filled.add("homeAge");
             }
 
-            if (json?.propertyType) {
+            if (hasPropertyData && json?.propertyType) {
               const pt = (json.propertyType as string).toLowerCase().replace(/[_\s-]+/g, " ");
               let homeTypeId = "";
               if (pt.includes("single") || pt === "residential" || pt === "sfr" || pt === "sfd") homeTypeId = "single_family";
