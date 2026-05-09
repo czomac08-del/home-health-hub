@@ -390,22 +390,36 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
             </div>
           </div>
         ) : isDirectMode ? (
-          <div className="flex-1 min-h-0 -mx-6 -mb-6 border-t border-border">
-            <InspectionPdfViewer fileUrl={signedUrl} />
+          <div className="flex-1 min-h-0 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 px-3 py-1.5 rounded-md">
+                <Check className="h-4 w-4" /> Synced to Warranties
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { onOpenChange(false); navigate("/warranties"); }}
+              >
+                View Warranties →
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0 -mx-6 -mb-6 border-t border-border">
+              <InspectionPdfViewer fileUrl={signedUrl} />
+            </div>
           </div>
         ) : !hasDetails ? (
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               {synced ? (
                 <Button disabled variant="secondary">
-                  <Check className="h-4 w-4 mr-2" /> Added to Warranties
+                  <Check className="h-4 w-4 mr-2" /> Synced to Warranties
                 </Button>
               ) : (
                 <Button onClick={syncToWarranties} disabled={syncing}>
                   {syncing ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding…</>
                   ) : (
-                    <><ShieldCheck className="h-4 w-4 mr-2" /> Add to Warranties</>
+                    <><ShieldCheck className="h-4 w-4 mr-2" /> Sync to Warranties</>
                   )}
                 </Button>
               )}
