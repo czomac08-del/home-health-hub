@@ -275,6 +275,43 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
   }
 
   // Generic extracted scalar fields
+  // Detected system (water filter, appliance, etc.) from "other" doc uploads
+  const detectedSystem = ai.detected_system;
+  const detectedSystemName = ai.system_name;
+  if (detectedSystem && detectedSystem !== "other") {
+    const systemNameMap: Record<string, string> = {
+      water_filtration: "Water Filtration",
+      plumbing: "Plumbing",
+      hvac: "HVAC",
+      electrical: "Electrical",
+      structural: "Structural",
+      roof: "Roof",
+      appliance: "Appliances",
+      water_heater: "Water Heater",
+      well: "Well",
+      septic: "Septic",
+    };
+    const mappedName = detectedSystemName || systemNameMap[detectedSystem] || String(detectedSystem).replace(/_/g, " ");
+    const spec: Record<string, any> = {};
+    if (ai.brand) spec.brand = ai.brand;
+    if (ai.model) spec.model = ai.model;
+    if (ai.serial) spec.serial_number = ai.serial;
+    if (ai.install_date) spec.install_date = ai.install_date;
+    if (ai.service_date) spec.last_service = ai.service_date;
+    if (ai.next_service_date) spec.next_service = ai.next_service_date;
+    if (ai.filter_life_months) spec.filter_life_months = ai.filter_life_months;
+    if (ai.notes) spec.notes = ai.notes;
+
+    const displayParts = [ai.brand, ai.model, ai.notes].filter(Boolean);
+    items.push({
+      key: "detected_system",
+      label: mappedName,
+      value: displayParts.join(" · ") || "Documented from uploaded file",
+      target: { kind: "system", systemName: mappedName, spec },
+      decision: null,
+    });
+  }
+
   const skipKeys = new Set([
     "inspection_report",
     "year_built",
