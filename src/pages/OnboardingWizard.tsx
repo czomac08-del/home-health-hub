@@ -345,14 +345,8 @@ const OnboardingWizard = () => {
               filled.add("homeType");
             }
 
-            // Force homeType if we have yearBuilt or squareFootage but no propertyType
-            if (!filled.has("homeType") && (json?.yearBuilt || json?.squareFootage)) {
-              update("homeType", "single_family");
-              filled.add("homeType");
-            }
-
-            // Safety net: any real property signal → default homeType to single_family
-            if (!filled.has("homeType") && (json?.yearBuilt || json?.squareFootage || json?.parcelId || json?.bedrooms)) {
+            // Safety net: default homeType to single_family if scan didn't map it
+            if (!filled.has("homeType")) {
               update("homeType", "single_family");
               filled.add("homeType");
             }
