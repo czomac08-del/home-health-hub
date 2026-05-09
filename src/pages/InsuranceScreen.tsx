@@ -86,8 +86,7 @@ const fmt = (n: number | null | undefined): string | null =>
 const InsuranceScreen = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, properties } = useAuth();
-  const activeProperty = properties.find((p) => p.is_active) || properties[0];
+  const { user, activeProperty, properties } = useAuth();
 
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
