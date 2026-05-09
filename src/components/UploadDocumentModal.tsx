@@ -322,7 +322,7 @@ export default function UploadDocumentModal({
             propertyId: activeProperty.id,
             userId: user.id,
             extracted: merged,
-            sourceRecordId: rec?.id ?? null,
+            sourceRecordId: null,
           });
         } catch (extErr) {
           console.warn("Extraction fan-out failed (non-fatal):", extErr);
