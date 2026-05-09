@@ -783,7 +783,7 @@ const SystemConfigScreen = () => {
       {/* ═══ WATER SOURCE — TYPE SELECTOR ═══ */}
       {isWaterSource && (
         <div className="mb-6">
-          <WaterSourceTypeSelector onSelect={(t) => { setWaterType(t); setExpandedSections(new Set(["specs"])); }} selected={waterType || undefined} />
+          <WaterSourceTypeSelector onSelect={(t) => { setWaterType(t); setSpec("waterType", t); setExpandedSections(new Set(["specs"])); }} selected={waterType || undefined} />
           {waterType && (
             <button onClick={() => setWaterType("")} className="text-xs text-primary hover:underline mt-3 flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" /> Change water source type
