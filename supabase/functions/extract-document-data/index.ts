@@ -158,6 +158,29 @@ CRITICAL RULES:
 EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
 EXTRACTION_PROMPTS.inspection = INSPECTION_REPORT_PROMPT;
 
+// Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
+// used as a fallback in onboarding when public records aren't available for
+// an address. Pulls only the structural property facts the wizard needs.
+EXTRACTION_PROMPTS.listing = `Extract property facts from this real-estate listing (Zillow, Realtor.com, Redfin, or MLS print-out). Rate confidence 0-100 for each field. Return JSON only:
+{
+  "fields": {
+    "yearBuilt": { "value": number or null, "confidence": 90 },
+    "squareFootage": { "value": number or null, "confidence": 90 },
+    "lotSize": { "value": "lot size as shown (e.g. '0.25 acres', '7,200 sq ft') or null", "confidence": 80 },
+    "bedrooms": { "value": number or null, "confidence": 90 },
+    "bathrooms": { "value": number or null, "confidence": 85 },
+    "lastSalePrice": { "value": number or null, "confidence": 80 },
+    "lastSaleDate": { "value": "YYYY-MM-DD" or null, "confidence": 75 },
+    "propertyType": { "value": "single family|multi family|condo|townhouse|manufactured|other or null", "confidence": 85 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}
+
+Only return values that are explicitly stated in the listing. Do not infer or estimate.`;
+
 // Service & receipt-style extraction prompts so the document upload pipeline
 // can flow real values straight into the right system_details row.
 EXTRACTION_PROMPTS.hvac_service = `Extract HVAC service-record details from this document. For each field, rate confidence 0-100. Return JSON only:

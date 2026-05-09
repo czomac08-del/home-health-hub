@@ -150,6 +150,9 @@ const OnboardingWizard = () => {
   } | null>(null);
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set());
   const [confirmedFields, setConfirmedFields] = useState<Set<string>>(new Set());
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [listingUploading, setListingUploading] = useState(false);
+  const [listingError, setListingError] = useState<string | null>(null);
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
@@ -262,6 +265,7 @@ const OnboardingWizard = () => {
       if (error) throw error;
       await refreshProperties();
       const propertyId = inserted?.id;
+      if (propertyId) setCreatedPropertyId(propertyId);
 
       await new Promise(r => setTimeout(r, 800));
       setScanPhase("extracting");
@@ -381,6 +385,107 @@ const OnboardingWizard = () => {
   const update = useCallback(<K extends keyof WizardData>(key: K, value: WizardData[K]) => {
     setData(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  /** Fallback path: parse a Zillow / Realtor.com listing PDF or screenshot
+   *  through the existing extract-document-data edge function and apply any
+   *  fields it returns to the wizard + the properties row. */
+  const handleListingUpload = async (file: File) => {
+    if (!user) { toast.error("Please sign in first"); return; }
+    const propertyId = createdPropertyId || activeProperty?.id;
+    if (!propertyId) { toast.error("No property to attach this listing to"); return; }
+    setListingError(null);
+    setListingUploading(true);
+    try {
+      const path = `${user.id}/${propertyId}/${Date.now()}-listing-${file.name}`;
+      const { error: upErr } = await supabase.storage.from("property-records").upload(path, file);
+      if (upErr) throw upErr;
+      const { data: urlData } = await supabase.storage
+        .from("property-records")
+        .createSignedUrl(path, 31536000);
+      if (!urlData?.signedUrl) throw new Error("Could not sign uploaded file");
+
+      const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
+        body: { documentUrl: urlData.signedUrl, systemType: "listing", source: "homeowner" },
+      });
+      if (extErr) throw extErr;
+      const e = (ext?.extracted || {}) as Record<string, any>;
+      const json: Record<string, any> = {
+        found: true,
+        yearBuilt: e.yearBuilt ?? null,
+        squareFootage: e.squareFootage ?? null,
+        lotSize: e.lotSize ?? null,
+        bedrooms: e.bedrooms ?? null,
+        bathrooms: e.bathrooms ?? null,
+        lastSalePrice: e.lastSalePrice ?? null,
+        lastSaleDate: e.lastSaleDate ?? null,
+        propertyType: e.propertyType ?? null,
+        data_source: "listing_upload",
+      };
+
+      const filledCount = Object.values(json).filter(v => v != null && v !== "" && v !== "listing_upload" && v !== true).length;
+      if (filledCount === 0) {
+        setListingError("Couldn't read property details from that file. Try a clearer screenshot or PDF.");
+        return;
+      }
+
+      // Write any found values to the properties row
+      const patch: Record<string, unknown> = {};
+      if (json.yearBuilt)     patch.year_built      = String(json.yearBuilt);
+      if (json.squareFootage) patch.square_footage  = json.squareFootage;
+      if (json.propertyType)  patch.property_type   = json.propertyType;
+      if (json.bedrooms  != null) patch.bedrooms    = json.bedrooms;
+      if (json.bathrooms != null) patch.bathrooms   = json.bathrooms;
+      if (json.lotSize)       patch.lot_size        = json.lotSize;
+      if (json.lastSaleDate)  patch.last_sale_date  = json.lastSaleDate;
+      if (json.lastSalePrice) patch.last_sale_price = json.lastSalePrice;
+      if (Object.keys(patch).length > 0) {
+        await supabase.from("properties").update(patch as any).eq("id", propertyId);
+      }
+      if (json.yearBuilt) {
+        try {
+          const { estimateSystemAgesFromYearBuilt } = await import("@/lib/seedSystems");
+          await estimateSystemAgesFromYearBuilt(propertyId, user.id, Number(json.yearBuilt));
+        } catch (err) { console.warn("estimateSystemAges failed", err); }
+      }
+
+      // Pre-fill the wizard fields, mirroring the rentcast mapping.
+      const filled = new Set<string>(prefilledFields);
+      const confirmed = new Set<string>(confirmedFields);
+      if (json.yearBuilt) {
+        const yr = Number(json.yearBuilt);
+        let ageRange = "Built before 1950";
+        if (yr >= 2020)      ageRange = "2020 or newer";
+        else if (yr >= 2010) ageRange = "2010–2020";
+        else if (yr >= 1990) ageRange = "1990–2010";
+        else if (yr >= 1970) ageRange = "1970–1990";
+        else if (yr >= 1950) ageRange = "1950–1970";
+        update("homeAge", ageRange);
+        filled.add("homeAge");
+      }
+      if (json.propertyType) {
+        const pt = String(json.propertyType).toLowerCase().replace(/[_\-]+/g, " ").trim();
+        const isMatch = (list: string[]) => list.some(v => pt === v || pt.includes(v));
+        let homeTypeId = "single_family";
+        if (isMatch(["multi family", "multifamily", "duplex", "2-4 units", "2 4 units"])) homeTypeId = "multi_unit";
+        else if (isMatch(["condo", "condominium"])) homeTypeId = "condo";
+        else if (isMatch(["townhouse", "row house", "th"])) homeTypeId = "townhouse";
+        else if (isMatch(["mobile home", "manufactured", "mh"])) homeTypeId = "manufactured";
+        update("homeType", homeTypeId);
+        filled.add("homeType");
+        confirmed.add("homeType");
+      }
+      setPrefilledFields(filled);
+      setConfirmedFields(confirmed);
+      setScanResults(json as any);
+      await refreshProperties();
+      toast.success("Listing details imported");
+    } catch (err) {
+      console.error("Listing upload failed", err);
+      setListingError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setListingUploading(false);
+    }
+  };
 
   const progress = Math.round((step / TOTAL_STEPS) * 100);
   const displayStepCount = TOTAL_STEPS - 1; // don't count final screen
@@ -606,6 +711,31 @@ const OnboardingWizard = () => {
                 >
                   Continue →
                 </button>
+                <div className="w-full rounded-xl border border-border bg-card/50 p-4 flex flex-col gap-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    Have a Zillow or Realtor.com listing? Upload it instead.
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload a PDF or screenshot — we'll pull the year built, square footage, beds, baths, and more.
+                  </p>
+                  <label className={`mt-1 inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold cursor-pointer hover:bg-muted ${listingUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                    {listingUploading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Reading listing…</>) : "Choose file"}
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      className="hidden"
+                      disabled={listingUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.currentTarget.value = "";
+                        if (f) handleListingUpload(f);
+                      }}
+                    />
+                  </label>
+                  {listingError && (
+                    <p className="text-xs text-destructive">{listingError}</p>
+                  )}
+                </div>
               </div>
             );
           }
