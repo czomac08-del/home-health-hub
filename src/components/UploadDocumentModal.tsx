@@ -714,11 +714,11 @@ export default function UploadDocumentModal({
           <div className="py-8 text-center">
             <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
             <p className="text-sm font-semibold text-foreground">
-              {step === "uploading" ? "Uploading document..." : "AI is reading your document..."}
+              {step === "uploading" ? "Uploading document..." : AI_MESSAGES[aiMessageIndex]}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {step === "uploading" ? "Securing in your private vault" : "This usually takes 5–15 seconds"}
-            </p>
+            {step === "uploading" && (
+              <p className="text-xs text-muted-foreground mt-1">Securing in your private vault</p>
+            )}
           </div>
         )}
 
