@@ -311,7 +311,11 @@ const OnboardingWizard = () => {
 
   const canNext = (): boolean => {
     if (step === 1) return !savingAddress; // address is optional
-    if (step === 2) return !!data.homeType && !!data.homeAge;
+    if (step === 2) {
+      // If public records filled it in, the confirmation card always passes through
+      if (publicRecordsData && (data.homeType || data.homeAge)) return true;
+      return !!data.homeType && !!data.homeAge;
+    }
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
     return true;
@@ -536,6 +540,60 @@ const OnboardingWizard = () => {
       case 2: {
         const selectedPropType = propertyTypes.find(p => p.id === data.homeType);
         const isManufactured = selectedPropType?.isManufactured;
+        const hasPublicRecords = !!publicRecordsData && (!!data.homeType || !!data.homeAge);
+        if (hasPublicRecords) {
+          return (
+            <div className="flex flex-col gap-6 animate-fade-in">
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-7 w-7 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">We found your home</h2>
+                <p className="text-sm text-muted-foreground">
+                  Public records filled in these details. Confirm or correct them.
+                </p>
+              </div>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                {data.homeType && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Property type</span>
+                    <span className="text-sm font-semibold text-foreground capitalize">
+                      {propertyTypes.find(p => p.id === data.homeType)?.label || data.homeType}
+                    </span>
+                  </div>
+                )}
+                {data.homeAge && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Year built</span>
+                    <span className="text-sm font-semibold text-foreground">{data.homeAge}</span>
+                  </div>
+                )}
+                {(activeProperty as any)?.square_footage && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Square footage</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {Number((activeProperty as any).square_footage).toLocaleString()} sq ft
+                    </span>
+                  </div>
+                )}
+                {(activeProperty as any)?.bedrooms && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Bedrooms / Baths</span>
+                    <span className="text-sm font-semibold text-foreground">
+                      {(activeProperty as any).bedrooms} bd · {(activeProperty as any).bathrooms ?? "–"} ba
+                    </span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setPublicRecordsData(null)}
+                className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 self-center transition-colors"
+              >
+                Something looks wrong — let me correct it
+              </button>
+            </div>
+          );
+        }
         return (
           <div className="flex flex-col gap-6 animate-fade-in">
             <h2 className="text-xl font-bold text-foreground">What type of property do you have?</h2>
