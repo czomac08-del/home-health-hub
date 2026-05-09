@@ -72,6 +72,7 @@ const DocumentVaultScreen = () => {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | DocCategory>("all");
+  const [structureFilter, setStructureFilter] = useState<string>("all"); // "all" | structureKey | "__legacy__" | "__unassigned__"
   const [sort, setSort] = useState<"newest" | "oldest" | "type">("newest");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [importDocId, setImportDocId] = useState<string | null>(null);
@@ -136,6 +137,15 @@ const DocumentVaultScreen = () => {
   const filtered = useMemo(() => {
     let list = docs.filter((d) => !hiddenIds.has(`${d.source_table}-${d.id}`));
     if (filter !== "all") list = list.filter((d) => d.category === filter);
+    if (structureFilter !== "all") {
+      if (structureFilter === "__legacy__") {
+        list = list.filter((d) => d.isLegacyStructure);
+      } else if (structureFilter === "__unassigned__") {
+        list = list.filter((d) => !d.structureKey);
+      } else {
+        list = list.filter((d) => d.structureKey === structureFilter && !d.isLegacyStructure);
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -143,6 +153,8 @@ const DocumentVaultScreen = () => {
           d.title.toLowerCase().includes(q) ||
           (d.inspectorName || "").toLowerCase().includes(q) ||
           CATEGORY_LABEL[d.category].toLowerCase().includes(q) ||
+          (d.structureLabel || "").toLowerCase().includes(q) ||
+          (d.systemLabel || "").toLowerCase().includes(q) ||
           new Date(d.uploadedAt).toLocaleDateString().toLowerCase().includes(q),
       );
     }
@@ -152,7 +164,30 @@ const DocumentVaultScreen = () => {
       list = [...list].sort((a, b) => a.category.localeCompare(b.category));
     }
     return list;
-  }, [docs, filter, search, sort]);
+  }, [docs, filter, structureFilter, search, sort, hiddenIds]);
+
+  // Build the list of structure filter chips from the docs themselves.
+  const structureOptions = useMemo(() => {
+    const active = new Map<string, string>(); // key -> label
+    let hasLegacy = false;
+    let hasUnassigned = false;
+    docs.forEach((d) => {
+      if (d.isLegacyStructure) {
+        hasLegacy = true;
+        return;
+      }
+      if (!d.structureKey) {
+        hasUnassigned = true;
+        return;
+      }
+      active.set(d.structureKey, d.structureLabel || d.structureKey);
+    });
+    return {
+      active: Array.from(active.entries()).map(([key, label]) => ({ key, label })),
+      hasLegacy,
+      hasUnassigned,
+    };
+  }, [docs]);
 
   // Group by category for the unfiltered "all" view
   const grouped = useMemo(() => {
@@ -204,7 +239,7 @@ const DocumentVaultScreen = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search by name, inspector, date, or type..."
+          placeholder="Search by name, structure, system, inspector, or date..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -239,6 +274,62 @@ const DocumentVaultScreen = () => {
           <option value="type">By type</option>
         </select>
       </div>
+
+      {/* Structure filter chips */}
+      {(structureOptions.active.length > 0 || structureOptions.hasLegacy || structureOptions.hasUnassigned) && (
+        <div className="flex items-center gap-1.5 mb-5 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mr-1">
+            Structure
+          </span>
+          <button
+            onClick={() => setStructureFilter("all")}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              structureFilter === "all"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground border border-border hover:border-primary/40"
+            }`}
+          >
+            All
+          </button>
+          {structureOptions.active.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setStructureFilter(s.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                structureFilter === s.key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground border border-border hover:border-primary/40"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+          {structureOptions.hasLegacy && (
+            <button
+              onClick={() => setStructureFilter("__legacy__")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                structureFilter === "__legacy__"
+                  ? "bg-muted-foreground/80 text-background"
+                  : "bg-muted text-muted-foreground border border-border hover:border-muted-foreground/40 line-through"
+              }`}
+            >
+              Legacy
+            </button>
+          )}
+          {structureOptions.hasUnassigned && (
+            <button
+              onClick={() => setStructureFilter("__unassigned__")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                structureFilter === "__unassigned__"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground border border-border hover:border-primary/40"
+              }`}
+            >
+              Unassigned
+            </button>
+          )}
+        </div>
+      )}
 
       {loading && docs.length === 0 ? (
         <div className="space-y-2">
