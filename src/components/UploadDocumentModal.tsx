@@ -58,6 +58,7 @@ export default function UploadDocumentModal({
   const [manualMode, setManualMode] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualDetails, setManualDetails] = useState("");
+  const [warrantyName, setWarrantyName] = useState("");
 
   const reset = () => {
     setStep("form");
@@ -73,6 +74,7 @@ export default function UploadDocumentModal({
     setManualMode(false);
     setManualDate("");
     setManualDetails("");
+    setWarrantyName("");
   };
 
   const handleClose = (next: boolean) => {
@@ -156,6 +158,13 @@ export default function UploadDocumentModal({
           setExtracted(ext?.extracted || {});
           setConfidence(ext?.confidence || "low");
           setInspectionReport(ext?.inspectionReport || null);
+          if (docType === "warranty") {
+            const suggested =
+              ext?.extracted?.provider_name ||
+              ext?.extracted?.product_name ||
+              file.name.replace(/\.[^.]+$/, "");
+            setWarrantyName(suggested || "");
+          }
         }
       }
       setStep("review");
@@ -194,6 +203,7 @@ export default function UploadDocumentModal({
             }
           }
           const providerLabel =
+            warrantyName.trim() ||
             w.provider_name || w.product_name ||
             file?.name?.replace(/\.[^.]+$/, "") || "Warranty";
 
