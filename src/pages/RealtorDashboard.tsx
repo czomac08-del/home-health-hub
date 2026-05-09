@@ -337,12 +337,19 @@ const RealtorDashboard = () => {
 
       <button
         onClick={() => navigate("/documents")}
-        className="w-full mb-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
+        className="w-full mb-3 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors px-4 py-3 flex items-center gap-2"
       >
         <FolderOpen className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">Documents Vault</span>
         <span className="text-[10px] text-muted-foreground ml-auto">Disclosures, reports, listing files</span>
       </button>
+
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <ProUploadButton role="realtor" defaultDocType="realtor.seller_disclosure" label="Upload Seller Disclosure" />
+        <ProUploadButton role="realtor" defaultDocType="realtor.inspection_report" label="Upload Inspection" />
+        <ProUploadButton role="realtor" defaultDocType="realtor.appraisal" label="Upload Appraisal" />
+        <ProUploadButton role="realtor" defaultDocType="realtor.listing_agreement" label="Upload Listing Agreement" />
+      </div>
 
       {activeProperty?.id && (
         <div className="mb-4">
