@@ -3215,6 +3215,7 @@ export type Database = {
       properties: {
         Row: {
           address: string
+          assessor_id: string | null
           city: string | null
           county: string | null
           county_fips: string | null
@@ -3224,10 +3225,14 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          legal_description: string | null
+          parcel_id: string | null
           profile_id: string | null
           property_type: string | null
+          rentcast_id: string | null
           square_footage: string | null
           state: string | null
+          subdivision: string | null
           updated_at: string
           user_id: string
           year_built: string | null
@@ -3235,6 +3240,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          assessor_id?: string | null
           city?: string | null
           county?: string | null
           county_fips?: string | null
@@ -3244,10 +3250,14 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          legal_description?: string | null
+          parcel_id?: string | null
           profile_id?: string | null
           property_type?: string | null
+          rentcast_id?: string | null
           square_footage?: string | null
           state?: string | null
+          subdivision?: string | null
           updated_at?: string
           user_id: string
           year_built?: string | null
@@ -3255,6 +3265,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          assessor_id?: string | null
           city?: string | null
           county?: string | null
           county_fips?: string | null
@@ -3264,10 +3275,14 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          legal_description?: string | null
+          parcel_id?: string | null
           profile_id?: string | null
           property_type?: string | null
+          rentcast_id?: string | null
           square_footage?: string | null
           state?: string | null
+          subdivision?: string | null
           updated_at?: string
           user_id?: string
           year_built?: string | null

@@ -195,6 +195,27 @@ export default function UploadDocumentModal({
         .update({ ai_verified: true, ai_extracted_data: merged })
         .eq("id", recordId);
 
+      // If AI found a parcel ID in this document, save it to the property record
+      try {
+        const ex = extracted as any;
+        const parcelFromExtraction =
+          ex?.parcel_id ||
+          ex?.fields?.parcel_id?.value ||
+          null;
+        if (parcelFromExtraction && activeProperty?.id) {
+          const { data: prop } = await supabase
+            .from("properties")
+            .select("id, parcel_id")
+            .eq("id", activeProperty.id)
+            .maybeSingle();
+          if (prop && !(prop as any).parcel_id) {
+            await supabase.from("properties")
+              .update({ parcel_id: parcelFromExtraction } as any)
+              .eq("id", activeProperty.id);
+          }
+        }
+      } catch { /* best-effort */ }
+
       // Auto-sync warranty documents directly to the warranties table so the
       // user doesn't have to find the doc in the vault and click "Sync".
       if (docType === "warranty" && recordId && activeProperty?.id && user?.id) {

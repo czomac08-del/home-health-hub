@@ -227,6 +227,12 @@ Deno.serve(async (req) => {
       county: property.county ?? null,
       state: property.state ?? null,
       zipCode: property.zipCode ?? null,
+      // Parcel / assessor identifiers — critical for county lookup
+      parcelId: property.assessorID ?? property.parcelNumber ?? property.parcelId ?? null,
+      rentcastId: property.id ?? null,
+      legalDescription: property.legalDescription ?? null,
+      ownerName: property.ownerName ?? null,
+      subdivision: property.subdivision ?? null,
     };
 
     console.log("Mapped result:", JSON.stringify(result));

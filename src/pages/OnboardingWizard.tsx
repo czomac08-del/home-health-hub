@@ -238,6 +238,24 @@ const OnboardingWizard = () => {
           );
           if (res.ok) {
             const json = await res.json();
+            // Store parcel IDs immediately — they unlock county-level deep searches
+            if (json?.parcelId || json?.rentcastId || json?.legalDescription) {
+              const { data: prop } = await supabase
+                .from("properties")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("address", selectedMatch.matchedAddress)
+                .maybeSingle();
+              if (prop?.id) {
+                await supabase.from("properties").update({
+                  parcel_id: json.parcelId || null,
+                  assessor_id: json.parcelId || null,
+                  rentcast_id: json.rentcastId || null,
+                  legal_description: json.legalDescription || null,
+                  subdivision: json.subdivision || null,
+                } as any).eq("id", prop.id);
+              }
+            }
             if (json?.found && json?.data) {
               const d = json.data;
               const found: NonNullable<typeof publicRecordsData> = {};
