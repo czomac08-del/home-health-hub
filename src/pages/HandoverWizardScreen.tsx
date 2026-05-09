@@ -144,7 +144,7 @@ const HandoverWizardScreen = () => {
       case 2: return <StepRatings stayingItems={stayingItems} ratings={ratings} setRatings={setRatings} ratingNotes={ratingNotes} setRatingNotes={setRatingNotes} confirmed={ratingsConfirmed} setConfirmed={setRatingsConfirmed} />;
       case 3: return <StepWelcome welcomeNote={welcomeNote} setWelcomeNote={setWelcomeNote} plumber={plumber} setPlumber={setPlumber} hvacContact={hvacContact} setHvacContact={setHvacContact} trashDay={trashDay} setTrashDay={setTrashDay} hoa={hoa} setHoa={setHoa} quirks={quirks} setQuirks={setQuirks} />;
       case 4: return <StepGenerate stayingItems={stayingItems} welcomeNote={welcomeNote} onGenerate={next} />;
-      case 5: return <StepTransfer email={email} setEmail={setEmail} transferDone={transferDone} setTransferDone={setTransferDone} showRemoveConfirm={showRemoveConfirm} setShowRemoveConfirm={setShowRemoveConfirm} navigate={navigate} />;
+      case 5: return <StepTransfer email={email} setEmail={setEmail} transferDone={transferDone} setTransferDone={setTransferDone} showRemoveConfirm={showRemoveConfirm} setShowRemoveConfirm={setShowRemoveConfirm} navigate={navigate} stayingItems={stayingItems} welcomeNote={welcomeNote} ratings={ratings} ratingNotes={ratingNotes} />;
       default: return null;
     }
   };
