@@ -59,6 +59,8 @@ export default function UploadDocumentModal({
   const [manualDate, setManualDate] = useState("");
   const [manualDetails, setManualDetails] = useState("");
   const [warrantyName, setWarrantyName] = useState("");
+  const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
+  const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
 
   const reset = () => {
     setStep("form");
@@ -75,6 +77,8 @@ export default function UploadDocumentModal({
     setManualDate("");
     setManualDetails("");
     setWarrantyName("");
+    setDetectedSystem(null);
+    setDetectedSystemName(null);
   };
 
   const handleClose = (next: boolean) => {
@@ -158,6 +162,8 @@ export default function UploadDocumentModal({
           setExtracted(ext?.extracted || {});
           setConfidence(ext?.confidence || "low");
           setInspectionReport(ext?.inspectionReport || null);
+          if (ext?.detected_system) setDetectedSystem(ext.detected_system);
+          if (ext?.detected_system_name) setDetectedSystemName(ext.detected_system_name);
           if (docType === "warranty") {
             const suggested =
               ext?.extracted?.provider_name ||
