@@ -3530,7 +3530,7 @@ export type Database = {
           record_type: string
           source: string
           storage_path: string | null
-          system_type: string
+          system_type: string | null
           updated_at: string
           upload_consent_at: string | null
           uploaded_by_user_id: string
@@ -3550,7 +3550,7 @@ export type Database = {
           record_type?: string
           source?: string
           storage_path?: string | null
-          system_type: string
+          system_type?: string | null
           updated_at?: string
           upload_consent_at?: string | null
           uploaded_by_user_id: string
@@ -3570,7 +3570,7 @@ export type Database = {
           record_type?: string
           source?: string
           storage_path?: string | null
-          system_type?: string
+          system_type?: string | null
           updated_at?: string
           upload_consent_at?: string | null
           uploaded_by_user_id?: string
