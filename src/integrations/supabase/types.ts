@@ -3216,6 +3216,8 @@ export type Database = {
         Row: {
           address: string
           assessor_id: string | null
+          bathrooms: number | null
+          bedrooms: number | null
           city: string | null
           county: string | null
           county_fips: string | null
@@ -3225,7 +3227,10 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          last_sale_date: string | null
+          last_sale_price: number | null
           legal_description: string | null
+          lot_size: number | null
           parcel_id: string | null
           profile_id: string | null
           property_type: string | null
@@ -3241,6 +3246,8 @@ export type Database = {
         Insert: {
           address: string
           assessor_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           city?: string | null
           county?: string | null
           county_fips?: string | null
@@ -3250,7 +3257,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          last_sale_date?: string | null
+          last_sale_price?: number | null
           legal_description?: string | null
+          lot_size?: number | null
           parcel_id?: string | null
           profile_id?: string | null
           property_type?: string | null
@@ -3266,6 +3276,8 @@ export type Database = {
         Update: {
           address?: string
           assessor_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
           city?: string | null
           county?: string | null
           county_fips?: string | null
@@ -3275,7 +3287,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          last_sale_date?: string | null
+          last_sale_price?: number | null
           legal_description?: string | null
+          lot_size?: number | null
           parcel_id?: string | null
           profile_id?: string | null
           property_type?: string | null

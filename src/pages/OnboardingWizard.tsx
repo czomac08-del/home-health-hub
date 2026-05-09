@@ -238,47 +238,57 @@ const OnboardingWizard = () => {
           );
           if (res.ok) {
             const json = await res.json();
-            // Store parcel IDs immediately — they unlock county-level deep searches
-            if (json?.parcelId || json?.rentcastId || json?.legalDescription) {
-              const { data: prop } = await supabase
-                .from("properties")
-                .select("id")
-                .eq("user_id", user.id)
-                .eq("address", selectedMatch.matchedAddress)
-                .maybeSingle();
-              if (prop?.id) {
-                await supabase.from("properties").update({
-                  parcel_id: json.parcelId || null,
-                  assessor_id: json.parcelId || null,
-                  rentcast_id: json.rentcastId || null,
-                  legal_description: json.legalDescription || null,
-                  subdivision: json.subdivision || null,
-                } as any).eq("id", prop.id);
+
+            // Get the property row we just created
+            const { data: prop } = await supabase
+              .from("properties")
+              .select("id")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (prop?.id && json?.found) {
+              const updatePayload: Record<string, any> = {};
+              if (json.yearBuilt) updatePayload.year_built = String(json.yearBuilt);
+              if (json.squareFootage) updatePayload.square_footage = String(json.squareFootage);
+              if (json.propertyType) updatePayload.property_type = json.propertyType;
+              if (json.bedrooms) updatePayload.bedrooms = json.bedrooms;
+              if (json.bathrooms) updatePayload.bathrooms = json.bathrooms;
+              if (json.lotSize) updatePayload.lot_size = json.lotSize;
+              if (json.lastSaleDate) updatePayload.last_sale_date = json.lastSaleDate;
+              if (json.lastSalePrice) updatePayload.last_sale_price = json.lastSalePrice;
+              if (json.parcelId) {
+                updatePayload.parcel_id = json.parcelId;
+                updatePayload.assessor_id = json.parcelId;
+              }
+              if (json.rentcastId) updatePayload.rentcast_id = json.rentcastId;
+              if (json.legalDescription) updatePayload.legal_description = json.legalDescription;
+              if (json.subdivision) updatePayload.subdivision = json.subdivision;
+              if (Object.keys(updatePayload).length > 0) {
+                await supabase.from("properties").update(updatePayload as any).eq("id", prop.id);
+                await refreshProperties();
               }
             }
-            if (json?.found && json?.data) {
-              const d = json.data;
-              const found: NonNullable<typeof publicRecordsData> = {};
-              if (d.yearBuilt) found.yearBuilt = String(d.yearBuilt);
-              if (d.features?.heating) found.hvacType = d.features.heating.toLowerCase().includes("heat pump") ? "heat_pump" : "central_air";
-              if (d.features?.waterSource) found.waterSource = d.features.waterSource.toLowerCase().includes("well") ? "well" : "city";
-              if (d.features?.sewer) found.septicOrSewer = d.features.sewer.toLowerCase().includes("septic") ? "septic" : "sewer";
-              if (d.squareFootage) found.sqft = d.squareFootage;
-              if (d.bedrooms) found.bedrooms = d.bedrooms;
-              if (d.bathrooms) found.bathrooms = d.bathrooms;
-              if (Object.keys(found).length > 0) {
-                setPublicRecordsData(found);
-                if (found.yearBuilt) update("homeAge", found.yearBuilt);
-                if (found.waterSource) update("waterSource", found.waterSource);
-                if (found.hvacType) update("hvacType", found.hvacType);
-                if (found.septicOrSewer) update("septicOrSewer", found.septicOrSewer);
-              }
+
+            if (json?.found) {
+              if (json.yearBuilt) update("homeAge", String(json.yearBuilt));
+              if (json.propertyType) update("homeType", json.propertyType);
+              const foundItems: string[] = [];
+              if (json.yearBuilt) foundItems.push(`Year built: ${json.yearBuilt}`);
+              if (json.squareFootage) foundItems.push(`${Number(json.squareFootage).toLocaleString()} sq ft`);
+              if (json.bedrooms) foundItems.push(`${json.bedrooms} bed`);
+              if (json.bathrooms) foundItems.push(`${json.bathrooms} bath`);
+              if (json.parcelId) foundItems.push(`Parcel ID: ${json.parcelId}`);
+              if (json.lastSaleDate) foundItems.push(`Last sold: ${new Date(json.lastSaleDate).getFullYear()}`);
+              setScanSummary({ sources: foundItems.length, details: foundItems });
+              setPublicRecordsData({
+                yearBuilt: json.yearBuilt ? String(json.yearBuilt) : undefined,
+                sqft: json.squareFootage ?? undefined,
+                bedrooms: json.bedrooms ?? undefined,
+                bathrooms: json.bathrooms ?? undefined,
+              });
             }
-            const sources: string[] = [];
-            if (json?.found) sources.push("Property records");
-            if (selectedMatch.countyFips) sources.push("FEMA history", "NOAA storms", "USDA drought");
-            if (selectedMatch.coordinates) sources.push("EPA environmental data");
-            setScanSummary({ sources: sources.length, details: sources });
           }
         }
       } catch { /* scan is best-effort */ }
