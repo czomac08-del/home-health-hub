@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { propertyTypes, manufacturedHomeFields } from "@/data/propertyTypes";
 import { HouseholdProfileEditor, type HouseholdData, type HouseholdRecommendation } from "@/components/HouseholdProfileEditor";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 
 const GEOCODE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/geocode`;
 const RENTCAST_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup`;
@@ -65,6 +65,7 @@ interface WizardData {
   hasSmartHome: boolean;
   hasChimney: boolean;
   manufacturedFields: Record<string, string | boolean>;
+  hasAdditionalStructures: boolean | null;
 }
 
 const defaultData: WizardData = {
@@ -75,6 +76,7 @@ const defaultData: WizardData = {
   hasGarage: false, garageDoors: 1, hasPool: false, hasSecurity: false, hasSmartHome: false,
   hasChimney: false,
   manufacturedFields: {},
+  hasAdditionalStructures: null,
 };
 
 const ageRanges = [
@@ -499,6 +501,7 @@ const OnboardingWizard = () => {
     }
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
+    if (step === 8) return data.hasAdditionalStructures !== null;
     return true;
   };
 
@@ -529,6 +532,15 @@ const OnboardingWizard = () => {
       // Only write year_built from wizard if scan didn't already give us a specific year
       if (!scanResults?.yearBuilt && data.homeAge) {
         await supabase.from("properties").update({ year_built: data.homeAge }).eq("id", propId);
+      }
+
+      // Persist whether the homeowner indicated additional structures beyond the main home
+      try {
+        await supabase.from("properties")
+          .update({ has_additional_structures: data.hasAdditionalStructures === true })
+          .eq("id", propId);
+      } catch (e) {
+        console.warn("failed to write has_additional_structures", e);
       }
 
       // build system list
@@ -609,7 +621,7 @@ const OnboardingWizard = () => {
   }, [step, activeProperty]);
 
   const next = () => {
-    if (step === 7) {
+    if (step === 8) {
       // Always allow finishing — save in background, navigate immediately
       if (user && activeProperty) {
         saveOnboarding();
@@ -1116,8 +1128,48 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 8 — Final celebration */
+      /* STEP 8 — Additional structures question */
       case 8:
+        return (
+          <div className="flex flex-col gap-5 animate-fade-in">
+            <h2 className="text-xl font-bold text-foreground">One last question</h2>
+            <p className="text-sm text-muted-foreground">
+              Does your property have any additional structures beyond the main home?
+              <span className="block mt-1 text-xs text-muted-foreground/80">
+                Things like a detached garage, ADU, workshop, pool house, or addition.
+              </span>
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => update("hasAdditionalStructures", false)}
+                className={`w-full text-left rounded-xl border px-4 py-4 transition-colors ${
+                  data.hasAdditionalStructures === false
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:bg-muted"
+                }`}
+              >
+                <div className="text-sm font-semibold text-foreground">No, just the main house</div>
+                <div className="text-xs text-muted-foreground mt-0.5">My profile is complete.</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => update("hasAdditionalStructures", true)}
+                className={`w-full text-left rounded-xl border px-4 py-4 transition-colors ${
+                  data.hasAdditionalStructures === true
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:bg-muted"
+                }`}
+              >
+                <div className="text-sm font-semibold text-foreground">Yes — I'll add them after setup</div>
+                <div className="text-xs text-muted-foreground mt-0.5">We'll remind you on your dashboard.</div>
+              </button>
+            </div>
+          </div>
+        );
+
+      /* STEP 9 — Final celebration */
+      case 9:
         return (
           <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
             <div className="relative h-32 w-32">
@@ -1197,8 +1249,8 @@ const OnboardingWizard = () => {
               <ChevronLeft className="h-4 w-4" /> Back
             </button>
             <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
-              className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
-              {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
+              className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 8 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
+              {saving ? "Saving..." : step === 8 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 8 && <ChevronRight className="h-4 w-4" />}
             </button>
           </div>
         </div>

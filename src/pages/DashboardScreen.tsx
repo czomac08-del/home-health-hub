@@ -27,6 +27,7 @@ import RecentUploadBanner from "@/components/RecentUploadBanner";
 import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
 import InspectionProgressCard from "@/components/InspectionProgressCard";
 import SellingPromptCard from "@/components/SellingPromptCard";
+import AdditionalStructuresBanner from "@/components/AdditionalStructuresBanner";
 import { iqDeltaForFinding, type FindingStatus } from "@/lib/inspectionScoring";
 
 // assessed = true means user has entered data for this system
@@ -223,6 +224,7 @@ const DashboardScreen = () => {
         <InspectionAutoAppliedBanner />
         <VerifyConflictsBanner />
         <RecentUploadBanner />
+        <AdditionalStructuresBanner />
 
         {hasNoProperty ? (
           /* Empty state — no property yet */
