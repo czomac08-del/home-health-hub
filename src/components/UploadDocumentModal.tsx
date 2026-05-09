@@ -12,6 +12,7 @@ import { recordRecentUpload } from "./RecentUploadBanner";
 import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { writeSystemFields } from "@/lib/systemFieldWrite";
+import UnifiedDocumentReview from "./UnifiedDocumentReview";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
