@@ -217,6 +217,7 @@ const DashboardScreen = () => {
       {/* Main content */}
       <div className="max-w-lg lg:max-w-[1400px] mx-auto px-6">
         <InspectionNotificationBanner variant="homeowner" />
+        <InspectionAutoAppliedBanner />
         <RecentUploadBanner />
 
         {hasNoProperty ? (
