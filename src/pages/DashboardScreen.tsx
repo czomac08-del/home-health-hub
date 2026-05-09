@@ -25,6 +25,7 @@ import DocumentHub from "@/components/DocumentHub";
 import RecentUploadBanner from "@/components/RecentUploadBanner";
 import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
 import InspectionProgressCard from "@/components/InspectionProgressCard";
+import SellingPromptCard from "@/components/SellingPromptCard";
 import { iqDeltaForFinding, type FindingStatus } from "@/lib/inspectionScoring";
 
 // assessed = true means user has entered data for this system
@@ -398,6 +399,9 @@ const DashboardScreen = () => {
         <div className="lg:max-w-xl">
           <UtilityContactsCard onViewAll={() => navigate("/utilities")} />
         </div>
+
+        {/* Subtle "thinking about selling?" prompt — only when IQ score > 60 */}
+        <SellingPromptCard iqScore={adjustedHealthScore as number | null} />
 
         {/* Share & Save referral widget */}
         <div className="mt-6 lg:max-w-xl">

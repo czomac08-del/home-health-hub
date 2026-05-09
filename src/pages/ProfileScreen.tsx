@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap, Users, Wifi, Trash2, Umbrella } from "lucide-react";
+import { Home, Plus, ChevronRight, Crown, Clock, Bell, Mail, CalendarClock, Lock, Sparkles, BarChart3, LogOut, MessageSquare, Zap, Users, Wifi, Trash2, Umbrella, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -275,6 +275,20 @@ const ProfileScreen = () => {
       >
         <MessageSquare className="h-4 w-4" /> Send Feedback
       </button>
+
+      {/* What's Next? — quiet selling entry */}
+      <Section title="What's Next?">
+        <button
+          onClick={() => navigate("/handover")}
+          className="w-full flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 hover:bg-secondary/30 transition-colors text-left"
+        >
+          <div>
+            <p className="text-sm font-medium text-foreground">Selling your home?</p>
+            <p className="text-xs text-muted-foreground">Build a Home Passport buyers love</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </Section>
 
       {/* Dev Reset */}
       <div className="mt-2">
