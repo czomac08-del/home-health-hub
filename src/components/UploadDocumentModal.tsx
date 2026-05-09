@@ -62,6 +62,11 @@ export default function UploadDocumentModal({
   const [warrantyName, setWarrantyName] = useState("");
   const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
   const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
+  // When uploading from the general Document Vault and the property has more
+  // than one system of the detected type, the user must pick which one this
+  // document belongs to before extraction is fanned out.
+  const [instanceOptions, setInstanceOptions] = useState<Array<{ id: string; system_name: string; structure: string | null }>>([]);
+  const [selectedInstanceName, setSelectedInstanceName] = useState<string>("");
 
   const AI_MESSAGES = [
     "AI is reading your document...",
@@ -82,6 +87,52 @@ export default function UploadDocumentModal({
     return () => clearInterval(interval);
   }, [step]);
 
+  // Map a detected system slug to a regex matching candidate `system_name`s.
+  const SYSTEM_NAME_PATTERNS: Record<string, RegExp> = {
+    hvac: /hvac|heat|cool|furnace|ac\b|air handler/i,
+    electrical: /electric|panel|breaker/i,
+    plumbing: /plumb/i,
+    water_heater: /water\s*heater|tankless/i,
+    well: /\bwell\b/i,
+    water_filtration: /filtration|filter|softener/i,
+    septic: /septic|sewer|waste/i,
+    roof: /roof/i,
+  };
+
+  // When the modal enters the review step from a general Vault upload and the
+  // property already has multiple instances of the detected system type, load
+  // the candidate instances so the user can pick which one this doc applies to.
+  useEffect(() => {
+    if (step !== "review") return;
+    if (defaultSystemType) return; // came from a system card — auto-targeted
+    if (!detectedSystem || !activeProperty?.id) return;
+    const pattern = SYSTEM_NAME_PATTERNS[detectedSystem];
+    if (!pattern) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("id, system_name, specs, status")
+        .eq("property_id", activeProperty.id);
+      if (cancelled || !data) return;
+      const matches = data
+        .filter((r: any) => pattern.test(r.system_name || ""))
+        .map((r: any) => ({
+          id: r.id as string,
+          system_name: r.system_name as string,
+          structure: ((r.specs as any)?.structure_assignment as string) || null,
+        }));
+      if (matches.length > 1) {
+        setInstanceOptions(matches);
+        setSelectedInstanceName("");
+      } else {
+        setInstanceOptions([]);
+        setSelectedInstanceName(matches[0]?.system_name || "");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, detectedSystem, activeProperty?.id, defaultSystemType]);
+
   const reset = () => {
     setStep("form");
     setFile(null);
@@ -99,6 +150,8 @@ export default function UploadDocumentModal({
     setWarrantyName("");
     setDetectedSystem(null);
     setDetectedSystemName(null);
+    setInstanceOptions([]);
+    setSelectedInstanceName("");
   };
 
   const handleClose = (next: boolean) => {
@@ -322,7 +375,13 @@ export default function UploadDocumentModal({
             well: "Well",
             septic: "Septic",
           };
-          const targetSystemName = detectedSystemName || systemNameMap[detectedSystem] || detectedSystem;
+          // If multiple instances exist on this property and the user picked
+          // one in the review step, that selection wins over the AI's guess.
+          const targetSystemName =
+            selectedInstanceName ||
+            detectedSystemName ||
+            systemNameMap[detectedSystem] ||
+            detectedSystem;
           const w = extracted as any;
           const docDate =
             w.inspection_date || w.report_date || w.service_date ||
@@ -398,7 +457,10 @@ export default function UploadDocumentModal({
               )
               .limit(1);
 
-            const targetSystemName = septicRows?.[0]?.system_name || "Septic System";
+            const targetSystemName =
+              selectedInstanceName ||
+              septicRows?.[0]?.system_name ||
+              "Septic System";
             // Newer pump-out / inspection / install date is the most authoritative
             // signal for septic docs.
             const docDate =
@@ -740,6 +802,29 @@ export default function UploadDocumentModal({
                 <span className="text-blue-600 dark:text-blue-400 text-xs">— info will be added to that system</span>
               </div>
             )}
+            {instanceOptions.length > 1 && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  Which structure does this document belong to?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  You have multiple {(detectedSystemName || detectedSystem || "").toString().replace(/_/g, " ")} systems on this property. Pick the one this document covers — fields will only update on that system.
+                </p>
+                <select
+                  value={selectedInstanceName}
+                  onChange={(e) => setSelectedInstanceName(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select a system…</option>
+                  {instanceOptions.map((opt) => (
+                    <option key={opt.id} value={opt.system_name}>
+                      {opt.system_name}
+                      {opt.structure ? ` — ${opt.structure}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {docType === "warranty" && (
               <div>
                 <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
@@ -893,7 +978,7 @@ export default function UploadDocumentModal({
                 <Button
                   onClick={handleConfirm}
                   className="flex-1"
-                  disabled={extractionEmpty}
+                  disabled={extractionEmpty || (instanceOptions.length > 1 && !selectedInstanceName)}
                 >
                   Confirm & Save
                 </Button>
