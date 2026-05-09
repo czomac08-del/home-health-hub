@@ -553,6 +553,11 @@ const OnboardingWizard = () => {
 
             if (hasPropertyData) return (
               <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
+                {process.env.NODE_ENV !== "production" && (
+                  <pre className="text-[9px] text-muted-foreground/50 w-full overflow-auto max-h-24 bg-muted/30 rounded p-2">
+                    {JSON.stringify({ found: (scanResults as any)?.found, yearBuilt: (scanResults as any)?.yearBuilt, propertyType: (scanResults as any)?.propertyType, parcelId: (scanResults as any)?.parcelId, prefilled: [...prefilledFields] }, null, 2)}
+                  </pre>
+                )}
                 <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
