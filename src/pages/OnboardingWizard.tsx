@@ -574,7 +574,7 @@ const OnboardingWizard = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => { setScanPhase("idle"); setStep(2); }}
                   className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                 >
                   Continue →
@@ -601,7 +601,7 @@ const OnboardingWizard = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => { setScanPhase("idle"); setStep(2); }}
                   className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                 >
                   Continue →
