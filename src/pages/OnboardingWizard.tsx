@@ -340,7 +340,7 @@ const OnboardingWizard = () => {
     if (step === 1) return !savingAddress; // address is optional
     if (step === 2) {
       // If public records filled it in, the confirmation card always passes through
-      if (publicRecordsData && (data.homeType || data.homeAge)) return true;
+      if (prefilledFields.size > 0 && (data.homeType || data.homeAge)) return true;
       return !!data.homeType && !!data.homeAge;
     }
     if (step === 3) return !!data.waterSource;
