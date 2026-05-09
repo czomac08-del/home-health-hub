@@ -164,23 +164,41 @@ async function regridLookup(address: string): Promise<{
   const apiKey = Deno.env.get("REGRID_API_KEY");
   if (!apiKey) return null;
   try {
-    const url = `https://app.regrid.com/api/v1/search?query=${encodeURIComponent(address)}&path=/us&limit=1&token=${apiKey}`;
+    const url = `https://app.regrid.com/api/v1/search?query=${encodeURIComponent(address)}&path=/us&return_custom=false&limit=1&token=${apiKey}`;
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn("Regrid HTTP error:", res.status, await res.text());
+      return null;
+    }
     const data = await res.json();
-    const parcel = data?.results?.[0]?.properties?.fields;
-    if (!parcel) return null;
-    console.log("Regrid hit:", JSON.stringify(parcel));
+
+    // Regrid returns { parcels: { type: "FeatureCollection", features: [...] } }
+    const features = data?.parcels?.features;
+    if (!features?.length) {
+      console.warn("Regrid: no features returned for address:", address);
+      return null;
+    }
+
+    const fields = features[0]?.properties?.fields;
+    if (!fields) {
+      console.warn("Regrid: no fields in first feature");
+      return null;
+    }
+
+    console.log("Regrid fields:", JSON.stringify(fields));
+
     return {
-      parcelId:      parcel.parcelnumb   ?? parcel.apn           ?? null,
-      yearBuilt:     parcel.yearbuilt    ?? parcel.year_built    ?? null,
-      propertyType:  parcel.usedesc      ?? parcel.land_use_desc ?? parcel.usecode ?? null,
-      squareFootage: parcel.sqft         ?? parcel.building_sqft ?? parcel.ll_bldg_footprint_sqft ?? null,
-      lotSize:       parcel.lotsize      ?? parcel.ll_gisacre    ?? null,
-      ownerName:     parcel.owner        ?? null,
+      parcelId:      fields.parcelnumb   ?? fields.parcel_id      ?? null,
+      yearBuilt:     fields.yearbuilt    ? Number(fields.yearbuilt) : null,
+      propertyType:  fields.usedesc      ?? fields.usecode         ?? fields.land_use_desc ?? null,
+      squareFootage: fields.sqft         ? Number(fields.sqft)     :
+                     fields.ll_bldg_footprint_sqft ? Number(fields.ll_bldg_footprint_sqft) : null,
+      lotSize:       fields.ll_gisacre   ? Number(fields.ll_gisacre) :
+                     fields.lotsize      ? Number(fields.lotsize)    : null,
+      ownerName:     fields.owner        ?? null,
     };
   } catch (e) {
-    console.warn("Regrid lookup error:", e);
+    console.error("Regrid lookup error:", e);
     return null;
   }
 }
