@@ -13,6 +13,7 @@ import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { writeSystemFields } from "@/lib/systemFieldWrite";
 import UnifiedDocumentReview from "./UnifiedDocumentReview";
+import VaultRecordReview from "./VaultRecordReview";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -21,6 +22,7 @@ const DOC_TYPES = [
   { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance" },
   { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance" },
   { value: "repair_receipt", label: "Repair Receipt", systemType: "maintenance" },
+  { value: "invoice", label: "Invoice / Receipt", systemType: "maintenance" },
   { value: "other", label: "Other", systemType: "other" },
 ];
 
