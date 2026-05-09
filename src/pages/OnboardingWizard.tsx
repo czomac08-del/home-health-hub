@@ -165,6 +165,9 @@ const OnboardingWizard = () => {
     sqft?: number;
   } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const regridDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [regridSuggestions, setRegridSuggestions] = useState<string[]>([]);
+  const [showRegridSuggestions, setShowRegridSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const initialSkipDone = useRef(false);
 
@@ -194,11 +197,54 @@ const OnboardingWizard = () => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+        setShowRegridSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  /** Regrid address typeahead — proxied via the regrid-typeahead edge
+   *  function so the API token stays server-side. Always degrades to a no-op
+   *  on errors so the input keeps working as a plain text field. */
+  const fetchRegridSuggestions = async (q: string) => {
+    if (q.trim().length < 3) {
+      setRegridSuggestions([]);
+      setShowRegridSuggestions(false);
+      return;
+    }
+    try {
+      // The supabase-js invoke helper doesn't pass URL query params for GET,
+      // so call the edge function directly. The function tolerates anonymous
+      // calls — REGRID_API_KEY stays on the server either way.
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const endpoint = `https://${projectRef}.supabase.co/functions/v1/regrid-typeahead?query=${encodeURIComponent(q)}`;
+      const res = await fetch(endpoint, {
+        headers: {
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : apiKey
+              ? { Authorization: `Bearer ${apiKey}` }
+              : {}),
+          ...(apiKey ? { apikey: apiKey } : {}),
+        },
+      });
+      let suggestions: string[] = [];
+      if (res.ok) {
+        const json = await res.json().catch(() => ({}));
+        suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
+      }
+      setRegridSuggestions(suggestions);
+      setShowRegridSuggestions(suggestions.length > 0);
+      // Hide the legacy geocode dropdown when Regrid has results to show.
+      if (suggestions.length > 0) setShowSuggestions(false);
+    } catch {
+      setRegridSuggestions([]);
+      setShowRegridSuggestions(false);
+    }
+  };
 
   const fetchSuggestions = async (q: string) => {
     if (q.trim().length < 4) { setSuggestions([]); return; }
@@ -231,6 +277,19 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(v), 400);
+    if (regridDebounceRef.current) clearTimeout(regridDebounceRef.current);
+    regridDebounceRef.current = setTimeout(() => fetchRegridSuggestions(v), 300);
+  };
+
+  /** User tapped a Regrid suggestion — set the field text and let the
+   *  existing geocode flow resolve a selectedMatch so Continue still works. */
+  const selectRegridSuggestion = (full: string) => {
+    setAddressInput(full);
+    setRegridSuggestions([]);
+    setShowRegridSuggestions(false);
+    setShowSuggestions(false);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    fetchSuggestions(full);
   };
 
   const selectAddress = (m: AddressMatch) => {
@@ -851,13 +910,32 @@ const OnboardingWizard = () => {
                 type="text"
                 value={addressInput}
                 onChange={(e) => handleAddressChange(e.target.value)}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onFocus={() => {
+                  if (regridSuggestions.length > 0) setShowRegridSuggestions(true);
+                  else if (suggestions.length > 0) setShowSuggestions(true);
+                }}
                 placeholder="Start typing your address..."
                 className="w-full rounded-xl border border-border bg-card py-4 pl-12 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 autoComplete="off"
               />
 
-              {showSuggestions && suggestions.length > 0 && (
+              {showRegridSuggestions && regridSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
+                  {regridSuggestions.map((s, i) => (
+                    <button
+                      key={`r-${i}`}
+                      type="button"
+                      onClick={() => selectRegridSuggestion(s)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-0"
+                    >
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground">{s}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showSuggestions && suggestions.length > 0 && !showRegridSuggestions && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
                   {suggestions.map((s, i) => (
                     <button
