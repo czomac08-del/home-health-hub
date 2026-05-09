@@ -62,6 +62,25 @@ export default function UploadDocumentModal({
   const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
   const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
 
+  const AI_MESSAGES = [
+    "AI is reading your document...",
+    "Extracting key details and dates...",
+    "Identifying document type...",
+    "Checking for warranty information...",
+    "Looking for permit numbers and specs...",
+    "Cross-referencing with your home systems...",
+    "Almost done — finalizing your records...",
+  ];
+  const [aiMessageIndex, setAiMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (step !== "extracting") return;
+    const interval = setInterval(() => {
+      setAiMessageIndex((prev) => (prev + 1) % AI_MESSAGES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [step]);
+
   const reset = () => {
     setStep("form");
     setFile(null);
