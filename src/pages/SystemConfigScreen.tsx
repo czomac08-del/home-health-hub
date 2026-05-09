@@ -25,6 +25,8 @@ import SystemApplicabilityGate from "@/components/SystemApplicabilityGate";
 import SystemInstanceSwitcher, { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
 import StructureAssignmentSelector, { LEGACY_OPTION, LEGACY_STATUS } from "@/components/StructureAssignmentSelector";
 import type { RefreshScope } from "@/hooks/useDataRefresh";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -125,6 +127,16 @@ const SystemConfigScreen = () => {
     | null
   >(null);
   const [pendingTargetId, setPendingTargetId] = useState<string>("");
+  // After a doc is uploaded from this screen, run AI extraction and open the
+  // unified review modal so the user always confirms what AI found before any
+  // values flow into the system specs.
+  const [reviewState, setReviewState] = useState<{
+    recordId: string;
+    fileName: string;
+    extracted: Record<string, any>;
+    targetSystemName: string;
+  } | null>(null);
+  const [extractingReview, setExtractingReview] = useState(false);
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -424,9 +436,10 @@ const SystemConfigScreen = () => {
     // Always mirror the upload to the Document Vault (property_records) so it
     // shows up immediately, regardless of whether the user finishes filling
     // out and saving this system's config form.
+    let vaultRecordId: string | null = null;
     if (activeProperty?.id) {
       try {
-        await supabase.from("property_records").insert({
+        const { data: vaultRow } = await supabase.from("property_records").insert({
           property_id: activeProperty.id,
           system_type: displayName,
           record_type: docType,
@@ -436,7 +449,8 @@ const SystemConfigScreen = () => {
           url: signedData.signedUrl,
           uploaded_by_user_id: user.id,
           consent_civic_sharing: false,
-        } as any);
+        } as any).select("id").single();
+        vaultRecordId = (vaultRow as any)?.id || null;
       } catch (vaultErr) {
         console.warn("[SystemConfig] vault mirror failed (non-fatal):", vaultErr);
       }
@@ -453,6 +467,9 @@ const SystemConfigScreen = () => {
       setPendingDoc({ docType, fileName: file.name, storagePath: path, signedUrl: signedData.signedUrl });
       // Clear input so the same file can be re-picked if cancelled.
       e.target.value = "";
+      // Stash the vault id on the pending doc context so the routing confirm
+      // step can resume the extract-and-review flow with the right record.
+      (window as any).__chiqPendingVaultId = vaultRecordId;
       return;
     }
 
@@ -461,6 +478,53 @@ const SystemConfigScreen = () => {
       [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl },
     }));
     e.target.value = "";
+
+    // Kick off AI extraction + unified review. This runs even when the file
+    // path does not need multi-instance routing — every system-card upload
+    // must surface the review screen so the user confirms what AI found.
+    if (vaultRecordId) {
+      void runExtractAndOpenReview({
+        recordId: vaultRecordId,
+        signedUrl: signedData.signedUrl,
+        fileName: file.name,
+        targetSystemName: displayName,
+      });
+    }
+  };
+
+  // Calls extract-document-data and opens the UnifiedDocumentReview modal.
+  // Even if extraction fails or returns no fields, the document is already in
+  // the vault — the review modal still opens so the user sees an honest
+  // "AI had trouble" / empty state instead of a silent save.
+  const runExtractAndOpenReview = async ({
+    recordId,
+    signedUrl,
+    fileName,
+    targetSystemName,
+  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }) => {
+    setExtractingReview(true);
+    let extracted: Record<string, any> = {};
+    try {
+      const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
+        body: { documentUrl: signedUrl, systemType: targetSystemName, source: "homeowner" },
+      });
+      if (extErr) {
+        console.warn("[SystemConfig] extract-document-data failed:", extErr);
+      } else {
+        extracted = (ext?.extracted as Record<string, any>) || {};
+        try {
+          await supabase
+            .from("property_records")
+            .update({ ai_extracted_data: extracted, ai_verified: true } as any)
+            .eq("id", recordId);
+        } catch { /* best-effort */ }
+      }
+    } catch (err) {
+      console.warn("[SystemConfig] extraction error:", err);
+    } finally {
+      setExtractingReview(false);
+      setReviewState({ recordId, fileName, extracted, targetSystemName });
+    }
   };
 
   const confirmPendingDoc = () => {
@@ -475,6 +539,20 @@ const SystemConfigScreen = () => {
         targetSystemDetailId: pendingTargetId || undefined,
       },
     }));
+    // Resume the extract → review flow once the user has picked which sibling
+    // instance the upload belongs to.
+    const vaultId = (window as any).__chiqPendingVaultId as string | null | undefined;
+    const targetName =
+      siblingSystems.find((s) => s.id === pendingTargetId)?.name || displayName;
+    if (vaultId) {
+      void runExtractAndOpenReview({
+        recordId: vaultId,
+        signedUrl: pendingDoc.signedUrl,
+        fileName: pendingDoc.fileName,
+        targetSystemName: targetName,
+      });
+    }
+    (window as any).__chiqPendingVaultId = null;
     setPendingDoc(null);
     setPendingTargetId("");
   };
@@ -1315,6 +1393,37 @@ const SystemConfigScreen = () => {
           onClose={() => setScanResult(null)}
         />
       )}
+
+      {/* Unified Document Review — opens after every doc upload from this
+          system card, so the user always confirms AI-extracted fields
+          before anything writes to system specs. */}
+      <Dialog
+        open={!!reviewState || extractingReview}
+        onOpenChange={(next) => { if (!next) setReviewState(null); }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Review AI-extracted details</DialogTitle>
+          </DialogHeader>
+          {extractingReview && !reviewState ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              <Sparkles className="h-5 w-5 text-primary mx-auto mb-2 animate-pulse" />
+              Reading your document…
+            </div>
+          ) : reviewState && activeProperty?.id && user?.id ? (
+            <UnifiedDocumentReview
+              propertyId={activeProperty.id}
+              userId={user.id}
+              systemName={reviewState.targetSystemName}
+              fileName={reviewState.fileName}
+              recordId={reviewState.recordId}
+              extracted={reviewState.extracted}
+              onSaved={() => setReviewState(null)}
+              onCompleteLater={() => setReviewState(null)}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
