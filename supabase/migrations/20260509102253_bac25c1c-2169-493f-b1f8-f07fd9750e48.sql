@@ -1,0 +1,1 @@
+ALTER TABLE public.warranties ADD COLUMN IF NOT EXISTS document_bucket text DEFAULT 'warranty-documents';

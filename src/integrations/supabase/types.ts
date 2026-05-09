@@ -4853,6 +4853,7 @@ export type Database = {
           coverage_start: string | null
           created_at: string
           data_status: Database["public"]["Enums"]["data_status"]
+          document_bucket: string | null
           document_path: string | null
           document_url: string | null
           extended_doc_path: string | null
@@ -4875,6 +4876,7 @@ export type Database = {
           coverage_start?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          document_bucket?: string | null
           document_path?: string | null
           document_url?: string | null
           extended_doc_path?: string | null
@@ -4897,6 +4899,7 @@ export type Database = {
           coverage_start?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          document_bucket?: string | null
           document_path?: string | null
           document_url?: string | null
           extended_doc_path?: string | null
