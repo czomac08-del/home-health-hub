@@ -648,9 +648,14 @@ serve(async (req) => {
       if (f.value != null && f.value !== "") extracted[k] = f.value;
     }
 
+    const detectedSystem = extracted.detected_system || null;
+    const detectedSystemName = extracted.system_name || null;
+
     return new Response(JSON.stringify({
       extracted,
       confidence: result.overall_confidence >= 85 ? "high" : result.overall_confidence >= 70 ? "medium" : "low",
+      detected_system: detectedSystem,
+      detected_system_name: detectedSystemName,
       // New tiered data
       tier: classification.tier,
       autoConfirm: classification.autoConfirm,
