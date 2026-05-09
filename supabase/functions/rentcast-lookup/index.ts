@@ -139,6 +139,68 @@ async function buildCensusFallback(address: string, authHeader?: string) {
   };
 }
 
+async function tryRentCastAddresses(addresses: string[], apiKey: string): Promise<any | null> {
+  for (const addr of addresses) {
+    if (!addr?.trim()) continue;
+    try {
+      const url = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(addr.trim())}`;
+      const resp = await fetch(url, {
+        headers: { "X-Api-Key": apiKey, Accept: "application/json" },
+      });
+      if (!resp.ok) { console.warn(`RentCast attempt failed for "${addr}": ${resp.status}`); continue; }
+      const data = await resp.json();
+      const property = Array.isArray(data) ? data[0] : data;
+      if (property) { console.log(`RentCast hit on: "${addr}"`); return property; }
+    } catch (e) { console.warn(`RentCast attempt error for "${addr}":`, e); }
+  }
+  return null;
+}
+
+async function ncParcelLookup(address: string, countyFips?: string | null): Promise<{
+  parcelId?: string; yearBuilt?: number; propertyType?: string;
+  squareFootage?: number; lotSize?: number; siteAddress?: string;
+} | null> {
+  try {
+    const parts = address.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+    const streetNum = parts[0];
+    const streetWord = parts[1] || "";
+    if (!streetNum || !streetWord) return null;
+
+    const whereClause = countyFips
+      ? `CNTY_FIPS='${countyFips}' AND SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`
+      : `SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`;
+
+    const url = `https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/0/query?` +
+      `where=${encodeURIComponent(whereClause)}&` +
+      `outFields=PARCEL_APN,SITE_ADDRESS,SITE_CITY,YEAR_BUILT,PARCEL_TYPE,CALC_ACRES,TOTAL_BLDG_AREA&` +
+      `f=json&resultRecordCount=5`;
+
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const features = data?.features;
+    if (!features?.length) return null;
+
+    const match = features.find((f: any) =>
+      String(f.attributes?.SITE_ADDRESS || "").toUpperCase().startsWith(streetNum)
+    ) || features[0];
+
+    const a = match.attributes;
+    console.log("NC parcel hit:", JSON.stringify(a));
+    return {
+      parcelId: a.PARCEL_APN ?? null,
+      yearBuilt: a.YEAR_BUILT ?? null,
+      propertyType: a.PARCEL_TYPE ?? null,
+      squareFootage: a.TOTAL_BLDG_AREA ?? null,
+      lotSize: a.CALC_ACRES ?? null,
+      siteAddress: a.SITE_ADDRESS ?? null,
+    };
+  } catch (e) {
+    console.error("NC parcel lookup error:", e);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
   const __unauth = await requireJwt(req); if (__unauth) return __unauth;
