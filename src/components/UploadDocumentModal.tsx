@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -61,6 +61,25 @@ export default function UploadDocumentModal({
   const [warrantyName, setWarrantyName] = useState("");
   const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
   const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
+
+  const AI_MESSAGES = [
+    "AI is reading your document...",
+    "Extracting key details and dates...",
+    "Identifying document type...",
+    "Checking for warranty information...",
+    "Looking for permit numbers and specs...",
+    "Cross-referencing with your home systems...",
+    "Almost done — finalizing your records...",
+  ];
+  const [aiMessageIndex, setAiMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (step !== "extracting") return;
+    const interval = setInterval(() => {
+      setAiMessageIndex((prev) => (prev + 1) % AI_MESSAGES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [step]);
 
   const reset = () => {
     setStep("form");
@@ -695,11 +714,11 @@ export default function UploadDocumentModal({
           <div className="py-8 text-center">
             <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
             <p className="text-sm font-semibold text-foreground">
-              {step === "uploading" ? "Uploading document..." : "AI is reading your document..."}
+              {step === "uploading" ? "Uploading document..." : AI_MESSAGES[aiMessageIndex]}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {step === "uploading" ? "Securing in your private vault" : "This usually takes 5–15 seconds"}
-            </p>
+            {step === "uploading" && (
+              <p className="text-xs text-muted-foreground mt-1">Securing in your private vault</p>
+            )}
           </div>
         )}
 
