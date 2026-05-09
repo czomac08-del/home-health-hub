@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Home, Trash2, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 type StructureType =
   | "main_house"
@@ -11,6 +12,7 @@ type StructureType =
   | "adu"
   | "workshop"
   | "pool_house"
+  | "legacy"
   | "other";
 
 interface Structure {
@@ -31,6 +33,7 @@ const TYPE_OPTIONS: { value: StructureType; label: string }[] = [
   { value: "adu", label: "ADU / in-law suite" },
   { value: "workshop", label: "Workshop / barn / outbuilding" },
   { value: "pool_house", label: "Pool house" },
+  { value: "legacy", label: "Legacy infrastructure (structure no longer exists)" },
   { value: "other", label: "Other" },
 ];
 
@@ -42,10 +45,24 @@ const TYPE_LABEL: Record<StructureType, string> = {
   adu: "ADU",
   workshop: "Workshop",
   pool_house: "Pool house",
+  legacy: "Legacy infrastructure",
   other: "Other",
 };
 
+type LegacyRemnant = "septic" | "well" | "foundation" | "electrical";
+
+const LEGACY_REMNANTS: { value: LegacyRemnant; label: string; systemName: string }[] = [
+  { value: "septic",     label: "Septic system",     systemName: "Legacy Septic System" },
+  { value: "well",       label: "Well",              systemName: "Legacy Well" },
+  { value: "foundation", label: "Foundation",        systemName: "Legacy Foundation" },
+  { value: "electrical", label: "Electrical service", systemName: "Legacy Electrical Service" },
+];
+
+const LEGACY_NOTE =
+  "Infrastructure remaining from a previous structure — document for property records and future sale disclosure.";
+
 const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
+  const { user } = useAuth();
   const [structures, setStructures] = useState<Structure[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -56,6 +73,7 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
   const [permitChoice, setPermitChoice] = useState<"" | "yes" | "no" | "unknown">("");
   const [permitYear, setPermitYear] = useState("");
   const [saving, setSaving] = useState(false);
+  const [legacyRemnants, setLegacyRemnants] = useState<Set<LegacyRemnant>>(new Set());
 
   const reload = async () => {
     const { data } = await supabase
@@ -82,6 +100,7 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
     setExtendedNotes("");
     setPermitChoice("");
     setPermitYear("");
+    setLegacyRemnants(new Set());
   };
 
   const addStructure = async () => {
@@ -89,20 +108,52 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
       toast.error("Give this structure a name");
       return;
     }
+    if (newType === "legacy" && legacyRemnants.size === 0) {
+      toast.error("Select what remains from the previous structure");
+      return;
+    }
     setSaving(true);
     try {
       const noteParts: string[] = [];
-      if (systemsChoice === "separate") noteParts.push("Has its own separate systems.");
-      if (systemsChoice === "extended") noteParts.push(`Extended existing systems${extendedNotes ? `: ${extendedNotes}` : ""}.`);
+      if (newType === "legacy") {
+        const remnantLabels = LEGACY_REMNANTS
+          .filter(r => legacyRemnants.has(r.value))
+          .map(r => r.label.toLowerCase());
+        noteParts.push(`${LEGACY_NOTE} Remaining: ${remnantLabels.join(", ")}.`);
+      } else {
+        if (systemsChoice === "separate") noteParts.push("Has its own separate systems.");
+        if (systemsChoice === "extended") noteParts.push(`Extended existing systems${extendedNotes ? `: ${extendedNotes}` : ""}.`);
+      }
       const { error } = await supabase.from("property_structures").insert({
         property_id: propertyId,
         name: newName.trim(),
         structure_type: newType,
-        added_by_permit: permitChoice === "yes",
-        permit_year: permitChoice === "yes" && permitYear ? Number(permitYear) : null,
+        added_by_permit: newType !== "legacy" && permitChoice === "yes",
+        permit_year: newType !== "legacy" && permitChoice === "yes" && permitYear ? Number(permitYear) : null,
         notes: noteParts.join(" ") || null,
       });
       if (error) throw error;
+
+      // For legacy infrastructure, create a system_details row for each remaining piece
+      if (newType === "legacy" && user?.id) {
+        const rows = LEGACY_REMNANTS
+          .filter(r => legacyRemnants.has(r.value))
+          .map(r => ({
+            property_id: propertyId,
+            user_id: user.id,
+            system_name: r.systemName,
+            status: "inactive_legacy",
+            notes: LEGACY_NOTE,
+          }));
+        if (rows.length > 0) {
+          const { error: sysErr } = await supabase.from("system_details").insert(rows);
+          if (sysErr) {
+            console.error("[Structures] legacy system_details insert failed", sysErr);
+            toast.error("Structure added, but legacy systems couldn't be saved.");
+          }
+        }
+      }
+
       toast.success(`${newName.trim()} added`);
       resetForm();
       reload();
@@ -206,11 +257,43 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Addition, Garage Apartment"
+              placeholder={newType === "legacy" ? "e.g. Old farmhouse footprint" : "e.g. Addition, Garage Apartment"}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
             />
           </div>
 
+          {newType === "legacy" ? (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
+                What remains on the property?
+              </p>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Select all infrastructure still present from the previous structure. We'll log each one for your records and future sale disclosure.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {LEGACY_REMNANTS.map((r) => {
+                  const checked = legacyRemnants.has(r.value);
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() =>
+                        setLegacyRemnants((prev) => {
+                          const n = new Set(prev);
+                          n.has(r.value) ? n.delete(r.value) : n.add(r.value);
+                          return n;
+                        })
+                      }
+                      className={`rounded-md border px-3 py-2 text-xs font-medium text-left transition-colors ${checked ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-foreground hover:bg-secondary"}`}
+                    >
+                      {checked ? "✓ " : ""}{r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+          <>
           <div>
             <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
               Did this structure get its own systems, or extend the existing ones?
@@ -266,6 +349,8 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
               />
             )}
           </div>
+          </>
+          )}
 
           <div className="flex gap-2 pt-1">
             <button

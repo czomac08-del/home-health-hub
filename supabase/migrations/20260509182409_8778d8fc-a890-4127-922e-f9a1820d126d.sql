@@ -1,0 +1,1 @@
+ALTER TYPE public.structure_type ADD VALUE IF NOT EXISTS 'legacy';

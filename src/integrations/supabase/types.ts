@@ -5276,6 +5276,7 @@ export type Database = {
         | "workshop"
         | "pool_house"
         | "other"
+        | "legacy"
       vault_record_source:
         | "homeowner"
         | "inspector"
@@ -5494,6 +5495,7 @@ export const Constants = {
         "workshop",
         "pool_house",
         "other",
+        "legacy",
       ],
       vault_record_source: [
         "homeowner",
