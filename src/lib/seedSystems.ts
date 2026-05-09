@@ -54,44 +54,60 @@ export async function seedSystemsFromOnboarding(
   if (wizardData.waterSource) {
     await writeSystemField({
       propertyId, userId, systemName: "Water Source",
-      field: "water_type", value: wizardData.waterSource,
+      field: "waterType", value: wizardData.waterSource,
+      source: "OWNER_PROVIDED",
+    });
+    const waterSystemName = wizardData.waterSource === "well" ? "Well Water" : "Plumbing";
+    await writeSystemField({
+      propertyId, userId, systemName: waterSystemName,
+      field: "waterType", value: wizardData.waterSource,
       source: "OWNER_PROVIDED",
     });
   }
   if (wizardData.knowsWaterShutoff) {
     await writeSystemField({
       propertyId, userId, systemName: "Water Source",
-      field: "shutoff_location_known", value: true,
+      field: "shutoffLocationKnown", value: true,
       source: "OWNER_PROVIDED",
     });
   }
   if (wizardData.knowsFilterLocation) {
     await writeSystemField({
       propertyId, userId, systemName: "HVAC",
-      field: "filter_location_known", value: true,
+      field: "filterLocationKnown", value: true,
       source: "OWNER_PROVIDED",
     });
   }
   if (wizardData.hvacType) {
     await writeSystemField({
       propertyId, userId, systemName: "HVAC",
-      field: "hvac_type", value: wizardData.hvacType,
+      field: "hvacType", value: wizardData.hvacType,
       source: "OWNER_PROVIDED",
     });
   }
   if (wizardData.fuelType) {
     await writeSystemField({
       propertyId, userId, systemName: "HVAC",
-      field: "fuel_type", value: wizardData.fuelType,
+      field: "fuelType", value: wizardData.fuelType,
       source: "OWNER_PROVIDED",
     });
   }
   if (wizardData.septicOrSewer) {
     await writeSystemField({
       propertyId, userId, systemName: "Sewer and Waste",
-      field: "system_type", value: wizardData.septicOrSewer,
+      field: "systemType", value: wizardData.septicOrSewer,
       source: "OWNER_PROVIDED",
     });
+  }
+  if (wizardData.homeAge) {
+    const year = typeof wizardData.homeAge === "string"
+      ? parseInt(wizardData.homeAge)
+      : wizardData.homeAge;
+    if (!isNaN(year as number) && (year as number) > 1700) {
+      await supabase.from("properties")
+        .update({ year_built: String(year) })
+        .eq("id", propertyId);
+    }
   }
 }
 
