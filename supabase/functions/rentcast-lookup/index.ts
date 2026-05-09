@@ -156,47 +156,92 @@ async function tryRentCastAddresses(addresses: string[], apiKey: string): Promis
   return null;
 }
 
-async function ncParcelLookup(address: string, countyFips?: string | null): Promise<{
+// ── TIER 2: Regrid nationwide parcel API ──────────────────────────────────
+async function regridLookup(address: string): Promise<{
   parcelId?: string; yearBuilt?: number; propertyType?: string;
-  squareFootage?: number; lotSize?: number; siteAddress?: string;
+  squareFootage?: number; lotSize?: number; ownerName?: string;
 } | null> {
+  const apiKey = Deno.env.get("REGRID_API_KEY");
+  if (!apiKey) return null;
+  try {
+    const url = `https://app.regrid.com/api/v1/search?query=${encodeURIComponent(address)}&path=/us&limit=1&token=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const parcel = data?.results?.[0]?.properties?.fields;
+    if (!parcel) return null;
+    console.log("Regrid hit:", JSON.stringify(parcel));
+    return {
+      parcelId:      parcel.parcelnumb   ?? parcel.apn           ?? null,
+      yearBuilt:     parcel.yearbuilt    ?? parcel.year_built    ?? null,
+      propertyType:  parcel.usedesc      ?? parcel.land_use_desc ?? parcel.usecode ?? null,
+      squareFootage: parcel.sqft         ?? parcel.building_sqft ?? parcel.ll_bldg_footprint_sqft ?? null,
+      lotSize:       parcel.lotsize      ?? parcel.ll_gisacre    ?? null,
+      ownerName:     parcel.owner        ?? null,
+    };
+  } catch (e) {
+    console.warn("Regrid lookup error:", e);
+    return null;
+  }
+}
+
+// ── TIER 3: State ArcGIS parcel portals (free, no key needed) ────────────
+const STATE_ARCGIS_ENDPOINTS: Record<string, {
+  url: string;
+  addressField: string;
+  fields: { parcelId: string; yearBuilt: string; propertyType: string; sqft: string; acres: string };
+}> = {
+  NC: {
+    url: "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/0",
+    addressField: "SITE_ADDRESS",
+    fields: { parcelId: "PARCEL_APN", yearBuilt: "YEAR_BUILT", propertyType: "PARCEL_TYPE", sqft: "TOTAL_BLDG_AREA", acres: "CALC_ACRES" },
+  },
+  VA: {
+    url: "https://gis.vgin.vipnet.org/arcgis/rest/services/Parcels/VA_Statewide_Parcels/FeatureServer/0",
+    addressField: "SITEADDRESS",
+    fields: { parcelId: "PARCELID", yearBuilt: "YEARBUILT", propertyType: "PROPCLASS", sqft: "TOTALLIVAREA", acres: "GISACRES" },
+  },
+};
+
+async function stateParcelLookup(address: string, state: string, countyFips?: string | null): Promise<{
+  parcelId?: string; yearBuilt?: number; propertyType?: string;
+  squareFootage?: number; lotSize?: number;
+} | null> {
+  const endpoint = STATE_ARCGIS_ENDPOINTS[state.toUpperCase()];
+  if (!endpoint) return null;
   try {
     const parts = address.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
     const streetNum = parts[0];
     const streetWord = parts[1] || "";
     if (!streetNum || !streetWord) return null;
 
-    const whereClause = countyFips
-      ? `CNTY_FIPS='${countyFips}' AND SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`
-      : `SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`;
+    const where = `${endpoint.addressField} LIKE '${streetNum} ${streetWord}%'` +
+      (countyFips ? ` AND CNTY_FIPS='${countyFips}'` : "");
+    const f = endpoint.fields;
+    const outFields = Object.values(f).join(",");
 
-    const url = `https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/0/query?` +
-      `where=${encodeURIComponent(whereClause)}&` +
-      `outFields=PARCEL_APN,SITE_ADDRESS,SITE_CITY,YEAR_BUILT,PARCEL_TYPE,CALC_ACRES,TOTAL_BLDG_AREA&` +
-      `f=json&resultRecordCount=5`;
-
+    const url = `${endpoint.url}/query?where=${encodeURIComponent(where)}&outFields=${encodeURIComponent(outFields)}&f=json&resultRecordCount=5`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     const features = data?.features;
     if (!features?.length) return null;
 
-    const match = features.find((f: any) =>
-      String(f.attributes?.SITE_ADDRESS || "").toUpperCase().startsWith(streetNum)
+    const match = features.find((feat: any) =>
+      String(feat.attributes?.[endpoint.addressField] || "").toUpperCase().startsWith(streetNum)
     ) || features[0];
 
     const a = match.attributes;
-    console.log("NC parcel hit:", JSON.stringify(a));
+    console.log(`State parcel hit (${state}):`, JSON.stringify(a));
     return {
-      parcelId: a.PARCEL_APN ?? null,
-      yearBuilt: a.YEAR_BUILT ?? null,
-      propertyType: a.PARCEL_TYPE ?? null,
-      squareFootage: a.TOTAL_BLDG_AREA ?? null,
-      lotSize: a.CALC_ACRES ?? null,
-      siteAddress: a.SITE_ADDRESS ?? null,
+      parcelId:      a[f.parcelId]      ?? null,
+      yearBuilt:     a[f.yearBuilt]     ? Number(a[f.yearBuilt]) : null,
+      propertyType:  a[f.propertyType]  ?? null,
+      squareFootage: a[f.sqft]          ? Number(a[f.sqft])      : null,
+      lotSize:       a[f.acres]         ? Number(a[f.acres])     : null,
     };
   } catch (e) {
-    console.error("NC parcel lookup error:", e);
+    console.warn(`State parcel lookup error (${state}):`, e);
     return null;
   }
 }
@@ -229,56 +274,51 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rawAddress = url.searchParams.get("rawAddress") || null;
-    const countyFips = url.searchParams.get("countyFips") || null;
-    const stateParam = url.searchParams.get("state") || null;
-    const isNC = stateParam === "NC" || (countyFips || "").startsWith("37");
+    const rawAddress    = url.searchParams.get("rawAddress")  || null;
+    const countyFips    = url.searchParams.get("countyFips")  || null;
+    const stateParam    = (url.searchParams.get("state") || "").toUpperCase();
 
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
 
-    // Build address variations to try with RentCast
-    const addressVariants = [
+    const variants = [
       rawAddress,
       address,
-      rawAddress?.replace(/\bRoad\b/i, "Rd").replace(/\bStreet\b/i, "St").replace(/\bAvenue\b/i, "Ave"),
-      rawAddress?.replace(/\bRd\b/i, "Road").replace(/\bSt\b/i, "Street"),
-    ].filter((v, i, arr) => v && arr.indexOf(v) === i) as string[];
+      rawAddress?.replace(/\bRoad\b/gi, "Rd").replace(/\bStreet\b/gi, "St").replace(/\bAvenue\b/gi, "Ave").replace(/\bDrive\b/gi, "Dr").replace(/\bLane\b/gi, "Ln").replace(/\bCourt\b/gi, "Ct").replace(/\bCircle\b/gi, "Cir"),
+      rawAddress?.replace(/\bRd\b/gi, "Road").replace(/\bSt\b/gi, "Street").replace(/\bAve\b/gi, "Avenue"),
+    ].filter((v, i, a) => !!v && a.indexOf(v) === i) as string[];
 
-    let property: any = null;
+    const [rentcastProperty, regridData, stateParcelData] = await Promise.all([
+      apiKey ? tryRentCastAddresses(variants, apiKey) : Promise.resolve(null),
+      regridLookup(rawAddress || address),
+      stateParam ? stateParcelLookup(rawAddress || address, stateParam, countyFips) : Promise.resolve(null),
+    ]);
 
-    if (apiKey) {
-      property = await tryRentCastAddresses(addressVariants, apiKey);
-    }
+    const parcelData = regridData || stateParcelData;
+    const property   = rentcastProperty;
 
-    let ncParcel: Awaited<ReturnType<typeof ncParcelLookup>> = null;
-    if (isNC) {
-      ncParcel = await ncParcelLookup(rawAddress || address, countyFips);
-      console.log("NC parcel result:", JSON.stringify(ncParcel));
-    }
-
-    if (property || ncParcel) {
+    if (property || parcelData) {
       const result = {
-        found: true,
+        found:            true,
         rentcast_available: !!property,
-        data_source: property ? "rentcast" : "nc_parcel",
-        yearBuilt:        property?.yearBuilt        ?? ncParcel?.yearBuilt        ?? null,
-        squareFootage:    property?.squareFootage    ?? property?.livingArea       ?? ncParcel?.squareFootage ?? null,
-        lotSize:          property?.lotSize          ?? ncParcel?.lotSize          ?? null,
-        propertyType:     property?.propertyType     ?? ncParcel?.propertyType     ?? null,
-        bedrooms:         property?.bedrooms         ?? null,
-        bathrooms:        property?.bathrooms        ?? property?.bathsFull        ?? null,
-        estimatedValue:   property?.price            ?? property?.estimatedValue   ?? null,
-        formattedAddress: property?.formattedAddress ?? property?.addressLine1     ?? ncParcel?.siteAddress ?? address,
-        lastSaleDate:     property?.lastSaleDate     ?? null,
-        lastSalePrice:    property?.lastSalePrice    ?? null,
-        priorSales:       property?.priorSales       ?? property?.salesHistory     ?? [],
-        county:           property?.county           ?? null,
-        state:            property?.state            ?? stateParam                 ?? null,
-        zipCode:          property?.zipCode          ?? null,
-        parcelId:         property?.assessorID       ?? property?.parcelId         ?? ncParcel?.parcelId    ?? null,
-        rentcastId:       property?.id               ?? null,
-        legalDescription: property?.legalDescription ?? null,
-        subdivision:      property?.subdivision      ?? null,
+        data_source:      property ? "rentcast" : (regridData ? "regrid" : `${stateParam.toLowerCase()}_parcel`),
+        yearBuilt:        property?.yearBuilt         ?? parcelData?.yearBuilt        ?? null,
+        squareFootage:    property?.squareFootage     ?? property?.livingArea         ?? parcelData?.squareFootage ?? null,
+        lotSize:          property?.lotSize           ?? parcelData?.lotSize          ?? null,
+        propertyType:     property?.propertyType      ?? parcelData?.propertyType     ?? null,
+        bedrooms:         property?.bedrooms          ?? null,
+        bathrooms:        property?.bathrooms         ?? property?.bathsFull          ?? null,
+        estimatedValue:   property?.price             ?? property?.estimatedValue    ?? null,
+        formattedAddress: property?.formattedAddress  ?? property?.addressLine1      ?? address,
+        lastSaleDate:     property?.lastSaleDate      ?? null,
+        lastSalePrice:    property?.lastSalePrice     ?? null,
+        priorSales:       property?.priorSales        ?? property?.salesHistory      ?? [],
+        county:           property?.county            ?? null,
+        state:            property?.state             ?? stateParam                  ?? null,
+        zipCode:          property?.zipCode           ?? null,
+        parcelId:         property?.assessorID        ?? property?.parcelId          ?? parcelData?.parcelId ?? null,
+        rentcastId:       property?.id                ?? null,
+        legalDescription: property?.legalDescription  ?? null,
+        subdivision:      property?.subdivision       ?? null,
       };
       await writeCache(cacheKey, result.data_source, result, countyFips, addrHash);
       return new Response(JSON.stringify(result), {
