@@ -3340,6 +3340,62 @@ export type Database = {
           },
         ]
       }
+      property_shares: {
+        Row: {
+          access_count: number
+          created_at: string
+          documents_included: Json
+          expires_at: string
+          id: string
+          last_accessed_at: string | null
+          message: string | null
+          property_id: string
+          recipient_email: string | null
+          recipient_name: string | null
+          revoked_at: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          access_count?: number
+          created_at?: string
+          documents_included?: Json
+          expires_at?: string
+          id?: string
+          last_accessed_at?: string | null
+          message?: string | null
+          property_id: string
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          token?: string
+          user_id: string
+        }
+        Update: {
+          access_count?: number
+          created_at?: string
+          documents_included?: Json
+          expires_at?: string
+          id?: string
+          last_accessed_at?: string | null
+          message?: string | null
+          property_id?: string
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       property_structures: {
         Row: {
           added_by_permit: boolean
@@ -3866,6 +3922,60 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      share_document_requests: {
+        Row: {
+          created_at: string
+          homeowner_user_id: string
+          id: string
+          message: string | null
+          property_id: string
+          requested_by_user_id: string
+          requested_items: Json
+          resolved_at: string | null
+          share_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          homeowner_user_id: string
+          id?: string
+          message?: string | null
+          property_id: string
+          requested_by_user_id: string
+          requested_items?: Json
+          resolved_at?: string | null
+          share_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          homeowner_user_id?: string
+          id?: string
+          message?: string | null
+          property_id?: string
+          requested_by_user_id?: string
+          requested_items?: Json
+          resolved_at?: string | null
+          share_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_document_requests_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "share_document_requests_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "property_shares"
             referencedColumns: ["id"]
           },
         ]
@@ -4695,6 +4805,20 @@ export type Database = {
           is_subscribed: boolean
           one_time_access_expires_at: string
           status: string
+        }[]
+      }
+      get_shared_property_package: {
+        Args: { _token: string }
+        Returns: {
+          documents_included: Json
+          expires_at: string
+          message: string
+          owner_name: string
+          property_address: string
+          property_health_score: number
+          property_id: string
+          property_year_built: string
+          share_id: string
         }[]
       }
       get_shared_report: {
