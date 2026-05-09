@@ -171,6 +171,14 @@ const OnboardingWizard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — run once on mount only
 
+  // Auto-advance from Step 2 when scan pre-filled both type + age
+  useEffect(() => {
+    if (step === 2 && prefilledFields.has("homeType") && prefilledFields.has("homeAge") && scanResults) {
+      const timer = setTimeout(() => setStep(3), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, prefilledFields, scanResults]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
