@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Star, QrCode, Mail, FileText, Download, Trash2, Sparkles, Home } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -9,6 +9,22 @@ import { supabase } from "@/integrations/supabase/client";
 
 const STEPS = ["What's Staying", "Scrub Info", "Rate Systems", "Welcome Note", "Generate", "Transfer"];
 
+const healthFromSpecs = (specs: any, dataStatus: string | null): number => {
+  const cond = String(specs?.condition || "").toLowerCase();
+  const isInspector = dataStatus === "inspector_verified";
+  let base = isInspector ? 82 : 70;
+  if (/major defect/i.test(cond)) base = 60;
+  else if (/significant/i.test(cond)) base = 70;
+  else if (/minor/i.test(cond)) base = 78;
+  else if (/excellent/i.test(cond)) base = 90;
+  return Math.max(40, Math.min(95, base));
+};
+
+const formatDate = (s: string | null | undefined) => {
+  if (!s) return "No record";
+  try { return new Date(s).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return s; }
+};
+
 type ItemDisposition = "staying" | "taking" | "unsure" | null;
 
 interface SystemEntry {
@@ -18,32 +34,73 @@ interface SystemEntry {
   lastService: string;
 }
 
-const systems: SystemEntry[] = [
-  { name: "HVAC", category: "core", health: 92, lastService: "Mar 2024" },
-  { name: "Well / Water Source", category: "core", health: 85, lastService: "Jan 2024" },
-  { name: "Electrical Panel", category: "core", health: 65, lastService: "Nov 2023" },
-  { name: "Plumbing", category: "core", health: 78, lastService: "Jan 2024" },
-  { name: "Roof", category: "core", health: 55, lastService: "Sep 2023" },
-  { name: "Septic / Sewer", category: "core", health: 80, lastService: "Apr 2023" },
-  { name: "Water Heater", category: "core", health: 70, lastService: "Jun 2023" },
-  { name: "Refrigerator", category: "appliance", health: 90, lastService: "N/A" },
-  { name: "Washer / Dryer", category: "appliance", health: 88, lastService: "N/A" },
-  { name: "Dishwasher", category: "appliance", health: 85, lastService: "N/A" },
-  { name: "Garage Door Opener", category: "appliance", health: 75, lastService: "N/A" },
+const FALLBACK_SYSTEMS: SystemEntry[] = [
+  { name: "HVAC", category: "core", health: 70, lastService: "No record" },
+  { name: "Plumbing", category: "core", health: 70, lastService: "No record" },
+  { name: "Electrical Panel", category: "core", health: 70, lastService: "No record" },
+  { name: "Roof", category: "core", health: 70, lastService: "No record" },
+  { name: "Water Heater", category: "core", health: 70, lastService: "No record" },
 ];
 
 const HandoverWizardScreen = () => {
   const navigate = useNavigate();
+  const { activeProperty } = useAuth();
   const [step, setStep] = useState(0);
+  const [systems, setSystems] = useState<SystemEntry[]>(FALLBACK_SYSTEMS);
+
+  useEffect(() => {
+    if (!activeProperty?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("system_name, install_date, last_service, specs, data_status")
+        .eq("property_id", activeProperty.id);
+      if (cancelled || !data || !data.length) return;
+      const isAppliance = (n: string) => /(refrig|washer|dryer|dishwasher|garage door|microwave|oven|range)/i.test(n);
+      const loaded: SystemEntry[] = (data as any[]).map((r) => ({
+        name: r.system_name,
+        category: isAppliance(r.system_name) ? "appliance" : "core",
+        health: healthFromSpecs(r.specs || {}, r.data_status),
+        lastService: formatDate(r.last_service || r.install_date),
+      }));
+      setSystems(loaded);
+    })();
+    return () => { cancelled = true; };
+  }, [activeProperty?.id]);
 
   // Step 1
   const [dispositions, setDispositions] = useState<Record<string, ItemDisposition>>(() => {
     const init: Record<string, ItemDisposition> = {};
-    systems.forEach((s) => {
+    FALLBACK_SYSTEMS.forEach((s) => {
       init[s.name] = s.category === "core" ? "staying" : null;
     });
     return init;
   });
+
+  // Re-seed dispositions when real systems load
+  useEffect(() => {
+    setDispositions((prev) => {
+      const next = { ...prev };
+      systems.forEach((s) => {
+        if (!(s.name in next)) next[s.name] = s.category === "core" ? "staying" : null;
+      });
+      return next;
+    });
+  }, [systems]);
+
+  // Pre-fill ratings from health score
+  useEffect(() => {
+    setRatings((prev) => {
+      const next = { ...prev };
+      systems.forEach((s) => {
+        if (next[s.name] == null) {
+          next[s.name] = s.health >= 80 ? 5 : s.health >= 60 ? 4 : s.health >= 40 ? 3 : 2;
+        }
+      });
+      return next;
+    });
+  }, [systems]);
 
   // Step 2
   const [scrubToggles, setScrubToggles] = useState<Record<string, boolean>>({
