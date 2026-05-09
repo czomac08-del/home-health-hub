@@ -803,6 +803,29 @@ export default function UploadDocumentModal({
                 <span className="text-blue-600 dark:text-blue-400 text-xs">— info will be added to that system</span>
               </div>
             )}
+            {instanceOptions.length > 1 && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                <p className="text-sm font-semibold text-foreground">
+                  Which structure does this document belong to?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  You have multiple {(detectedSystemName || detectedSystem || "").toString().replace(/_/g, " ")} systems on this property. Pick the one this document covers — fields will only update on that system.
+                </p>
+                <select
+                  value={selectedInstanceName}
+                  onChange={(e) => setSelectedInstanceName(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select a system…</option>
+                  {instanceOptions.map((opt) => (
+                    <option key={opt.id} value={opt.system_name}>
+                      {opt.system_name}
+                      {opt.structure ? ` — ${opt.structure}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {docType === "warranty" && (
               <div>
                 <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
