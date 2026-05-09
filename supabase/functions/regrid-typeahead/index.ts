@@ -34,9 +34,11 @@ serve(async (req) => {
     }
 
     const upstream = new URL("https://app.regrid.com/api/v1/typeahead");
+    // Send the full query string to Regrid. The 3-char check above is only a
+    // minimum-length threshold; it is NOT a cap on query length.
     upstream.searchParams.set("query", query);
     upstream.searchParams.set("token", token);
-    upstream.searchParams.set("limit", "5");
+    upstream.searchParams.set("limit", "8");
 
     const res = await fetch(upstream.toString(), {
       headers: { Accept: "application/json" },
@@ -74,7 +76,7 @@ serve(async (req) => {
         "";
       const str = typeof candidate === "string" ? candidate.trim() : "";
       if (str && !suggestions.includes(str)) suggestions.push(str);
-      if (suggestions.length >= 5) break;
+      if (suggestions.length >= 8) break;
     }
 
     return new Response(JSON.stringify({ suggestions }), {
