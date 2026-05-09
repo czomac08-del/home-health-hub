@@ -290,6 +290,10 @@ const ProfileScreen = () => {
         </button>
       </Section>
 
+      <Section title="Shared Links">
+        <SharedLinksList />
+      </Section>
+
       {/* Dev Reset */}
       <div className="mt-2">
         <DevResetButton />
