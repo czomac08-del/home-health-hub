@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Home, Shield, Calendar, Heart, ChevronRight, AlertTriangle, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { parseStateFromAddress } from "@/data/stateData";
 import ConstructionProfile from "@/components/ConstructionProfile";
 import PropertyTimeline from "@/components/PropertyTimeline";
@@ -101,6 +102,85 @@ const PropertyDetailScreen = () => {
           </div>
         ) : null}
       </div>
+
+      {/* Property Identity — parcel ID + public record vitals */}
+      {((activeProperty as any).parcel_id || (activeProperty as any).bedrooms || activeProperty.square_footage) ? (
+        <div className="rounded-xl border border-border bg-card p-4 mb-6">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Property Identity
+          </h2>
+          <div className="space-y-2">
+            {(activeProperty as any).parcel_id && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Parcel ID (APN)</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText((activeProperty as any).parcel_id);
+                    toast.success("Parcel ID copied");
+                  }}
+                  className="text-xs font-mono font-medium text-foreground hover:text-primary flex items-center gap-1"
+                >
+                  {(activeProperty as any).parcel_id}
+                  <Copy className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            {(activeProperty as any).legal_description && (
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-xs text-muted-foreground shrink-0">Legal Description</span>
+                <span className="text-xs text-foreground text-right">{(activeProperty as any).legal_description}</span>
+              </div>
+            )}
+            {(activeProperty as any).subdivision && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Subdivision</span>
+                <span className="text-xs text-foreground">{(activeProperty as any).subdivision}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border mt-2">
+              {(activeProperty as any).bedrooms && (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">{(activeProperty as any).bedrooms}</p>
+                  <p className="text-[10px] text-muted-foreground">Beds</p>
+                </div>
+              )}
+              {(activeProperty as any).bathrooms && (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">{(activeProperty as any).bathrooms}</p>
+                  <p className="text-[10px] text-muted-foreground">Baths</p>
+                </div>
+              )}
+              {activeProperty.square_footage && (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    {Number(activeProperty.square_footage).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Sq Ft</p>
+                </div>
+              )}
+              {(activeProperty as any).lot_size && (
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    {((activeProperty as any).lot_size / 43560).toFixed(2)}ac
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Lot</p>
+                </div>
+              )}
+            </div>
+            {(activeProperty as any).last_sale_date && (
+              <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                Last sold {new Date((activeProperty as any).last_sale_date).getFullYear()}
+                {(activeProperty as any).last_sale_price
+                  ? ` · $${Number((activeProperty as any).last_sale_price).toLocaleString()}`
+                  : ""}
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground/60 italic pt-1">
+              From public records · Use parcel ID to look up county permits and tax history
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Discovery Status */}
       <div className="mb-6">
