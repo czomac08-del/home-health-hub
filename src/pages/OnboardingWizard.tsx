@@ -150,6 +150,9 @@ const OnboardingWizard = () => {
   } | null>(null);
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set());
   const [confirmedFields, setConfirmedFields] = useState<Set<string>>(new Set());
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [listingUploading, setListingUploading] = useState(false);
+  const [listingError, setListingError] = useState<string | null>(null);
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
