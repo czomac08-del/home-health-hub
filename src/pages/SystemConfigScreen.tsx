@@ -418,6 +418,27 @@ const SystemConfigScreen = () => {
     const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
     if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
 
+    // Always mirror the upload to the Document Vault (property_records) so it
+    // shows up immediately, regardless of whether the user finishes filling
+    // out and saving this system's config form.
+    if (activeProperty?.id) {
+      try {
+        await supabase.from("property_records").insert({
+          property_id: activeProperty.id,
+          system_type: displayName,
+          record_type: docType,
+          source: "system_config",
+          file_name: file.name,
+          storage_path: path,
+          url: signedData.signedUrl,
+          uploaded_by_user_id: user.id,
+          consent_civic_sharing: false,
+        } as any);
+      } catch (vaultErr) {
+        console.warn("[SystemConfig] vault mirror failed (non-fatal):", vaultErr);
+      }
+    }
+
     const needsRouting =
       siblingSystems.length > 1 ||
       (hasAdditionalStructures && siblingSystems.length >= 1) ||
