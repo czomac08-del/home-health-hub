@@ -836,6 +836,9 @@ const SystemConfigScreen = () => {
           {isWaterSource && waterType && (
             <WaterFiltrationSection waterType={waterType as "city" | "well"} householdFactors={hvacHouseholdFactors} />
           )}
+          {!isWaterSource && waterType && (
+            <WaterFiltrationSection waterType={waterType as "city" | "well"} householdFactors={hvacHouseholdFactors} readOnly />
+          )}
 
           {/* ── HVAC Filter & Air Quality Section ── */}
           {displayName.toLowerCase().includes("hvac") && (

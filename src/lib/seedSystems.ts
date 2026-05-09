@@ -7,9 +7,8 @@ const STANDARD_SYSTEMS = [
   "Electrical Panel",
   "Plumbing",
   "Water Heater",
-  "Water Source",
-  "Sewer and Waste",
 ];
+// Water Source and Sewer/Waste are seeded only when onboarding captures the type.
 
 /**
  * Insert minimal placeholder rows for every standard system so the dashboard

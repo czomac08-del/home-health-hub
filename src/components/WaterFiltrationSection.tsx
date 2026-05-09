@@ -100,9 +100,10 @@ const AffiliateNote = () => (
 interface Props {
   waterType: "city" | "well";
   householdFactors?: string[];
+  readOnly?: boolean;
 }
 
-export const WaterFiltrationSection = ({ waterType, householdFactors = [] }: Props) => {
+export const WaterFiltrationSection = ({ waterType, householdFactors = [], readOnly = false }: Props) => {
   const hasVulnerable = householdFactors.some(f => ["allergies", "asthma", "young_children", "immunocompromised"].includes(f));
   const hasPets = householdFactors.some(f => ["dogs", "cats", "multiple_pets"].includes(f));
   const [hasFiltration, setHasFiltration] = useState<"yes" | "no" | "">("");
