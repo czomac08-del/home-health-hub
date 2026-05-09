@@ -12,6 +12,7 @@ import CivicDashboard from "@/components/CivicDashboard";
 import DataPermanenceBanner from "@/components/DataPermanenceBanner";
 import CommunityImpactSection from "@/components/CommunityImpactSection";
 import DevResetButton from "@/components/DevResetButton";
+import SharedLinksList from "@/components/SharedLinksList";
 import AccountSecuritySection from "@/components/AccountSecuritySection";
 import ReferralDashboard from "@/components/ReferralDashboard";
 
@@ -288,6 +289,10 @@ const ProfileScreen = () => {
           </div>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
         </button>
+      </Section>
+
+      <Section title="Shared Links">
+        <SharedLinksList />
       </Section>
 
       {/* Dev Reset */}

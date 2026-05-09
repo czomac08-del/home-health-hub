@@ -4807,6 +4807,22 @@ export type Database = {
           status: string
         }[]
       }
+      get_share_status: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          message: string
+          owner_first_name: string
+          owner_full_name: string
+          property_address: string
+          property_health_score: number
+          property_id: string
+          property_year_built: string
+          share_id: string
+          status: string
+        }[]
+      }
       get_shared_property_package: {
         Args: { _token: string }
         Returns: {
@@ -4874,6 +4890,8 @@ export type Database = {
           read_ct: number
         }[]
       }
+      record_share_view: { Args: { _token: string }; Returns: undefined }
+      revoke_property_share: { Args: { _share_id: string }; Returns: boolean }
       spend_credits: { Args: { _amount: number }; Returns: boolean }
     }
     Enums: {

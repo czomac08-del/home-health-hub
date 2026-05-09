@@ -19,6 +19,7 @@ import { template as onboardingDay60 } from './onboarding-day-60.tsx'
 import { template as pulseMonthly } from './pulse-monthly.tsx'
 import { template as reengagement45 } from './reengagement-45.tsx'
 import { template as reengagement60 } from './reengagement-60.tsx'
+import { template as realtorShareInvite } from './realtor-share-invite.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'onboarding-day-1': onboardingDay1,
@@ -31,4 +32,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'pulse-monthly': pulseMonthly,
   'reengagement-45': reengagement45,
   'reengagement-60': reengagement60,
+  'realtor-share-invite': realtorShareInvite,
 }
