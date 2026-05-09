@@ -985,55 +985,18 @@ const OnboardingWizard = () => {
       </div>
 
       {/* footer nav */}
-      {step < TOTAL_STEPS && (
+      {step < TOTAL_STEPS && step !== 1 && scanPhase === "idle" && (
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
-          {step === 1 ? (
-            <>
-            {selectedMatch && scanning && (
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Searching public records for this property…
-              </div>
-            )}
-            {publicRecordsData && Object.keys(publicRecordsData).length > 0 && (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
-                <p className="font-semibold text-primary mb-1">✓ Public records found — answers pre-filled</p>
-                <ul className="text-xs text-muted-foreground space-y-0.5">
-                  {publicRecordsData.yearBuilt && <li>Year built: {publicRecordsData.yearBuilt}</li>}
-                  {publicRecordsData.waterSource && <li>Water source: {publicRecordsData.waterSource === "well" ? "Well water" : "City water"}</li>}
-                  {publicRecordsData.hvacType && <li>Heating/cooling detected</li>}
-                  {publicRecordsData.septicOrSewer && <li>Sewer: {publicRecordsData.septicOrSewer}</li>}
-                </ul>
-                <p className="text-xs text-muted-foreground mt-1 italic">You can review and change any of these as you go through setup.</p>
-              </div>
-            )}
-            <button
-              onClick={() => {
-                if (selectedMatch) {
-                  void saveAddressAndContinue();
-                } else {
-                  // No address selected — advance without saving or scanning
-                  setStep(2);
-                }
-              }}
-              disabled={savingAddress || scanning}
-              className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {scanning ? (<><Loader2 className="h-4 w-4 animate-spin" /> Scanning records...</>) : savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
+          <div className="flex gap-3">
+            <button onClick={back}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
+              <ChevronLeft className="h-4 w-4" /> Back
             </button>
-            </>
-          ) : (
-            <div className="flex gap-3">
-              <button onClick={back}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-foreground hover:bg-muted transition-colors">
-                <ChevronLeft className="h-4 w-4" /> Back
-              </button>
-              <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
-                className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
-                {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
-              </button>
-            </div>
-          )}
+            <button onClick={next} disabled={(step !== 7 && !canNext()) || saving}
+              className={`flex-[2] flex items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 ${step === 7 ? "py-4 min-h-[56px] text-base glow-teal-strong" : "py-3"}`}>
+              {saving ? "Saving..." : step === 7 ? "🎉 Finish Setup" : "Continue"} {!saving && step < 7 && <ChevronRight className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       )}
     </div>
