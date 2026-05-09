@@ -515,7 +515,7 @@ const OnboardingWizard = () => {
               )}
             </div>
 
-            {selectedMatch && (
+            {selectedMatch && !scanning && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <div className="text-xs text-foreground">
@@ -527,6 +527,40 @@ const OnboardingWizard = () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {scanning && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+                  <p className="text-sm font-semibold text-primary">Searching public records…</p>
+                </div>
+                <div className="flex flex-col gap-1.5 pl-6">
+                  {["Property tax & ownership records","County assessor data","Environmental & FEMA risk data","Parcel & structure details"].map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedMatch && (
+              <button
+                type="button"
+                onClick={saveAddressAndContinue}
+                disabled={savingAddress || scanning}
+                className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+              >
+                {scanning ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Searching public records…</>
+                ) : savingAddress ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />Saving…</>
+                ) : (
+                  <><Sparkles className="h-4 w-4" />Search Public Records &amp; Continue</>
+                )}
+              </button>
             )}
 
             {geocodeError && !selectedMatch && (
