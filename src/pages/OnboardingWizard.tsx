@@ -317,14 +317,17 @@ const OnboardingWizard = () => {
             }
 
             if (json?.propertyType) {
-              const pt = (json.propertyType as string).toLowerCase();
+              const pt = (json.propertyType as string).toLowerCase().replace(/[_\s-]+/g, " ");
               let homeTypeId = "";
-              if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
-              else if (pt.includes("condo"))                      homeTypeId = "condo";
-              else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
-              else if (pt.includes("multi") || pt.includes("duplex"))       homeTypeId = "multi_family";
-              else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
-              if (homeTypeId) { update("homeType", homeTypeId); filled.add("homeType"); }
+              if (pt.includes("single") || pt === "residential" || pt === "sfr" || pt === "sfd") homeTypeId = "single_family";
+              else if (pt.includes("condo") || pt.includes("condominium")) homeTypeId = "condo";
+              else if (pt.includes("townhouse") || pt.includes("townhome") || pt.includes("town home")) homeTypeId = "townhouse";
+              else if (pt.includes("multi") || pt.includes("duplex") || pt.includes("triplex") || pt.includes("quadplex")) homeTypeId = "multi_family";
+              else if (pt.includes("mobile") || pt.includes("manufactured") || pt.includes("mfh")) homeTypeId = "manufactured";
+              else if (pt.includes("land") || pt.includes("lot") || pt.includes("vacant")) homeTypeId = "land";
+              else homeTypeId = "single_family"; // safe default — most scanned properties are single family
+              update("homeType", homeTypeId);
+              filled.add("homeType");
             }
 
             setPrefilledFields(filled);
