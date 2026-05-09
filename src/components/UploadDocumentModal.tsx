@@ -59,6 +59,8 @@ export default function UploadDocumentModal({
   const [manualDate, setManualDate] = useState("");
   const [manualDetails, setManualDetails] = useState("");
   const [warrantyName, setWarrantyName] = useState("");
+  const [detectedSystem, setDetectedSystem] = useState<string | null>(null);
+  const [detectedSystemName, setDetectedSystemName] = useState<string | null>(null);
 
   const reset = () => {
     setStep("form");
@@ -75,6 +77,8 @@ export default function UploadDocumentModal({
     setManualDate("");
     setManualDetails("");
     setWarrantyName("");
+    setDetectedSystem(null);
+    setDetectedSystemName(null);
   };
 
   const handleClose = (next: boolean) => {
@@ -158,6 +162,8 @@ export default function UploadDocumentModal({
           setExtracted(ext?.extracted || {});
           setConfidence(ext?.confidence || "low");
           setInspectionReport(ext?.inspectionReport || null);
+          if (ext?.detected_system) setDetectedSystem(ext.detected_system);
+          if (ext?.detected_system_name) setDetectedSystemName(ext.detected_system_name);
           if (docType === "warranty") {
             const suggested =
               ext?.extracted?.provider_name ||
@@ -239,6 +245,60 @@ export default function UploadDocumentModal({
           }
         } catch (warrantyErr) {
           console.warn("Auto-sync to warranties failed (non-fatal):", warrantyErr);
+        }
+      }
+
+      // Fan extracted data out to system_details when an "Other" upload was
+      // identified by AI as belonging to a known system category.
+      if (detectedSystem && detectedSystem !== "other" && user && activeProperty?.id && recordId) {
+        try {
+          const systemNameMap: Record<string, string> = {
+            water_filtration: "Water Filtration",
+            plumbing: "Plumbing",
+            hvac: "HVAC",
+            electrical: "Electrical",
+            structural: "Structural",
+            roof: "Roof",
+            appliance: "Appliances",
+            water_heater: "Water Heater",
+            well: "Well",
+            septic: "Septic",
+          };
+          const targetSystemName = detectedSystemName || systemNameMap[detectedSystem] || detectedSystem;
+
+          const { data: existingSystems } = await supabase
+            .from("system_details")
+            .select("id, system_name, brand, model, notes")
+            .eq("property_id", activeProperty.id)
+            .eq("user_id", user.id)
+            .ilike("system_name", `%${systemNameMap[detectedSystem] || detectedSystem}%`)
+            .limit(1);
+
+          const w = extracted as any;
+          const updatePayload: any = {};
+          if (w.brand && !existingSystems?.[0]?.brand) updatePayload.brand = w.brand;
+          if (w.model) updatePayload.model = w.model;
+          if (w.serial) updatePayload.serial_number = w.serial;
+          if (w.install_date) updatePayload.install_date = w.install_date;
+          if (w.notes) updatePayload.notes = w.notes;
+
+          if (existingSystems && existingSystems.length > 0) {
+            if (Object.keys(updatePayload).length > 0) {
+              await supabase
+                .from("system_details")
+                .update(updatePayload)
+                .eq("id", existingSystems[0].id);
+            }
+          } else {
+            await supabase.from("system_details").insert({
+              property_id: activeProperty.id,
+              user_id: user.id,
+              system_name: targetSystemName,
+              ...updatePayload,
+            });
+          }
+        } catch (sysErr) {
+          console.warn("System fan-out failed (non-fatal):", sysErr);
         }
       }
 
@@ -532,6 +592,14 @@ export default function UploadDocumentModal({
 
         {step === "review" && (
           <div className="space-y-4">
+            {docType === "other" && detectedSystem && detectedSystem !== "other" && (
+              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  📍 Looks like: {detectedSystemName || detectedSystem.replace(/_/g, " ")}
+                </span>
+                <span className="text-blue-600 dark:text-blue-400 text-xs">— info will be added to that system</span>
+              </div>
+            )}
             {docType === "warranty" && (
               <div>
                 <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
