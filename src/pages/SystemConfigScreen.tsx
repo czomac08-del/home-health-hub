@@ -56,6 +56,16 @@ const AiBadge = () => (
   </span>
 );
 
+// Grey "Estimated" badge — for AI inferences from regional patterns (not from a confirmed source)
+const EstimatedBadge = () => (
+  <span
+    title="AI estimate based on regional patterns. Not a confirmed record for this property."
+    className="inline-flex items-center gap-0.5 rounded-full bg-muted border border-border px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wide leading-none"
+  >
+    <Sparkles className="h-2.5 w-2.5" /> ~Est
+  </span>
+);
+
 const SystemConfigScreen = () => {
   const { name } = useParams<{ name: string }>();
   const [searchParams] = useSearchParams();
