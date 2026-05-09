@@ -458,6 +458,9 @@ const ContractorDashboard = () => {
         </button>
       </div>
 
+      {/* Submit via share link from homeowner */}
+      <ShareLinkSubmit />
+
       {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
       <div className="mb-6">
@@ -596,5 +599,47 @@ const Field = ({ label, value, onChange, placeholder, multiline }: {
     )}
   </div>
 );
+
+const ShareLinkSubmit = () => {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState("");
+  const submit = () => {
+    const m = val.trim().match(/(?:\/job\/|\/inspection\/)?([a-f0-9-]{20,})/i);
+    if (!m) { toast.error("Paste a valid job share link or token"); return; }
+    const isInspection = /\/inspection\//.test(val);
+    const path = isInspection ? "inspection" : "job";
+    navigate(`/${path}/${m[1]}?contractor=true`);
+  };
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="w-full mb-4 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 px-4 py-3 text-left flex items-center gap-2 transition-colors">
+        <Send className="h-4 w-4 text-primary" />
+        <div className="flex-1">
+          <p className="text-xs font-semibold text-foreground">Have a share link from a homeowner?</p>
+          <p className="text-[10px] text-muted-foreground">Submit a work record without needing the homeowner's account access.</p>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-primary/30 bg-card p-3 mb-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-foreground">Submit via share link</p>
+        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+      </div>
+      <input
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        placeholder="Paste your job share link"
+        className="w-full rounded-lg border border-border bg-secondary/30 py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+      />
+      <button onClick={submit} className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground">
+        Open Submission Form
+      </button>
+    </div>
+  );
+};
 
 export default ContractorDashboard;

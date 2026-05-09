@@ -14,6 +14,10 @@ interface ShareRow {
   revoked_at: string | null;
   access_count: number;
   last_accessed_at: string | null;
+  share_scope: string | null;
+  share_type: string | null;
+  job_description: string | null;
+  submission_status: string | null;
 }
 
 const SharedLinksList = () => {
@@ -27,7 +31,7 @@ const SharedLinksList = () => {
     setLoading(true);
     const { data } = await supabase
       .from("property_shares")
-      .select("id, token, recipient_email, recipient_name, expires_at, created_at, revoked_at, access_count, last_accessed_at")
+      .select("id, token, recipient_email, recipient_name, expires_at, created_at, revoked_at, access_count, last_accessed_at, share_scope, share_type, job_description, submission_status")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setRows((data as ShareRow[]) || []);
@@ -36,8 +40,14 @@ const SharedLinksList = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const copy = (token: string) => {
-    const url = `${window.location.origin}/share/${token}`;
+  const buildUrl = (r: ShareRow) => {
+    if (r.share_type === "inspector") return `${window.location.origin}/inspection/${r.token}`;
+    if (r.share_scope === "job" || r.share_type === "contractor") return `${window.location.origin}/job/${r.token}`;
+    return `${window.location.origin}/share/${r.token}`;
+  };
+
+  const copy = (r: ShareRow) => {
+    const url = buildUrl(r);
     navigator.clipboard?.writeText(url);
     toast.success("Link copied");
   };
@@ -61,6 +71,11 @@ const SharedLinksList = () => {
       {rows.map((r) => {
         const expired = new Date(r.expires_at) <= new Date();
         const inactive = !!r.revoked_at || expired;
+        const typeLabel = r.share_type === "inspector"
+          ? "Inspector"
+          : (r.share_scope === "job" || r.share_type === "contractor")
+            ? "Contractor (job-scoped)"
+            : "Realtor (full)";
         return (
           <div key={r.id} className={`rounded-xl border bg-card p-3 ${inactive ? "border-border opacity-70" : "border-border"}`}>
             <div className="flex items-start justify-between gap-2">
@@ -71,6 +86,13 @@ const SharedLinksList = () => {
                 {r.recipient_email && r.recipient_name && (
                   <p className="text-[10px] text-muted-foreground truncate">{r.recipient_email}</p>
                 )}
+                <div className="flex flex-wrap items-center gap-1 mt-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-wide rounded-full bg-primary/10 text-primary px-2 py-0.5">{typeLabel}</span>
+                  {r.job_description && <span className="text-[10px] text-muted-foreground truncate">{r.job_description}</span>}
+                  {r.submission_status && r.submission_status !== "none" && (
+                    <span className="text-[9px] font-semibold uppercase tracking-wide rounded-full bg-secondary text-foreground px-2 py-0.5">{r.submission_status}</span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{r.access_count} view{r.access_count === 1 ? "" : "s"}</span>
                   <span>
@@ -85,7 +107,7 @@ const SharedLinksList = () => {
               {!inactive && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button
-                    onClick={() => copy(r.token)}
+                    onClick={() => copy(r)}
                     title="Copy link"
                     className="rounded-md border border-border bg-background p-1.5 hover:border-primary/50"
                   >
