@@ -171,6 +171,14 @@ const OnboardingWizard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — run once on mount only
 
+  // Auto-advance from Step 2 when scan pre-filled both type + age
+  useEffect(() => {
+    if (step === 2 && prefilledFields.has("homeType") && prefilledFields.has("homeAge") && scanResults) {
+      const timer = setTimeout(() => setStep(3), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, prefilledFields, scanResults]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -309,14 +317,17 @@ const OnboardingWizard = () => {
             }
 
             if (json?.propertyType) {
-              const pt = (json.propertyType as string).toLowerCase();
+              const pt = (json.propertyType as string).toLowerCase().replace(/[_\s-]+/g, " ");
               let homeTypeId = "";
-              if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
-              else if (pt.includes("condo"))                      homeTypeId = "condo";
-              else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
-              else if (pt.includes("multi") || pt.includes("duplex"))       homeTypeId = "multi_family";
-              else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
-              if (homeTypeId) { update("homeType", homeTypeId); filled.add("homeType"); }
+              if (pt.includes("single") || pt === "residential" || pt === "sfr" || pt === "sfd") homeTypeId = "single_family";
+              else if (pt.includes("condo") || pt.includes("condominium")) homeTypeId = "condo";
+              else if (pt.includes("townhouse") || pt.includes("townhome") || pt.includes("town home")) homeTypeId = "townhouse";
+              else if (pt.includes("multi") || pt.includes("duplex") || pt.includes("triplex") || pt.includes("quadplex")) homeTypeId = "multi_family";
+              else if (pt.includes("mobile") || pt.includes("manufactured") || pt.includes("mfh")) homeTypeId = "manufactured";
+              else if (pt.includes("land") || pt.includes("lot") || pt.includes("vacant")) homeTypeId = "land";
+              else homeTypeId = "single_family"; // safe default — most scanned properties are single family
+              update("homeType", homeTypeId);
+              filled.add("homeType");
             }
 
             setPrefilledFields(filled);
@@ -687,6 +698,16 @@ const OnboardingWizard = () => {
         if (hasPublicRecords) {
           return (
             <div className="flex flex-col gap-6 animate-fade-in">
+              {prefilledFields.has("homeType") && prefilledFields.has("homeAge") && scanResults && (
+                <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">Pre-filled from public records</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Continuing automatically…</p>
+                  </div>
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin shrink-0" />
+                </div>
+              )}
               <div className="flex flex-col items-center text-center gap-2">
                 <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
                   <CheckCircle2 className="h-7 w-7 text-primary" />
