@@ -693,7 +693,18 @@ serve(async (req) => {
       if (f.value != null && f.value !== "") extracted[k] = f.value;
     }
 
-    const detectedSystem = extracted.detected_system || null;
+    // Detect sewer_waste/septic from extracted septic-specific fields so the
+    // upload pipeline can auto-tag the vault row's system_type.
+    const SEPTIC_FIELDS = [
+      "tankSize", "tankCount", "systemType", "lastPumpDate",
+      "drainFieldCondition", "permitNumber", "installDate",
+      "technicianName", "companyName", "conditionRating",
+    ];
+    const hasSepticFields = SEPTIC_FIELDS.some(
+      (k) => extracted[k] != null && extracted[k] !== "",
+    );
+    const detectedSystem = extracted.detected_system
+      || (hasSepticFields ? "sewer_waste" : null);
     const detectedSystemName = extracted.system_name || null;
 
     return new Response(JSON.stringify({

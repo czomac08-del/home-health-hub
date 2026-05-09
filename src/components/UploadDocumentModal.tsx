@@ -209,9 +209,26 @@ export default function UploadDocumentModal({
       const merged = inspectionReport
         ? { ...extracted, inspection_report: inspectionReport }
         : extracted;
+      // Auto-tag the vault row's system_type to sewer_waste when septic fields
+      // were extracted, regardless of the user's initial doc-type pick.
+      const SEPTIC_FIELDS = [
+        "tankSize", "tankCount", "systemType", "lastPumpDate",
+        "drainFieldCondition", "permitNumber", "installDate",
+        "technicianName", "companyName", "conditionRating",
+      ];
+      const hasSepticFields = SEPTIC_FIELDS.some(
+        (k) => (extracted as any)?.[k] != null && (extracted as any)[k] !== "",
+      );
+      const updatePayload: Record<string, any> = {
+        ai_verified: true,
+        ai_extracted_data: merged,
+      };
+      if (hasSepticFields || detectedSystem === "sewer_waste") {
+        updatePayload.system_type = "sewer_waste";
+      }
       await supabase
         .from("property_records")
-        .update({ ai_verified: true, ai_extracted_data: merged })
+        .update(updatePayload as any)
         .eq("id", recordId);
 
       // If AI found a parcel ID in this document, save it to the property record
