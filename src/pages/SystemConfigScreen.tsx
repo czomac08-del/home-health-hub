@@ -824,6 +824,22 @@ const SystemConfigScreen = () => {
         />
       )}
 
+      {activeProperty && user && (
+        <StructureAssignmentSelector
+          systemDetailId={systemDetailId}
+          propertyId={activeProperty.id}
+          userId={user.id}
+          systemName={displayName}
+          value={structureAssignment}
+          status={rowStatus}
+          onChange={({ value, isLegacy }) => {
+            setStructureAssignment(value);
+            setSpecs((prev) => ({ ...prev, structure_assignment: value }));
+            setRowStatus(isLegacy ? LEGACY_STATUS : rowStatus === LEGACY_STATUS ? "documented" : rowStatus);
+          }}
+        />
+      )}
+
       {/* Progress Bar — always visible */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
