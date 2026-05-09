@@ -46,6 +46,7 @@ export async function seedSystemsFromOnboarding(
     hvacType?: string;
     fuelType?: string;
     septicOrSewer?: string;
+    hasMultipleSeptic?: boolean;
     homeAge?: string | number;
   },
 ) {
@@ -87,11 +88,21 @@ export async function seedSystemsFromOnboarding(
     });
   }
   if (wizardData.septicOrSewer) {
-    await writeSystemField({
-      propertyId, userId, systemName: "Sewer and Waste",
-      field: "systemType", value: wizardData.septicOrSewer,
-      source: "OWNER_PROVIDED",
-    });
+    if (wizardData.septicOrSewer === "septic" && wizardData.hasMultipleSeptic) {
+      for (const name of ["Septic System 1 (Main House)", "Septic System 2"]) {
+        await writeSystemField({
+          propertyId, userId, systemName: name,
+          field: "systemType", value: "septic",
+          source: "OWNER_PROVIDED",
+        });
+      }
+    } else {
+      await writeSystemField({
+        propertyId, userId, systemName: "Sewer and Waste",
+        field: "systemType", value: wizardData.septicOrSewer,
+        source: "OWNER_PROVIDED",
+      });
+    }
   }
   if (wizardData.homeAge) {
     const year = typeof wizardData.homeAge === "string"

@@ -58,6 +58,7 @@ interface WizardData {
   hasGenerator: boolean;
   hasSolar: boolean;
   septicOrSewer: string;
+  hasMultipleSeptic: boolean;
   hasGarage: boolean;
   garageDoors: number;
   hasPool: boolean;
@@ -72,7 +73,7 @@ const defaultData: WizardData = {
   homeType: "", homeAge: "", waterSource: "",
   hasWaterFilter: false, hasWaterSoftener: false, knowsWaterShutoff: true,
   hvacType: "", fuelType: "", propaneTankOwned: true, knowsFilterLocation: true,
-  hasGenerator: false, hasSolar: false, septicOrSewer: "",
+  hasGenerator: false, hasSolar: false, septicOrSewer: "", hasMultipleSeptic: false,
   hasGarage: false, garageDoors: 1, hasPool: false, hasSecurity: false, hasSmartHome: false,
   hasChimney: false,
   manufacturedFields: {},
@@ -852,7 +853,14 @@ const OnboardingWizard = () => {
       if (data.waterSource !== "well") systems.push("Plumbing");
       if (data.hasGenerator) systems.push("Generator");
       if (data.hasSolar) systems.push("Solar");
-      if (data.septicOrSewer === "septic") systems.push("Septic");
+      if (data.septicOrSewer === "septic") {
+        if (data.hasMultipleSeptic) {
+          systems.push("Septic System 1 (Main House)");
+          systems.push("Septic System 2");
+        } else {
+          systems.push("Septic");
+        }
+      }
       if (data.hasGarage) systems.push("Garage");
       if (data.hasPool) systems.push("Pool / Hot Tub");
       if (data.hasSecurity) systems.push("Security System");
@@ -889,6 +897,7 @@ const OnboardingWizard = () => {
           hvacType: data.hvacType,
           fuelType: data.fuelType,
           septicOrSewer: data.septicOrSewer,
+          hasMultipleSeptic: data.hasMultipleSeptic,
           homeAge: data.homeAge,
         });
       } catch (e) {
@@ -1414,6 +1423,13 @@ const OnboardingWizard = () => {
                 <SelectCard selected={data.septicOrSewer === "sewer"} onClick={() => update("septicOrSewer", "sewer")} icon={Droplets} label="City / Municipal Sewer" />
               </div>
             </div>
+            {data.septicOrSewer === "septic" && (
+              <ToggleRow
+                label="Does your property have more than one septic system?"
+                checked={data.hasMultipleSeptic}
+                onChange={v => update("hasMultipleSeptic", v)}
+              />
+            )}
             <ToggleRow label="Do you have a garage?" checked={data.hasGarage} onChange={v => update("hasGarage", v)} />
             {data.hasGarage && (
               <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
