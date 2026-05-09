@@ -1122,6 +1122,57 @@ const SystemConfigScreen = () => {
             </div>
           </CollapsibleSectionView>
 
+          {/* Routing prompt — shown when the property has multiple instances
+              of this system category and the user uploads a doc. */}
+          {pendingDoc && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
+              <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+                <h3 className="text-base font-bold text-foreground mb-1">Which system is this for?</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  This property has multiple {displayName.replace(/\s*\d+$/, "").trim().toLowerCase()} systems.
+                  Choose the one this {pendingDoc.docType.toLowerCase()} belongs to so it stays linked to the right record.
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto mb-5">
+                  {siblingSystems.map((s) => (
+                    <label
+                      key={s.id}
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
+                        pendingTargetId === s.id ? "border-primary bg-primary/10" : "border-border hover:bg-muted/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="pending-target"
+                        value={s.id}
+                        checked={pendingTargetId === s.id}
+                        onChange={() => setPendingTargetId(s.id)}
+                        className="accent-primary"
+                      />
+                      <span className="text-sm text-foreground">{s.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelPendingDoc}
+                    className="flex-1 rounded-xl border border-border bg-background py-2.5 text-sm font-semibold text-foreground hover:bg-muted/40"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!pendingTargetId}
+                    onClick={confirmPendingDoc}
+                    className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                  >
+                    Attach to this system
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Location ── */}
           <CollapsibleSectionView isOpen={expandedSections.has("location")} title="Location in Home" onToggle={() => toggleSection("location")}>
             <div>
