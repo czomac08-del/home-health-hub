@@ -49,9 +49,8 @@ export default function UnifiedDocumentReview({
   const [saving, setSaving] = useState(false);
 
   const tier = useMemo<ExtractionTier>(() => {
-    const totalFields = rows?.length ?? Object.keys(extracted ?? {}).length ?? 1;
-    return assessExtraction(extracted ?? {}, totalFields).tier;
-  }, [extracted, rows]);
+    return assessExtraction(extracted ?? {}).tier;
+  }, [extracted]);
 
   useEffect(() => {
     let cancelled = false;
