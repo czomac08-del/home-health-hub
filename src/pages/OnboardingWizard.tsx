@@ -136,6 +136,16 @@ const OnboardingWizard = () => {
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
   const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [publicRecordsData, setPublicRecordsData] = useState<{
+    yearBuilt?: string;
+    waterSource?: string;
+    hvacType?: string;
+    septicOrSewer?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    sqft?: number;
+  } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -197,13 +207,13 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
   };
 
-  /** Save the address to properties and kick off background scan. */
+  /** Save the address and run a blocking public-records scan to pre-fill the wizard. */
   const saveAddressAndContinue = async () => {
     if (!user || !selectedMatch) return;
     setSavingAddress(true);
     try {
-      const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
-      const insertRow = {
+      const { city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
+      const { error } = await supabase.from("properties").insert({
         user_id: user.id,
         address: selectedMatch.matchedAddress,
         label: "Primary Residence",
@@ -213,40 +223,54 @@ const OnboardingWizard = () => {
         zip: zip || null,
         county: selectedMatch.county || null,
         county_fips: selectedMatch.countyFips || null,
-      };
-      const { error } = await supabase.from("properties").insert(insertRow as any);
+      } as any);
       if (error) throw error;
       await refreshProperties();
 
-      // Fire background scan (RentCast). Result cached in state for final step.
-      void (async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.access_token) return;
-          const res = await fetch(`${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`, {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          if (!res.ok) return;
-          const json = await res.json();
-          const found: string[] = [];
-          if (json?.found) found.push("Property records");
-          if (selectedMatch.countyFips) {
-            found.push("FEMA disaster history");
-            found.push("NOAA storm records");
-            found.push("USDA drought monitor");
+      // Blocking public records scan
+      setScanning(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const res = await fetch(
+            `${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`,
+            { headers: { Authorization: `Bearer ${session.access_token}` } }
+          );
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.found && json?.data) {
+              const d = json.data;
+              const found: NonNullable<typeof publicRecordsData> = {};
+              if (d.yearBuilt) found.yearBuilt = String(d.yearBuilt);
+              if (d.features?.heating) found.hvacType = d.features.heating.toLowerCase().includes("heat pump") ? "heat_pump" : "central_air";
+              if (d.features?.waterSource) found.waterSource = d.features.waterSource.toLowerCase().includes("well") ? "well" : "city";
+              if (d.features?.sewer) found.septicOrSewer = d.features.sewer.toLowerCase().includes("septic") ? "septic" : "sewer";
+              if (d.squareFootage) found.sqft = d.squareFootage;
+              if (d.bedrooms) found.bedrooms = d.bedrooms;
+              if (d.bathrooms) found.bathrooms = d.bathrooms;
+              if (Object.keys(found).length > 0) {
+                setPublicRecordsData(found);
+                if (found.yearBuilt) update("homeAge", found.yearBuilt);
+                if (found.waterSource) update("waterSource", found.waterSource);
+                if (found.hvacType) update("hvacType", found.hvacType);
+                if (found.septicOrSewer) update("septicOrSewer", found.septicOrSewer);
+              }
+            }
+            const sources: string[] = [];
+            if (json?.found) sources.push("Property records");
+            if (selectedMatch.countyFips) sources.push("FEMA history", "NOAA storms", "USDA drought");
+            if (selectedMatch.coordinates) sources.push("EPA environmental data");
+            setScanSummary({ sources: sources.length, details: sources });
           }
-          if (selectedMatch.coordinates) found.push("EPA environmental data");
-          setScanSummary({ sources: found.length, details: found });
-        } catch {
-          // Silent — scan is best-effort
         }
-      })();
-
+      } catch { /* scan is best-effort */ }
+      setScanning(false);
       setStep(2);
-    } catch (e) {
+    } catch {
       toast.error("Could not save your address. Please try again.");
     } finally {
       setSavingAddress(false);
+      setScanning(false);
     }
   };
 
@@ -728,6 +752,25 @@ const OnboardingWizard = () => {
       {step < TOTAL_STEPS && (
         <div className="px-6 pb-[calc(env(safe-area-inset-bottom,20px)+60px)] max-w-lg mx-auto w-full flex flex-col gap-3">
           {step === 1 ? (
+            <>
+            {selectedMatch && scanning && (
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Searching public records for this property…
+              </div>
+            )}
+            {publicRecordsData && Object.keys(publicRecordsData).length > 0 && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
+                <p className="font-semibold text-primary mb-1">✓ Public records found — answers pre-filled</p>
+                <ul className="text-xs text-muted-foreground space-y-0.5">
+                  {publicRecordsData.yearBuilt && <li>Year built: {publicRecordsData.yearBuilt}</li>}
+                  {publicRecordsData.waterSource && <li>Water source: {publicRecordsData.waterSource === "well" ? "Well water" : "City water"}</li>}
+                  {publicRecordsData.hvacType && <li>Heating/cooling detected</li>}
+                  {publicRecordsData.septicOrSewer && <li>Sewer: {publicRecordsData.septicOrSewer}</li>}
+                </ul>
+                <p className="text-xs text-muted-foreground mt-1 italic">You can review and change any of these as you go through setup.</p>
+              </div>
+            )}
             <button
               onClick={() => {
                 if (selectedMatch) {
@@ -737,11 +780,12 @@ const OnboardingWizard = () => {
                   setStep(2);
                 }
               }}
-              disabled={savingAddress}
+              disabled={savingAddress || scanning}
               className="w-full rounded-xl bg-primary py-4 font-semibold text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
+              {scanning ? (<><Loader2 className="h-4 w-4 animate-spin" /> Scanning records...</>) : savingAddress ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>) : (<>Next <ChevronRight className="h-4 w-4" /></>)}
             </button>
+            </>
           ) : (
             <div className="flex gap-3">
               <button onClick={back}
