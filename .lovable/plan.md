@@ -1,66 +1,113 @@
-## Complete AI Data Pipeline — Auto-fill + Conflict Verification
+# Selling Mode — Implementation Plan
 
-This is a large 7-part feature touching the data refresh hook, system config, document extraction, onboarding wizard, and adds a new conflict resolution UI. I'll break it into atomic implementation steps.
+A 5-part feature spanning seller entry, real data wiring, disclosure generation, share package, and realtor receive flow. ~10 files + 1 migration + 1 edge function.
 
-### Part 1 — Year-Built → System Age Estimates
-- File: `src/hooks/useDataRefresh.ts`
-- Add `estimateSystemAgesFromYearBuilt(propertyId, yearBuilt, userId)` helper
-- Call it automatically after each successful RentCast pull that returns `yearBuilt`
-- For each system slug (Roof, HVAC, Water Heater, Electrical Panel, Plumbing) compute estimated install date / risk flags using lifespans
-- Only INSERT when no `system_details` row exists for that slug — never overwrite
-- Stamp `data_status: 'ai_extracted'`, add a `source_tag: 'AI_INFERRED'` field in `specs` JSON, and explanatory `notes`
-- Add a grey **~Estimated** badge: extend `src/components/VerificationBadge.tsx` (or a new tiny `EstimatedBadge`) and surface it in `SystemsScreen.tsx` / `SystemConfigScreen.tsx` when `specs.source_tag === 'AI_INFERRED'`
+---
 
-### Part 2 — Public API → System-level Flags
-In `useDataRefresh.ts`, after each source returns data:
-- **FEMA**: write `flood_zone`, `flood_zone_code`, `source_tag: 'GOVERNMENT_API'` to a synthetic `Insurance` row in `system_details` (or to existing insurance record). Banner on `InsuranceScreen.tsx` when `flood_zone === true`.
-- **NOAA**: hail/wind in last 5 yrs → `Roof` specs `recent_storm_events`, `last_hail_event`. Banner inside Roof system config.
-- **EPA ECHO**: facilities in 1 mi → `Well Water` specs `epa_facilities_nearby`, `facility_count`. Banner on Well Water system.
+## Part 1 — Subtle Dashboard Entry
 
-### Part 3 — Auto-analyze Photos on Upload
-- File: `src/pages/SystemConfigScreen.tsx`
-- After photo upload completes, fire-and-forget call to existing `ai-scan` (mode `full_unit`) with the new photo
-- On result: merge into form state via `setIfEmpty` — only fill fields that are currently empty
-- Show a non-blocking toast/banner: "IQ identified details from your photo — review below"
-- Tag autofilled fields with AI_INFERRED in specs metadata
+**`src/pages/DashboardScreen.tsx`**
+- Add a `<SellingPromptCard />` rendered below the systems overview, conditional on:
+  - `iqScore > 60`
+  - `localStorage.getItem('selling_prompt_dismissed_until')` is null or in the past
+  - Not already shown this session (sessionStorage flag)
+- Card style: muted border (`border-border`), neutral bg, no orange. Copy per spec. CTA → `/handover`.
+- Dismiss `X` writes `Date.now() + 30d` to localStorage.
 
-### Part 4 — Inspection Extraction Auto-applies to system_details
-- Modify the inspection upload success path (currently flows through `AddToProfileModal`)
-- When `extract-document-data` returns confidence > 60, immediately call `applyInspectionFindingsToSystems` plus a new `applyInspectionExtractionToSystems(propertyId, userId, extractedData, inspectionMeta)` that writes `last_inspected_date`, `inspector_name`, `inspector_company`, condition, and any explicit specs per system with `source_tag: 'DOCUMENT_EXTRACTED'`
-- Dashboard banner: "IQ updated N systems from your inspection report — tap to review"
-- `Add to Profile` button shows `✓ Added` retroactively (read from system_details existence)
+**`src/pages/ProfileScreen.tsx`**
+- Add a "What's Next?" section with quiet text link "Selling your home? →" → `/handover`.
 
-### Part 5 — Conflict Detection + Verify Badge
-- New table `system_pending_verifications` (migration): id, property_id, user_id, system_name, field_path, value_a, source_a, value_b, source_b, created_at, resolved_at, resolution
-- New helper `src/lib/systemFieldWrite.ts` — `writeSystemField` that:
-  - Reads existing value
-  - If conflicting (different non-null), inserts a pending verification instead of overwriting
-  - Otherwise writes through
-- New component `src/components/VerifyConflictModal.tsx` — shows two values + sources, three buttons (Keep mine / Use other / I'll check manually)
-- Field-level orange exclamation badge in `SystemConfigScreen` when `pending_verifications` exists for that field
-- All Part 1–4 writes funnel through `writeSystemField` so conflicts are auto-detected
+**`src/pages/PropertyDetailScreen.tsx`**
+- Confirm/extend existing Sell/Transfer area with link to `/handover`.
 
-### Part 6 — Onboarding Wizard Seeds system_details
-- File: `src/pages/OnboardingWizard.tsx`
-- New `seedSystemsFromOnboarding(propertyId, userId, wizardData)` in `src/lib/seedSystems.ts`
-- Creates blank rows for every standard system slug (status `not_documented`, health null) so dashboard shows "Needs documentation" instead of the Add button
-- Prefill Water Source `water_type` from wizard, HVAC `filter_location_known` if user marked it, all `source_tag: 'OWNER_PROVIDED'`
+---
 
-### Part 7 — Missing Extraction Prompts
-- File: `supabase/functions/extract-document-data/index.ts`
-- Add prompts: `hvac_service`, `water_heater_service`, `roof_inspection`, `appliance_receipt`, `insurance_policy`
-- File: `src/components/AddToProfileModal.tsx` — extend doc-type → system mapping so each new extraction type routes to the correct slug
+## Part 2 — Wire HandoverWizard to Real Data
 
-### Database Changes
-One migration:
-- `system_pending_verifications` table with RLS (user owns row via property_id → properties.user_id)
-- Indexes on (property_id, system_name)
+**`src/pages/HandoverWizardScreen.tsx`**
+- On mount, with active property id, parallel fetch:
+  - `system_details` (name, install_date, last_service_date, condition, specs)
+  - `warranties`
+  - `system_documents` + `property_records` (permits, inspections, manuals)
+  - `inspections` for findings
+- Compute per-system health score using existing logic (import from `src/logic/system-health-scoring` or equivalent helper if present; otherwise simple condition→score mapping).
+- Step 1 "What's Staying": render real systems with health score + last service date.
+- Step 3 "Rate Systems": pre-fill stars from health score (e.g. 80+ = 5, 60+ = 4, 40+ = 3, else 2).
+- Step 5 "Generate": passport PDF/data uses real specs, install dates, last service, inspection findings, warranty coverage.
 
-### Out of Scope / Notes
-- Photo analysis uses the existing `ai-scan` edge function — no new function
-- Estimated badge will piggyback on existing badge system, not a new one if `VerificationBadge` already supports a generic variant
-- All writes respect existing `data_trust` rules; AI_INFERRED is rank 0 (lowest), DOCUMENT_EXTRACTED maps to `ai_extracted`, GOVERNMENT_API maps to a new tier ranked above `ai_extracted` but below `inspector_verified`
+---
 
-### Risks / Assumptions
-- This is ~12 file edits + 1 migration + 1 new edge prompt set. Approving this plan greenlights all of it in one pass; I won't re-prompt mid-implementation unless I hit an actual blocker (e.g., a column doesn't exist).
-- I'll re-read each target file before editing rather than relying on summaries.
+## Part 3 — Seller Disclosure Auto-Generation
+
+**New route `src/pages/SellerDisclosureScreen.tsx`** at `/handover/disclosure`.
+- Read state from active property → query `state_disclosure_requirements`.
+- For each required field, attempt auto-fill from:
+  - Defects ← open inspection findings (level 1/2)
+  - System ages ← `system_details.install_date` for HVAC/Roof/WaterHeater/Electrical
+  - Permits ← `property_records` filtered to permits
+  - Environmental ← FEMA/EPA flags on property record
+  - HOA ← onboarding data on property
+  - Well/Septic ← `system_details` for water/sewer slugs
+- Render fields grouped by category. Unknown fields highlighted yellow with input.
+- Header shows "X% complete — N fields need your input".
+- "Download Disclosure PDF" button → generates client-side PDF (jsPDF or existing report util).
+
+Route registered in `src/App.tsx`.
+
+---
+
+## Part 4 — One-Click Realtor Share
+
+**Migration** — new table:
+```
+property_shares (id, property_id, user_id, token uuid unique, recipient_email,
+  created_at, expires_at, revoked_at, documents_included jsonb)
+```
+RLS: owner can select/insert/update own; public select via SECURITY DEFINER function `get_shared_property(_token)` returning non-revoked, non-expired rows.
+
+**HandoverWizard Step 6 + Disclosure page**: "Share with Realtor" dialog with two tabs:
+- Generate link → insert row, copy `/share/{token}` URL.
+- Email realtor → insert row + invoke edge function `send-realtor-share` (uses Lovable Emails / existing transactional infra) with branded copy.
+
+**New edge function `supabase/functions/send-realtor-share/index.ts`** — sends share email via existing email queue.
+
+**New page `src/pages/SharedPropertyView.tsx`** at `/share/:token` (public, no auth):
+- Calls `get_shared_property` RPC.
+- Shows owner name, address, document package by category (passport, disclosure, warranties, inspections, permits).
+- Signed URLs for documents fetched via edge function (since viewer is unauthenticated).
+
+**Profile page**: add "Active Shares" list with revoke button (sets `revoked_at`).
+
+---
+
+## Part 5 — Realtor Receive Flow
+
+**`src/pages/RealtorDashboard.tsx`**
+- Query `property_shares` where `recipient_email = current user email` and not revoked/expired.
+- Notification banner: "{owner} shared their property record with you".
+- Clicking opens detail view (reuse `SharedPropertyView` layout).
+- Replace generic Digital Disclosure hardcoded list with data from the shared package's disclosure (when one is selected).
+- "Request Missing Documents" button → modal with checkbox list of standard items; submit creates an `inspection_notifications` row (or new `share_requests` if needed) for the owner.
+
+**Owner Dashboard**: surface incoming requests as a banner with "Upload" / "Share" actions.
+
+For request notifications, reuse existing `inspection_notifications` table with a new notification_type if the enum allows; otherwise add a small `share_document_requests` table in the same migration.
+
+---
+
+## Technical Notes
+
+- Health score helper: reuse `src/logic` if available; else inline mapping.
+- PDF: prefer existing report generation utility; fall back to jsPDF.
+- Public share viewer fetches signed URLs through a thin edge function (`get-share-documents`) that validates the token server-side and returns 1-hour signed URLs from private buckets.
+- All new tables get RLS; owner-scoped policies plus a SECURITY DEFINER read function for the public token path.
+
+## Out of Scope / Deferred
+
+- Localized disclosure form layouts beyond field-by-field rendering (we render generically; per-state PDF templates can come later).
+- Push notifications — using in-app banners only.
+- Realtor-side write-back to disclosure (read-only for now; request flow handles gaps).
+
+## Risk
+
+~10 file edits, 2 new pages, 1 migration, 1–2 edge functions. Largest risks: state_disclosure_requirements schema variance and PDF fidelity. I'll re-read each target file before editing and ship in this order: migration → wizard data wiring → disclosure page → share infra → realtor receive → dashboard entry.
