@@ -228,6 +228,26 @@ EXTRACTION_PROMPTS.appliance_receipt = `Extract details from an appliance purcha
   "possible_values": {}
 }`;
 
+EXTRACTION_PROMPTS.other = `First identify what home system or appliance this document is about, then extract all relevant details. Return JSON only:
+{
+  "fields": {
+    "detected_system": { "value": "hvac|plumbing|water_filtration|electrical|structural|roof|appliance|water_heater|well|septic|other", "confidence": 0-100 },
+    "system_name": { "value": "Human-readable name e.g. 'Whole-House Water Filter', 'Kitchen Refrigerator', 'Sump Pump' — or null", "confidence": 0-100 },
+    "brand": { "value": string or null, "confidence": 85 },
+    "model": { "value": string or null, "confidence": 85 },
+    "serial": { "value": string or null, "confidence": 80 },
+    "install_date": { "value": "YYYY-MM-DD" or null, "confidence": 80 },
+    "service_date": { "value": "YYYY-MM-DD" or null, "confidence": 80 },
+    "filter_life_months": { "value": number or null, "confidence": 70 },
+    "next_service_date": { "value": "YYYY-MM-DD" or null, "confidence": 70 },
+    "notes": { "value": "Most important details about this system or document, 1-2 sentences", "confidence": 70 }
+  },
+  "overall_confidence": 80,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
 EXTRACTION_PROMPTS.insurance_policy = `Extract details from a homeowner's insurance declarations page. Rate confidence 0-100. JSON only:
 {
   "fields": {
