@@ -373,7 +373,7 @@ const StepGenerate = ({ stayingItems, welcomeNote, onGenerate }: { stayingItems:
 };
 
 /* ═══ Step 6: Transfer Method ═══ */
-const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void }) => {
+const StepTransfer = ({ email, setEmail, transferDone, setTransferDone, showRemoveConfirm, setShowRemoveConfirm, navigate, stayingItems, welcomeNote, ratings, ratingNotes }: { email: string; setEmail: (v: string) => void; transferDone: boolean; setTransferDone: (v: boolean) => void; showRemoveConfirm: boolean; setShowRemoveConfirm: (v: boolean) => void; navigate: (p: string) => void; stayingItems: SystemEntry[]; welcomeNote: string; ratings: Record<string, number>; ratingNotes: Record<string, string> }) => {
   const { activeProperty } = useAuth();
   if (transferDone) {
     return (
