@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info, Share2 } from "lucide-react";
 import { systems } from "./DashboardScreen";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -14,6 +14,9 @@ import ApplianceScanner from "@/components/ApplianceScanner";
 import RecordsStatusSelector from "@/components/RecordsStatusSelector";
 import QuickCheckInButton from "@/components/QuickCheckInButton";
 import UploadPromptCard from "@/components/UploadPromptCard";
+import ContractorShareModal from "@/components/ContractorShareModal";
+import PendingContractorSubmissions from "@/components/PendingContractorSubmissions";
+import { toast } from "sonner";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -149,6 +152,8 @@ const SystemDetailScreen = () => {
   const [findingsByLevel, setFindingsByLevel] = useState<Record<number, number>>({});
   const [inspector, setInspector] = useState<{ name: string | null; date: string | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareSystemId, setShareSystemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProperty?.id || !id) { setLoaded(true); return; }
@@ -248,6 +253,25 @@ const SystemDetailScreen = () => {
   const handleConfirmScan = (fields: Record<string, string>) => {
     console.log("Saving scanned fields:", fields);
     setScanReview(null);
+  };
+
+  const openShare = async () => {
+    if (!activeProperty?.id || !system) return;
+    let sid = rows[0]?.id || null;
+    if (!sid) {
+      const { data, error } = await supabase
+        .from("system_details")
+        .insert({ property_id: activeProperty.id, system_name: system.name, data_status: "homeowner_provided" } as any)
+        .select("id")
+        .single();
+      if (error || !data) {
+        toast.error("Could not prepare share");
+        return;
+      }
+      sid = (data as any).id;
+    }
+    setShareSystemId(sid);
+    setShowShare(true);
   };
 
   return (
@@ -393,6 +417,35 @@ const SystemDetailScreen = () => {
       <div className="mb-6">
         <RecordsStatusSelector systemName={system.name} />
       </div>
+
+      {/* Pending contractor submissions */}
+      {activeProperty?.id && rows[0]?.id && (
+        <PendingContractorSubmissions
+          propertyId={activeProperty.id}
+          systemId={rows[0].id}
+          systemName={system.name}
+        />
+      )}
+
+      {/* Share with Contractor */}
+      {activeProperty?.id && (
+        <button
+          onClick={openShare}
+          className="w-full mb-6 mt-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors py-3 text-sm font-semibold text-primary flex items-center justify-center gap-2"
+        >
+          <Share2 className="h-4 w-4" /> Share with a Contractor
+        </button>
+      )}
+
+      {showShare && shareSystemId && activeProperty?.id && (
+        <ContractorShareModal
+          open={showShare}
+          onClose={() => setShowShare(false)}
+          propertyId={activeProperty.id}
+          systemId={shareSystemId}
+          systemName={system.name}
+        />
+      )}
 
       {/* Warranty Section */}
       <div className="mb-6">
