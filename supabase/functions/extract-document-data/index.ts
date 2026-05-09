@@ -59,9 +59,14 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
 }`,
-  default: `Extract all relevant property record data from this document. For each field, rate confidence 0-100. Return JSON with this structure:
+  default: `Extract all relevant property record data from this document. For each field, rate confidence 0-100.
+IMPORTANT: Always look for a parcel number, APN (Assessor Parcel Number), or tax ID — these appear on deeds, permits, tax bills, and survey documents.
+Return JSON with this structure:
 {
-  "fields": { "field_name": { "value": "...", "confidence": 85 } },
+  "fields": {
+    "parcel_id": { "value": "APN or parcel number if found, null otherwise", "confidence": 95 },
+    "field_name": { "value": "...", "confidence": 85 }
+  },
   "overall_confidence": 85,
   "document_quality": "good|fair|poor|damaged",
   "unclear_fields": [],
