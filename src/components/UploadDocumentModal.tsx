@@ -458,7 +458,10 @@ export default function UploadDocumentModal({
               )
               .limit(1);
 
-            const targetSystemName = septicRows?.[0]?.system_name || "Septic System";
+            const targetSystemName =
+              selectedInstanceName ||
+              septicRows?.[0]?.system_name ||
+              "Septic System";
             // Newer pump-out / inspection / install date is the most authoritative
             // signal for septic docs.
             const docDate =
