@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { parseStateFromAddress, parseZipFromAddress } from "@/data/stateData";
+import { estimateSystemAgesFromYearBuilt, applyApiFlagsToSystems } from "@/lib/seedSystems";
 
 export type RefreshScope =
   | "full"
@@ -193,6 +194,12 @@ export function useDataRefresh(scope: RefreshScope = "full") {
                       estimatedValue: rcData.estimatedValue,
                     },
                   });
+                }
+
+                // Auto-fill system age estimates from year built — never overwrite.
+                if (rcData.yearBuilt && Number(rcData.yearBuilt) > 1700) {
+                  estimateSystemAgesFromYearBuilt(activeProperty.id, user.id, Number(rcData.yearBuilt))
+                    .catch((e) => console.warn("estimateSystemAgesFromYearBuilt failed", e));
                 }
 
                 // Add sale history as timeline events
@@ -419,6 +426,35 @@ export function useDataRefresh(scope: RefreshScope = "full") {
 
       const updatesFound = results.filter((r) => r.status === "new_data").length;
       const now = new Date().toISOString();
+
+      // Apply public-API findings to relevant systems (FEMA → Insurance, NOAA → Roof, EPA → Well Water).
+      try {
+        const femaResult = results.find((r) => r.source === "FEMA");
+        const noaaResult = results.find((r) => r.source === "NOAA");
+        const epaResult = results.find((r) => r.source === "EPA ECHO");
+        const femaData = femaResult?.data as any;
+        const noaaData = noaaResult?.data as any;
+        const epaData = epaResult?.data as any;
+        await applyApiFlagsToSystems({
+          propertyId: activeProperty.id,
+          userId: user.id,
+          fema: femaData
+            ? {
+                in_flood_zone: !!(femaData.in_flood_zone ?? femaData.flood_zone),
+                flood_zone_code: femaData.flood_zone_code ?? femaData.zone ?? null,
+              }
+            : null,
+          noaa: noaaData?.total > 0
+            ? {
+                recent_storm_events: true,
+                last_hail_event: noaaData.last_hail_event ?? null,
+              }
+            : null,
+          epa: epaData?.total > 0 ? { facility_count: epaData.total } : null,
+        });
+      } catch (e) {
+        console.warn("applyApiFlagsToSystems failed", e);
+      }
 
       // Log the refresh
       await supabase.from("refresh_logs").insert({
