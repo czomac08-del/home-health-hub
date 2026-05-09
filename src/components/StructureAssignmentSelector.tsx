@@ -5,14 +5,19 @@ import { toast } from "sonner";
 
 export const STRUCTURE_OPTIONS = [
   "Main House",
-  "Guest House",
-  "Barn / Shop",
-  "ADU",
-  "Former Structure (no longer exists)",
+  "Addition / Sunroom",
+  "Guest House / ADU",
+  "Garage (Attached)",
+  "Garage (Detached)",
+  "Shop / Workshop",
+  "Barn",
+  "Outbuilding",
+  "Irrigation System",
+  "Former Structure — No Longer Exists",
   "Unknown",
 ] as const;
 
-export const LEGACY_OPTION = "Former Structure (no longer exists)";
+export const LEGACY_OPTION = "Former Structure — No Longer Exists";
 export const LEGACY_STATUS = "inactive_legacy";
 
 interface Props {
