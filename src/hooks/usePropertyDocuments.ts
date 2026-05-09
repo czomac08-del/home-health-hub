@@ -157,7 +157,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     const [recs, media, ins, fixes, warrantyDocs, systemRows] = await Promise.all([
       supabase
         .from("property_records")
-        .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
+        .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes, source")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
       supabase
