@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { assessExtraction, type ExtractionTier } from "@/lib/documentCredit";
 
 export type DocCategory =
   | "inspection"
@@ -50,6 +51,16 @@ export interface UnifiedDocument {
   structureKey?: string | null;
   /** True if the assigned structure is legacy/former. */
   isLegacyStructure?: boolean;
+  /** Confidence tier for AI extraction quality. */
+  extractionTier?: ExtractionTier;
+  /** Partial-credit multiplier (1 / 0.75 / 0.5 / 0). */
+  extractionCredit?: number;
+  /** Honest one-line detail string about extraction quality. */
+  extractionDetail?: string;
+  /** Friendly credit label, e.g. "Full credit". */
+  extractionCreditLabel?: string;
+  /** True when document came from a public-records pull rather than user upload. */
+  isPublicRecord?: boolean;
   raw?: any;
 }
 
@@ -146,7 +157,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     const [recs, media, ins, fixes, warrantyDocs, systemRows] = await Promise.all([
       supabase
         .from("property_records")
-        .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
+        .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes, source")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
       supabase
@@ -248,6 +259,14 @@ export function usePropertyDocuments(propertyId: string | undefined) {
       const hasFindings = !!(rep && Array.isArray(rep.findings) && rep.findings.length);
       const extractionFailed = !ext || (extractedKeys.length === 0 && !hasFindings);
       const struct = lookupStructure(r.system_type);
+      const assess = assessExtraction(r.ai_extracted_data, { hasDocument: true });
+      const sourceLower = (r.source || "").toString().toLowerCase();
+      const isPublicRecord =
+        sourceLower === "public_records" ||
+        sourceLower === "civic" ||
+        sourceLower === "county" ||
+        sourceLower === "regrid" ||
+        sourceLower === "rentcast";
       all.push({
         id: r.id,
         source_table: "property_records",
@@ -271,6 +290,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         hasExtractedData: !!ext,
         extractionFailed,
         addedToProfile: !!r.ai_verified,
+        extractionTier: assess.tier,
+        extractionCredit: assess.creditMultiplier,
+        extractionDetail: assess.detail,
+        extractionCreditLabel: assess.creditLabel,
+        isPublicRecord,
         raw: r,
       });
     });
