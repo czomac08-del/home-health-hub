@@ -115,6 +115,15 @@ const SystemConfigScreen = () => {
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
+  // Sibling systems of the same category — used to route uploaded docs to
+  // the correct system_details row when a property has multiple instances.
+  const [siblingSystems, setSiblingSystems] = useState<Array<{ id: string; name: string }>>([]);
+  const [hasAdditionalStructures, setHasAdditionalStructures] = useState(false);
+  const [pendingDoc, setPendingDoc] = useState<
+    | { docType: string; fileName: string; storagePath: string; signedUrl: string }
+    | null
+  >(null);
+  const [pendingTargetId, setPendingTargetId] = useState<string>("");
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
