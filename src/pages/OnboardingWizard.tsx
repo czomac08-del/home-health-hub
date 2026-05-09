@@ -367,8 +367,49 @@ const OnboardingWizard = () => {
 
     setAddressInput(formatted);
     setGooglePlaceId(pred.place_id);
+    // Synthesize a selectedMatch immediately from the Google result so the
+    // user can proceed even if Census/RentCast/Regrid can't enrich it. The
+    // census fallback runs server-side on submit for county/coords.
+    const parsed = parseMatchedAddress(formatted);
+    setSelectedMatch({
+      matchedAddress: formatted,
+      coordinates: { x: 0, y: 0 },
+      state: parsed.state || null,
+    });
+    setGeocodeError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    fetchSuggestions(formatted);
+    // Best-effort enrichment: silently try the geocoder to upgrade the
+    // synthesized match with county/FIPS/coords. Never block or surface an
+    // error — the Google selection is authoritative.
+    void enrichSelectedMatch(formatted);
+  };
+
+  /** Silently call the geocoder to upgrade selectedMatch with county data.
+   *  Never sets geocodeError — failures are non-fatal because the user has
+   *  already chosen a valid Google Places address. */
+  const enrichSelectedMatch = async (q: string) => {
+    if (q.trim().length < 4) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      const res = await fetch(`${GEOCODE_URL}?address=${encodeURIComponent(q)}`, { headers });
+      const payload = await res.json().catch(() => ({}));
+      const matches: AddressMatch[] = payload?.matches || [];
+      if (matches.length > 0) {
+        const best = matches[0];
+        setSelectedMatch((prev) => prev ? {
+          ...prev,
+          coordinates: best.coordinates || prev.coordinates,
+          county: best.county ?? prev.county ?? null,
+          countyFips: best.countyFips ?? prev.countyFips ?? null,
+          state: prev.state || best.state || null,
+          stateFips: best.stateFips ?? prev.stateFips ?? null,
+        } : prev);
+      }
+    } catch {
+      /* silent — Google selection already valid */
+    }
   };
 
   /** Regrid address typeahead — proxied via the regrid-typeahead edge
