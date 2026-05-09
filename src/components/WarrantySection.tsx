@@ -19,6 +19,7 @@ interface Warranty {
   document_path: string | null;
   extended_doc_url: string | null;
   is_transferable: boolean | null;
+  system_detail_id?: string | null;
 }
 
 interface SystemInfo {
@@ -77,7 +78,8 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
     const { data } = await supabase
       .from("warranties")
       .select("*")
-      .eq("system_detail_id", systemDetailId);
+      .eq("property_id", propertyId)
+      .or(`system_detail_id.eq.${systemDetailId},system_detail_id.is.null`);
     setWarranties((data as Warranty[]) || []);
     setLoading(false);
   };
