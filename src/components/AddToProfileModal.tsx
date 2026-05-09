@@ -285,6 +285,8 @@ function buildItemsFromExtraction(ai: any): ExtractedItem[] {
     "roof",
     "address",
     "property_address",
+    "detected_system",
+    "system_name",
   ]);
   for (const [k, v] of Object.entries(ai)) {
     if (skipKeys.has(k)) continue;
