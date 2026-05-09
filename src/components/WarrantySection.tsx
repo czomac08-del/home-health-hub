@@ -125,6 +125,74 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
 
   if (loading) return <div className="animate-pulse h-24 bg-secondary rounded-xl" />;
 
+  const systemWarranties = warranties.filter((w) => w.system_detail_id === systemDetailId);
+  const propertyWarranties = warranties.filter((w) => !w.system_detail_id);
+
+  const renderWarrantyCard = (w: Warranty) => {
+    const status = getWarrantyStatus(w.coverage_end);
+    const StatusIcon = status.icon;
+    return (
+      <div key={w.id} className="rounded-lg border border-border bg-background p-4 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <StatusIcon className={`h-5 w-5 ${status.color}`} />
+            <span className="text-sm font-semibold text-foreground capitalize">{w.warranty_type.replace("_", " ")} Warranty</span>
+          </div>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+            status.label === "Active" ? "bg-emerald-500/20 text-emerald-500" :
+            status.label === "Expiring Soon" ? "bg-[hsl(var(--health-amber))]/20 text-[hsl(var(--health-amber))]" :
+            "bg-destructive/20 text-destructive"
+          }`}>{status.label}</span>
+        </div>
+        {status.daysLeft > 0 && (
+          <div className="mb-3">
+            <p className="text-xs text-muted-foreground mb-1">
+              <Clock className="h-3 w-3 inline mr-1" />
+              {systemInfo?.system_name || "This item"} warranty expires in <span className="font-bold text-foreground">{status.daysLeft} days</span>
+            </p>
+            <Progress value={Math.max(0, Math.min(100, (status.daysLeft / 365) * 100))} className="h-1.5" />
+          </div>
+        )}
+        {status.daysLeft <= 0 && w.coverage_end && (
+          <p className="text-xs text-destructive mb-3">Expired on {new Date(w.coverage_end).toLocaleDateString()}</p>
+        )}
+        {w.provider_name && <p className="text-xs text-muted-foreground">Provider: <span className="text-foreground">{w.provider_name}</span></p>}
+        {w.coverage_start && w.coverage_end && (
+          <p className="text-xs text-muted-foreground">Coverage: {w.coverage_start} — {w.coverage_end}</p>
+        )}
+        <div className="flex flex-wrap gap-2 mt-3">
+          {w.claim_phone && (
+            <a href={`tel:${w.claim_phone}`} className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg font-medium">
+              <Phone className="h-3 w-3" /> {w.claim_phone}
+            </a>
+          )}
+          {w.claim_website && (
+            <a href={w.claim_website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg font-medium">
+              <Globe className="h-3 w-3" /> File Claim Online
+            </a>
+          )}
+        </div>
+        {!w.document_url && (
+          <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+            <Upload className="h-3.5 w-3.5" /> Upload warranty document (PDF)
+            <input type="file" accept=".pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleUploadDoc(w.id, e.target.files[0])} />
+          </label>
+        )}
+        {w.document_url && (
+          <a href={w.document_url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline">
+            <FileText className="h-3.5 w-3.5" /> View warranty document
+          </a>
+        )}
+        <button onClick={() => setShowClaimAssist(showClaimAssist === w.id ? null : w.id)} className="mt-3 w-full text-xs bg-destructive/10 text-destructive font-semibold py-2 rounded-lg hover:bg-destructive/20 transition-colors">
+          Help Me File a Claim
+        </button>
+        {showClaimAssist === w.id && (
+          <ClaimAssistant warranty={w} systemInfo={systemInfo} />
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-5">
@@ -137,72 +205,17 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
           </button>
         </div>
 
-        {warranties.map((w) => {
-          const status = getWarrantyStatus(w.coverage_end);
-          const StatusIcon = status.icon;
-          return (
-            <div key={w.id} className="rounded-lg border border-border bg-background p-4 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <StatusIcon className={`h-5 w-5 ${status.color}`} />
-                  <span className="text-sm font-semibold text-foreground capitalize">{w.warranty_type.replace("_", " ")} Warranty</span>
-                </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  status.label === "Active" ? "bg-emerald-500/20 text-emerald-500" :
-                  status.label === "Expiring Soon" ? "bg-[hsl(var(--health-amber))]/20 text-[hsl(var(--health-amber))]" :
-                  "bg-destructive/20 text-destructive"
-                }`}>{status.label}</span>
-              </div>
-              {status.daysLeft > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs text-muted-foreground mb-1">
-                    <Clock className="h-3 w-3 inline mr-1" />
-                    {systemInfo?.system_name || "This item"} warranty expires in <span className="font-bold text-foreground">{status.daysLeft} days</span>
-                  </p>
-                  <Progress value={Math.max(0, Math.min(100, (status.daysLeft / 365) * 100))} className="h-1.5" />
-                </div>
-              )}
-              {status.daysLeft <= 0 && w.coverage_end && (
-                <p className="text-xs text-destructive mb-3">Expired on {new Date(w.coverage_end).toLocaleDateString()}</p>
-              )}
-              {w.provider_name && <p className="text-xs text-muted-foreground">Provider: <span className="text-foreground">{w.provider_name}</span></p>}
-              {w.coverage_start && w.coverage_end && (
-                <p className="text-xs text-muted-foreground">Coverage: {w.coverage_start} — {w.coverage_end}</p>
-              )}
-              <div className="flex flex-wrap gap-2 mt-3">
-                {w.claim_phone && (
-                  <a href={`tel:${w.claim_phone}`} className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg font-medium">
-                    <Phone className="h-3 w-3" /> {w.claim_phone}
-                  </a>
-                )}
-                {w.claim_website && (
-                  <a href={w.claim_website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1.5 rounded-lg font-medium">
-                    <Globe className="h-3 w-3" /> File Claim Online
-                  </a>
-                )}
-              </div>
-              {!w.document_url && (
-                <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                  <Upload className="h-3.5 w-3.5" /> Upload warranty document (PDF)
-                  <input type="file" accept=".pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleUploadDoc(w.id, e.target.files[0])} />
-                </label>
-              )}
-              {w.document_url && (
-                <a href={w.document_url} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center gap-1 text-xs text-primary hover:underline">
-                  <FileText className="h-3.5 w-3.5" /> View warranty document
-                </a>
-              )}
-              <button onClick={() => setShowClaimAssist(showClaimAssist === w.id ? null : w.id)} className="mt-3 w-full text-xs bg-destructive/10 text-destructive font-semibold py-2 rounded-lg hover:bg-destructive/20 transition-colors">
-                Help Me File a Claim
-              </button>
-              {showClaimAssist === w.id && (
-                <ClaimAssistant warranty={w} systemInfo={systemInfo} />
-              )}
-            </div>
-          );
-        })}
+        {systemWarranties.map(renderWarrantyCard)}
 
-        {warranties.length === 0 && !showForm && (
+        {propertyWarranties.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <h3 className="text-sm font-semibold text-foreground mb-1">Property Warranties</h3>
+            <p className="text-xs text-muted-foreground mb-3">These warranties are not linked to a specific system.</p>
+            {propertyWarranties.map(renderWarrantyCard)}
+          </div>
+        )}
+
+        {systemWarranties.length === 0 && propertyWarranties.length === 0 && !showForm && (
           <p className="text-sm text-muted-foreground text-center py-4">No warranties added yet. Add one to track coverage and get expiration alerts.</p>
         )}
 
