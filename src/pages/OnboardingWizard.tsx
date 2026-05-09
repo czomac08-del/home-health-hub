@@ -698,6 +698,16 @@ const OnboardingWizard = () => {
         if (hasPublicRecords) {
           return (
             <div className="flex flex-col gap-6 animate-fade-in">
+              {prefilledFields.has("homeType") && prefilledFields.has("homeAge") && scanResults && (
+                <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">Pre-filled from public records</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Continuing automatically…</p>
+                  </div>
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin shrink-0" />
+                </div>
+              )}
               <div className="flex flex-col items-center text-center gap-2">
                 <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
                   <CheckCircle2 className="h-7 w-7 text-primary" />
