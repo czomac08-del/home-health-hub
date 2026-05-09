@@ -406,11 +406,41 @@ const OnboardingWizard = () => {
         .createSignedUrl(path, 31536000);
       if (!urlData?.signedUrl) throw new Error("Could not sign uploaded file");
 
+      // Always create the Document Vault row BEFORE extraction so the file
+      // is persisted in the vault even if AI extraction fails. Listings are
+      // general property documents (not tied to a specific home system) so
+      // system_type is null and record_type is "property_listing".
+      const { data: vaultRow } = await supabase
+        .from("property_records")
+        .insert({
+          property_id: propertyId,
+          system_type: null as any,
+          record_type: "property_listing",
+          source: "onboarding",
+          file_name: file.name,
+          storage_path: path,
+          url: urlData.signedUrl,
+          uploaded_by_user_id: user.id,
+          consent_civic_sharing: false,
+        } as any)
+        .select("id")
+        .maybeSingle();
+
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
         body: { documentUrl: urlData.signedUrl, systemType: "listing", source: "homeowner" },
       });
       if (extErr) throw extErr;
       const e = (ext?.extracted || {}) as Record<string, any>;
+
+      // Stamp the AI-extracted fields onto the vault row so the user can
+      // see the parsed data in the Document Vault immediately after onboarding.
+      if (vaultRow?.id) {
+        await supabase
+          .from("property_records")
+          .update({ ai_extracted_data: e as any, ai_verified: true })
+          .eq("id", vaultRow.id);
+      }
+
       const json: Record<string, any> = {
         found: true,
         yearBuilt: e.yearBuilt ?? null,
