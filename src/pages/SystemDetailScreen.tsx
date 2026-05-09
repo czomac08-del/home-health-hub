@@ -451,7 +451,7 @@ const SystemDetailScreen = () => {
       <div className="mb-6">
         <WarrantySection
           systemDetailId={id || ""}
-          propertyId=""
+          propertyId={activeProperty?.id || ""}
           systemInfo={{ id: id || "", system_name: system.name, brand: null, model: null, serial_number: null, purchase_date: null, install_date: null }}
         />
       </div>
