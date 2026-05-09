@@ -470,13 +470,25 @@ const DocumentVaultScreen = () => {
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingDelete && (pendingDelete.source_table === "warranties" || pendingDelete.source_table === "insurance_documents")
+                ? "Remove this document?"
+                : "Delete document?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-foreground">
-                "{pendingDelete?.title}"
-              </span>
-              ? This cannot be undone.
+              {pendingDelete && (pendingDelete.source_table === "warranties" || pendingDelete.source_table === "insurance_documents") ? (
+                <>
+                  This will remove the file{" "}
+                  <span className="font-semibold text-foreground">"{pendingDelete?.title}"</span>{" "}
+                  from your vault. The extracted details (provider, coverage,
+                  claim contacts) stay on your record so you don't lose them.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">"{pendingDelete?.title}"</span>? This cannot be undone.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
