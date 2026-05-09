@@ -45,19 +45,19 @@ interface RefreshLog {
 }
 
 const SCOPE_SOURCES: Record<RefreshScope, string[]> = {
-  full: ["RentCast", "FEMA", "NOAA", "EPA ECHO"],
-  roof: ["RentCast"],
-  electrical: ["RentCast"],
-  plumbing: ["RentCast"],
-  hvac: ["RentCast"],
-  water_heater: ["RentCast"],
+  full: ["RentCast", "Regrid", "FEMA", "NOAA", "EPA ECHO"],
+  roof: ["RentCast", "Regrid"],
+  electrical: ["RentCast", "Regrid"],
+  plumbing: ["RentCast", "Regrid"],
+  hvac: ["RentCast", "Regrid"],
+  water_heater: ["RentCast", "Regrid"],
   well: ["USDA Drought Monitor"],
   septic: ["RentCast", "EPA ECHO"],
   insurance: ["FEMA", "NOAA"],
-  warranties: ["RentCast"],
+  warranties: ["RentCast", "Regrid"],
   environmental: ["FEMA", "NOAA", "EPA ECHO"],
-  land_title: ["RentCast"],
-  timeline: ["RentCast", "FEMA"],
+  land_title: ["RentCast", "Regrid"],
+  timeline: ["RentCast", "Regrid", "FEMA"],
 };
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -141,8 +141,14 @@ export function useDataRefresh(scope: RefreshScope = "full") {
         try {
           switch (source) {
             case "RentCast": {
+              const lookupParams = new URLSearchParams({
+                address:    activeProperty.address,
+                rawAddress: activeProperty.address,
+                state:      geoState      || "",
+                countyFips: geoCountyFips || "",
+              });
               const resp = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup?address=${encodeURIComponent(activeProperty.address)}`,
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rentcast-lookup?${lookupParams}`,
                 {
                   headers: {
                     Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -153,13 +159,21 @@ export function useDataRefresh(scope: RefreshScope = "full") {
               const rcData = await resp.json();
               if (rcData?.found) {
                 // Write property data back to Supabase
-                const updates: { year_built?: string; square_footage?: string } = {};
-                if (rcData.yearBuilt) updates.year_built = String(rcData.yearBuilt);
-                if (rcData.squareFootage) updates.square_footage = String(rcData.squareFootage);
+                const updates: Record<string, unknown> = {};
+                if (rcData.yearBuilt)          updates.year_built      = String(rcData.yearBuilt);
+                if (rcData.squareFootage)      updates.square_footage  = String(rcData.squareFootage);
+                if (rcData.propertyType)       updates.property_type   = rcData.propertyType;
+                if (rcData.bedrooms   != null) updates.bedrooms        = rcData.bedrooms;
+                if (rcData.bathrooms  != null) updates.bathrooms       = rcData.bathrooms;
+                if (rcData.lotSize)            updates.lot_size        = rcData.lotSize;
+                if (rcData.lastSaleDate)       updates.last_sale_date  = rcData.lastSaleDate;
+                if (rcData.lastSalePrice)      updates.last_sale_price = rcData.lastSalePrice;
+                if (rcData.parcelId)           updates.parcel_id       = rcData.parcelId;
+                if (rcData.rentcastId)         updates.rentcast_id     = rcData.rentcastId;
                 if (Object.keys(updates).length > 0) {
                   await supabase
                     .from("properties")
-                    .update(updates)
+                    .update(updates as any)
                     .eq("id", activeProperty.id);
                 }
 
