@@ -979,7 +979,7 @@ export default function UploadDocumentModal({
                 <Button
                   onClick={handleConfirm}
                   className="flex-1"
-                  disabled={extractionEmpty}
+                  disabled={extractionEmpty || (instanceOptions.length > 1 && !selectedInstanceName)}
                 >
                   Confirm & Save
                 </Button>
