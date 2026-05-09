@@ -1,49 +1,91 @@
-## Reality check
+## Goal
+Add role-aware document upload + AI extraction to all four Pro dashboards (Contractor, Realtor, Inspector, Investor), reusing the existing unified review flow. Apply universal rules already codified in `mem://features/document-universal-rules` (no silent overwrites, deletion never removes extracted data, public-records badge, confidence indicators, vault-always-saves).
 
-I audited the codebase to find every upload touchpoint by role. Today the **only place documents actually get uploaded** is `UploadDocumentModal` (used by Document Vault, FAB, DocumentHub, system cards) plus the listing pre-fill in `OnboardingWizard`. The Contractor / Realtor / Inspector / Investor dashboards manage records (jobs, listings, inspections, flip projects) but don't have document upload UI yet — they `INSERT` into `contractor_jobs`, `realtor_listings`, `inspections`, `flip_projects`. None of them call `extract-document-data` or `storage.upload`.
+## Architecture
 
-That changes the scope significantly. The spec describes upload behavior across roles, but most of the role-specific upload UIs **don't exist yet**. I shouldn't pretend to wire all of them up in one pass — half would be net-new screens, not refactors.
+### 1. Role-aware extraction schemas
+Create `src/lib/proDocumentSchemas.ts` defining per-role document types and field schemas the AI must extract:
 
-## Recommended phased rollout
+```text
+contractor/
+  estimate         → line_items[], total_cost, labor_cost, materials_cost,
+                     validity_date, job_address, license_number
+  invoice          → estimate fields + payment_status, payment_date, invoice_number
+  receipt          → vendor, amount, date, item_description, job_reference
+  work_photo       → job_id, system_type, structure_id (tag-only, no OCR)
 
-### Phase 1 (now) — Per-doc-type review screens for the existing modal
-The unified review I just shipped only handles "system spec" docs (HVAC, septic, etc.). It needs siblings for the other doc types so the same flow works regardless of what the user uploaded:
+realtor/
+  seller_disclosure → defects[], known_issues[], system_ages{}, renovations[],
+                      hoa_info, flood_zone
+  inspection_report → inspector_name, date, flagged_items[]{item, severity}
+  appraisal         → appraised_value, date, comparables[], appraiser_name
+  listing_agreement → list_price, commission_rate, expiration_date, agent_name
 
-| Doc type        | Writes to                  | Status today              |
-|-----------------|----------------------------|---------------------------|
-| System specs    | `system_details`            | Done last turn            |
-| Warranty        | `warranties`               | Auto-syncs silently — needs review screen |
-| Insurance       | `insurance_policies` (?)    | Needs review screen        |
-| Receipt/invoice | `maintenance_history`       | Needs review screen        |
-| Inspection      | `system_details` + timeline | Already has `InspectionFindingsReview` (keep) |
-| Public records  | Same as homeowner uploads + "From Public Records" tag | Add tag in review header |
+inspector/
+  inspection_report → inspector_name, license_number, date,
+                      flagged_items[]{description, severity, system, action, est_cost}
 
-**Work**: extend `UnifiedDocumentReview` (or add per-type review components that share the same shell — confidence header, ✅/✏️/⚠️ rows, Save / Complete Later) for warranty, insurance, and receipt. Wire `UploadDocumentModal` to pick the right review based on `docType`. Delete the silent auto-sync in `handleConfirm` for warranties (already exists) so the user reviews fields first.
+investor/
+  contractor_bid    → contractor_name, scope, line_items[], total, timeline
+  renovation_receipt→ vendor, amount, date, item_description, job_reference
+  before_after_photo→ room, system_type, structure_id, phase
+  arv_appraisal     → arv_value, date, appraiser_name
+```
 
-### Phase 2 — Pro role uploads piggyback on the same modal
-Add an "Attach Documents" action on each Pro dashboard's record screens (`ContractorJobDetail`, `RealtorListingDetail`, `InspectionChecklistScreen`, `FlipProjectDetail`) that opens `UploadDocumentModal` pre-configured with:
-- `defaultDocType` (estimate / invoice / disclosure / appraisal / bid…)
-- A new `linkedRecord` prop: `{ table: "contractor_jobs" | "realtor_listings" | "inspections" | "flip_projects", id: string }`
-After save, write a foreign-key row into a new `record_attachments` table linking the property record and the role-specific record. Same review flow, same confidence indicators.
+### 2. Edge function: `extract-pro-document`
+New function that accepts `{ role, docType, fileUrl }`, fetches the file, calls Lovable AI Gateway (`google/gemini-3-flash-preview`) with the matching schema via AI SDK `Output.object`, returns `{ fields, confidence, lowConfidenceReason? }`. Handwritten/low-quality scans return `confidence < 0.6` with `"AI had trouble"` flag for partial-credit messaging.
 
-**Work**: new doc-type review components for estimate / invoice / disclosure / appraisal / bid; new `record_attachments` table; "Attach" button + modal trigger on each Pro detail screen.
+### 3. Unified upload flow per role
+Extend `UploadDocumentModal` with a `proContext?: { role, docType }` prop. When set:
+- Skip system-instance/structure prompts (those are homeowner-only).
+- Route to `extract-pro-document` instead of homeowner extractor.
+- Render results in `UnifiedDocumentReview` with role-aware field list (driven by schema registry).
+- Always save the file to the matching storage bucket + create a vault record before review (so "skip review" still preserves the doc).
 
-### Phase 3 — Cross-role sharing + notifications
-- When a contractor / inspector / realtor uploads a document for a property that has a homeowner with a CHIQ account, prompt: "Share a copy with the homeowner?" (default on). On confirm, copy the `property_records` row (or grant read access) to the homeowner's vault.
-- Inspector uploads emit a notification via the existing `notify_property_connections` RPC (already used for inspection reports — extend to other inspector docs).
-- Surface "Shared by [role]" badges in the homeowner's vault.
+### 4. Per-role wiring
+Each Pro dashboard gets a small `<ProUploadButton role docType .../>` that opens the modal in pro mode. Existing dashboard tabs (estimates, invoices, receipts, photos / disclosures, listings / inspections / bids, etc.) get an "Upload" entry point.
 
-**Work**: a `property_record_shares` table (or reuse `property_shares`); confirm UI in the modal; vault badge + filter; notification fan-out.
+### 5. Role-specific side effects after confirm
+- **Contractor confirm**: if homeowner is linked to property, show "Share with homeowner's vault?" toggle → writes to `property_record_vault` with `record_source='contractor'`.
+- **Realtor confirm**: always write to `permanent_archive` (provenance-locked) so it stays attached to the address after listing closes.
+- **Inspector confirm**: each flagged item upserts the matching `system_details` row (status/notes appended, never overwritten — conflicts open the existing "Conflict?" prompt). Triggers `notify_property_connections` for homeowner if linked.
+- **Investor confirm**: writes to investor project tables; before/after photos tagged to room/system/structure/phase.
 
-### Phase 4 — Universal rules audit
-- Audit any code path that writes to `system_details` / `warranties` / `insurance_policies` from a document and confirm none of them silently overwrite. (Already done for `system_details` via `writeSystemFields`. Need the same for `warranties` and insurance.)
-- Confirm "deletion never removes extracted field data" — verify the warranty/insurance vaults don't cascade-delete on document removal.
-- Add the "From Public Records" badge in the review header when `source = "public_records"`.
+### 6. Universal rules (already enforced, re-applied here)
+- Vault save happens at upload time, before review.
+- Deletion of the doc detaches the file but keeps extracted fields.
+- Conflicts always prompt; never silent overwrite.
+- Confidence pill on every reviewed field; "AI had trouble" banner when overall confidence < 0.6.
+- "From Public Records" badge when source is realtor/inspector permanent_archive.
 
-## My recommendation
+## Files
 
-Start with **Phase 1** in the next message — it's a self-contained refactor of `UploadDocumentModal` and adds 2–3 new review components. It immediately gives every homeowner upload the unified review the user asked for, which is the bulk of traffic today. Phases 2–4 each deserve their own session because they involve schema changes and new screens.
+**New**
+- `src/lib/proDocumentSchemas.ts` — schema registry + field metadata
+- `src/components/ProUploadButton.tsx` — entry point used by all 4 dashboards
+- `src/components/ProDocumentReview.tsx` — thin wrapper around `UnifiedDocumentReview` that maps role schema → field list and handles role-specific confirm side effects
+- `supabase/functions/extract-pro-document/index.ts` — Lovable AI Gateway extraction
+- `supabase/functions/_shared/ai-gateway.ts` — provider helper (if not already present)
 
-If you want me to do all four in one go I will, but the response will be long, the diff will be large, and the risk of something subtle breaking in your B2B dashboards goes up. I'd rather ship Phase 1 cleanly, you verify it on /documents, then we move on.
+**Edited**
+- `src/components/UploadDocumentModal.tsx` — accept `proContext`, branch to pro flow
+- `src/components/UnifiedDocumentReview.tsx` — accept `fieldSchema` prop, render dynamic fields + confidence + "AI had trouble" banner
+- `src/pages/ContractorDashboard.tsx` — add upload buttons for estimates / invoices / receipts / photos + "share with homeowner" toggle
+- `src/pages/RealtorDashboard.tsx` — add upload buttons for disclosures / inspections / appraisals / listings; permanent_archive write on confirm
+- `src/pages/InspectorDashboard.tsx` — add inspection report upload; flagged-item → system upsert + notification
+- `src/pages/InvestorDashboard.tsx` — add upload buttons for bids / receipts / before-after / ARV
 
-Tell me which phase to execute next (or "all four") and I'll proceed.
+**Migration**
+- No new tables required — reuses `property_record_vault`, `permanent_archive`, `system_details`, `inspection_notifications`, `contractor_submissions`, existing storage buckets.
+
+## Out of scope
+- Building new business logic on the homeowner side beyond what already exists.
+- Changing the homeowner upload flow.
+- Editing inspector state-specific checklists (separate feature).
+
+## Order of work
+1. Schema registry + edge function (foundation).
+2. `ProDocumentReview` + modal `proContext` branch.
+3. Wire Contractor dashboard end-to-end (smallest blast radius), verify.
+4. Wire Realtor, Inspector, Investor dashboards in parallel.
+5. QA each role's confirm path against universal rules.
