@@ -474,6 +474,7 @@ const OnboardingWizard = () => {
         zip: zip || null,
         county: selectedMatch.county || null,
         county_fips: selectedMatch.countyFips || null,
+        google_place_id: googlePlaceId,
       };
       const { data: inserted, error } = await supabase
         .from("properties")
