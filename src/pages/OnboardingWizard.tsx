@@ -501,6 +501,7 @@ const OnboardingWizard = () => {
     }
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
+    if (step === 8) return data.hasAdditionalStructures !== null;
     return true;
   };
 
