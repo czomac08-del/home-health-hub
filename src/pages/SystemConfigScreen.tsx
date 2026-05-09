@@ -46,7 +46,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
 );
 
 interface PhotoItem { url: string; label: string; storagePath?: string; id?: string; ai_analyzed?: boolean; }
-interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
+interface DocItem { name: string; date: string; storagePath?: string; url?: string; targetSystemDetailId?: string }
 interface AiSuggestion { key: string; label: string; value: string; target: "brand" | "model" | "serial" | "installDate" | "notes" | "spec"; specKey?: string; }
 
 // Small teal badge
@@ -115,6 +115,15 @@ const SystemConfigScreen = () => {
   const [docs, setDocs] = useState<Record<string, DocItem | null>>({});
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState("");
+  // Sibling systems of the same category — used to route uploaded docs to
+  // the correct system_details row when a property has multiple instances.
+  const [siblingSystems, setSiblingSystems] = useState<Array<{ id: string; name: string }>>([]);
+  const [hasAdditionalStructures, setHasAdditionalStructures] = useState(false);
+  const [pendingDoc, setPendingDoc] = useState<
+    | { docType: string; fileName: string; storagePath: string; signedUrl: string }
+    | null
+  >(null);
+  const [pendingTargetId, setPendingTargetId] = useState<string>("");
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -408,7 +417,51 @@ const SystemConfigScreen = () => {
     if (error) { toast.error("Document upload failed"); return; }
     const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
     if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
-    setDocs((prev) => ({ ...prev, [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl } }));
+
+    const needsRouting =
+      siblingSystems.length > 1 ||
+      (hasAdditionalStructures && siblingSystems.length >= 1) ||
+      /\d/.test(displayName);
+
+    if (needsRouting && siblingSystems.length > 1) {
+      // Default to the system this screen represents.
+      setPendingTargetId(systemDetailId || siblingSystems[0]?.id || "");
+      setPendingDoc({ docType, fileName: file.name, storagePath: path, signedUrl: signedData.signedUrl });
+      // Clear input so the same file can be re-picked if cancelled.
+      e.target.value = "";
+      return;
+    }
+
+    setDocs((prev) => ({
+      ...prev,
+      [docType]: { name: file.name, date: new Date().toLocaleDateString(), storagePath: path, url: signedData.signedUrl },
+    }));
+    e.target.value = "";
+  };
+
+  const confirmPendingDoc = () => {
+    if (!pendingDoc) return;
+    setDocs((prev) => ({
+      ...prev,
+      [pendingDoc.docType]: {
+        name: pendingDoc.fileName,
+        date: new Date().toLocaleDateString(),
+        storagePath: pendingDoc.storagePath,
+        url: pendingDoc.signedUrl,
+        targetSystemDetailId: pendingTargetId || undefined,
+      },
+    }));
+    setPendingDoc(null);
+    setPendingTargetId("");
+  };
+
+  const cancelPendingDoc = async () => {
+    if (pendingDoc?.storagePath) {
+      // Best-effort cleanup of the uploaded file the user backed out of.
+      await supabase.storage.from("system-documents").remove([pendingDoc.storagePath]).catch(() => {});
+    }
+    setPendingDoc(null);
+    setPendingTargetId("");
   };
 
   const deletePhoto = async (photo: PhotoItem, index: number) => {
@@ -540,7 +593,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_documents").select("id").eq("storage_path", doc.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_documents").insert({
-            system_detail_id: savedSystemDetailId,
+            system_detail_id: doc.targetSystemDetailId || savedSystemDetailId,
             user_id: user.id,
             storage_path: doc.storagePath,
             doc_type: docType,
@@ -653,6 +706,27 @@ const SystemConfigScreen = () => {
   useEffect(() => {
     if (usesApplicabilityGate) setGateLoaded(true);
   }, [usesApplicabilityGate]);
+
+  // Load sibling system rows of the same category + the property flag so we
+  // can prompt the user to route uploads to the correct instance when the
+  // home has multiple of the same system.
+  useEffect(() => {
+    if (!user || !activeProperty || !displayName) return;
+    (async () => {
+      const baseTerm = displayName.replace(/\s*\d+$/, "").trim();
+      const { data } = await supabase
+        .from("system_details")
+        .select("id, system_name, instance_name")
+        .eq("property_id", activeProperty.id)
+        .ilike("system_name", `${baseTerm}%`);
+      const rows = (data || []).map((r: any) => ({
+        id: r.id as string,
+        name: (r.instance_name as string) || (r.system_name as string),
+      }));
+      setSiblingSystems(rows);
+      setHasAdditionalStructures(!!(activeProperty as any).has_additional_structures);
+    })();
+  }, [user, activeProperty, displayName]);
 
   const saveIsApplicable = useCallback(async (next: boolean) => {
     setIsApplicable(next);
@@ -1047,6 +1121,57 @@ const SystemConfigScreen = () => {
               })}
             </div>
           </CollapsibleSectionView>
+
+          {/* Routing prompt — shown when the property has multiple instances
+              of this system category and the user uploads a doc. */}
+          {pendingDoc && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm px-4">
+              <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+                <h3 className="text-base font-bold text-foreground mb-1">Which system is this for?</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  This property has multiple {displayName.replace(/\s*\d+$/, "").trim().toLowerCase()} systems.
+                  Choose the one this {pendingDoc.docType.toLowerCase()} belongs to so it stays linked to the right record.
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto mb-5">
+                  {siblingSystems.map((s) => (
+                    <label
+                      key={s.id}
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
+                        pendingTargetId === s.id ? "border-primary bg-primary/10" : "border-border hover:bg-muted/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="pending-target"
+                        value={s.id}
+                        checked={pendingTargetId === s.id}
+                        onChange={() => setPendingTargetId(s.id)}
+                        className="accent-primary"
+                      />
+                      <span className="text-sm text-foreground">{s.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelPendingDoc}
+                    className="flex-1 rounded-xl border border-border bg-background py-2.5 text-sm font-semibold text-foreground hover:bg-muted/40"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!pendingTargetId}
+                    onClick={confirmPendingDoc}
+                    className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                  >
+                    Attach to this system
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Location ── */}
           <CollapsibleSectionView isOpen={expandedSections.has("location")} title="Location in Home" onToggle={() => toggleSection("location")}>
