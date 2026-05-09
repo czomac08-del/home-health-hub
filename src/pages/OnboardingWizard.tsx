@@ -711,6 +711,31 @@ const OnboardingWizard = () => {
                 >
                   Continue →
                 </button>
+                <div className="w-full rounded-xl border border-border bg-card/50 p-4 flex flex-col gap-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    Have a Zillow or Realtor.com listing? Upload it instead.
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Upload a PDF or screenshot — we'll pull the year built, square footage, beds, baths, and more.
+                  </p>
+                  <label className={`mt-1 inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm font-semibold cursor-pointer hover:bg-muted ${listingUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                    {listingUploading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Reading listing…</>) : "Choose file"}
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      className="hidden"
+                      disabled={listingUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.currentTarget.value = "";
+                        if (f) handleListingUpload(f);
+                      }}
+                    />
+                  </label>
+                  {listingError && (
+                    <p className="text-xs text-destructive">{listingError}</p>
+                  )}
+                </div>
               </div>
             );
           }
