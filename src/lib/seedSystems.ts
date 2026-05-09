@@ -57,24 +57,18 @@ export async function seedSystemsFromOnboarding(
       field: "waterType", value: wizardData.waterSource,
       source: "OWNER_PROVIDED",
     });
-    const waterSystemName = wizardData.waterSource === "well" ? "Well Water" : "Plumbing";
-    await writeSystemField({
-      propertyId, userId, systemName: waterSystemName,
-      field: "waterType", value: wizardData.waterSource,
-      source: "OWNER_PROVIDED",
-    });
   }
-  if (wizardData.knowsWaterShutoff) {
+  if (wizardData.knowsWaterShutoff !== undefined) {
     await writeSystemField({
       propertyId, userId, systemName: "Water Source",
-      field: "shutoffLocationKnown", value: true,
+      field: "shutoffLocationKnown", value: !!wizardData.knowsWaterShutoff,
       source: "OWNER_PROVIDED",
     });
   }
-  if (wizardData.knowsFilterLocation) {
+  if (wizardData.knowsFilterLocation !== undefined) {
     await writeSystemField({
       propertyId, userId, systemName: "HVAC",
-      field: "filterLocationKnown", value: true,
+      field: "filterLocationKnown", value: !!wizardData.knowsFilterLocation,
       source: "OWNER_PROVIDED",
     });
   }
