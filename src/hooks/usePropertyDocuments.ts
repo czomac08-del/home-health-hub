@@ -99,7 +99,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .order("created_at", { ascending: false }),
       supabase
         .from("warranties")
-        .select("id, warranty_type, provider_name, document_path, document_url, extended_doc_path, extended_doc_url, created_at, property_id, source_record_id")
+        .select("id, warranty_type, provider_name, document_path, document_url, document_bucket, extended_doc_path, extended_doc_url, created_at, property_id, source_record_id")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
     ]);
@@ -236,7 +236,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           uploadedAt: w.created_at,
           url: w.document_url,
           storagePath: w.document_path,
-          bucket: "warranty-documents",
+          bucket: w.document_bucket || "warranty-documents",
           recordType: w.warranty_type,
           raw: w,
         });
@@ -251,7 +251,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           uploadedAt: w.created_at,
           url: w.extended_doc_url,
           storagePath: w.extended_doc_path,
-          bucket: "warranty-documents",
+          bucket: w.document_bucket || "warranty-documents",
           recordType: w.warranty_type,
           raw: w,
         });
