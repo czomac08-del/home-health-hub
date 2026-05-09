@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import ProPartnerWidget from "@/components/ProPartnerWidget";
 import PendingRewardsCard from "@/components/PendingRewardsCard";
 import SEO from "@/components/SEO";
+import ProUploadButton from "@/components/ProUploadButton";
 import {
   Search, ChevronRight, Camera, Check, Clock, DollarSign, Shield, Send,
   Star, Users, TrendingUp, Eye, Wrench, MapPin, Calendar, Plus, Loader2,
@@ -462,6 +463,13 @@ const ContractorDashboard = () => {
       <ShareLinkSubmit />
 
       {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
+
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <ProUploadButton role="contractor" defaultDocType="contractor.estimate" label="Upload Estimate" />
+        <ProUploadButton role="contractor" defaultDocType="contractor.invoice"  label="Upload Invoice" />
+        <ProUploadButton role="contractor" defaultDocType="contractor.receipt"  label="Upload Receipt" />
+        <ProUploadButton role="contractor" defaultDocType="contractor.work_photo" label="Upload Work Photo" />
+      </div>
 
       <div className="mb-6">
         <ProPartnerWidget />
