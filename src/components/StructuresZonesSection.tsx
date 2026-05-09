@@ -257,11 +257,43 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Addition, Garage Apartment"
+              placeholder={newType === "legacy" ? "e.g. Old farmhouse footprint" : "e.g. Addition, Garage Apartment"}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
             />
           </div>
 
+          {newType === "legacy" ? (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
+                What remains on the property?
+              </p>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Select all infrastructure still present from the previous structure. We'll log each one for your records and future sale disclosure.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {LEGACY_REMNANTS.map((r) => {
+                  const checked = legacyRemnants.has(r.value);
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() =>
+                        setLegacyRemnants((prev) => {
+                          const n = new Set(prev);
+                          n.has(r.value) ? n.delete(r.value) : n.add(r.value);
+                          return n;
+                        })
+                      }
+                      className={`rounded-md border px-3 py-2 text-xs font-medium text-left transition-colors ${checked ? "border-primary bg-primary/15 text-primary" : "border-border bg-background text-foreground hover:bg-secondary"}`}
+                    >
+                      {checked ? "✓ " : ""}{r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+          <>
           <div>
             <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
               Did this structure get its own systems, or extend the existing ones?
@@ -317,6 +349,8 @@ const StructuresZonesSection = ({ propertyId }: { propertyId: string }) => {
               />
             )}
           </div>
+          </>
+          )}
 
           <div className="flex gap-2 pt-1">
             <button
