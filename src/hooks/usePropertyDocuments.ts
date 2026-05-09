@@ -89,7 +89,8 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .order("created_at", { ascending: false }),
       supabase
         .from("insurance_documents")
-        .select("id, file_name, url, storage_path, created_at, doc_type")
+        .select("id, file_name, url, storage_path, created_at, doc_type, insurance_policies!inner(property_id)")
+        .eq("insurance_policies.property_id", propertyId)
         .order("created_at", { ascending: false }),
       supabase
         .from("fix_verifications")
@@ -126,7 +127,8 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         rt === "civic_data" ||
         rt === "rentcast_snapshot";
       const hasNoRealFile = !r.file_name && !r.storage_path && !r.url;
-      if (isSystemGenerated || hasNoRealFile) return;
+      const isImage = /\.(jpe?g|png|heic|webp|gif)$/i.test(r.file_name || "");
+      if (isSystemGenerated || hasNoRealFile || isImage) return;
 
       const ext = r.ai_extracted_data && typeof r.ai_extracted_data === "object";
       const rep = ext && (r.ai_extracted_data as any).inspection_report;
