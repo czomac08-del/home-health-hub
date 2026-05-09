@@ -29,6 +29,8 @@ import GuideWalkthroughScreen from "./pages/GuideWalkthroughScreen";
 import ProfileScreen from "./pages/ProfileScreen";
 import PropertyDetailScreen from "./pages/PropertyDetailScreen";
 import HandoverWizardScreen from "./pages/HandoverWizardScreen";
+import SellerDisclosureScreen from "./pages/SellerDisclosureScreen";
+import SharedPropertyView from "./pages/SharedPropertyView";
 import ClaimHomeScreen from "./pages/ClaimHomeScreen";
 import RealtorDashboard from "./pages/RealtorDashboard";
 import InspectorDashboard from "./pages/InspectorDashboard";
@@ -78,7 +80,7 @@ import SEO from "./components/SEO";
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog", "/unsubscribe"];
-const hideNavPrefixes = ["/inspection-review/", "/blog/"];
+const hideNavPrefixes = ["/inspection-review/", "/blog/", "/share/"];
 
 /**
  * Routes that have their own per-page SEO and should be crawled.
@@ -274,6 +276,8 @@ const AppContent = () => {
             <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
             <Route path="/property" element={<ProtectedRoute><PropertyDetailScreen /></ProtectedRoute>} />
             <Route path="/handover" element={<ProtectedRoute><HandoverWizardScreen /></ProtectedRoute>} />
+            <Route path="/handover/disclosure" element={<ProtectedRoute><SellerDisclosureScreen /></ProtectedRoute>} />
+            <Route path="/share/:token" element={<SharedPropertyView />} />
             <Route path="/claim" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
             <Route path="/claim/:propertyId" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
