@@ -314,6 +314,19 @@ export default function UploadDocumentModal({
         } catch (sysErr) {
           console.warn("System fan-out failed (non-fatal):", sysErr);
         }
+        // Also extract structured field values (brand, model, install date, etc.)
+        // so system config screens show real data instead of empty fields.
+        try {
+          const { applyInspectionExtractionToSystems } = await import("@/lib/seedSystems");
+          await applyInspectionExtractionToSystems({
+            propertyId: activeProperty.id,
+            userId: user.id,
+            extracted: merged,
+            sourceRecordId: rec?.id ?? null,
+          });
+        } catch (extErr) {
+          console.warn("Extraction fan-out failed (non-fatal):", extErr);
+        }
       }
 
       // Fan out cross-role notifications when an inspection report is confirmed
