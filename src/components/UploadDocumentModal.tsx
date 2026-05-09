@@ -869,7 +869,14 @@ export default function UploadDocumentModal({
                 </p>
                 <select
                   value={selectedInstanceName}
-                  onChange={(e) => setSelectedInstanceName(e.target.value)}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setSelectedInstanceName(name);
+                    const opt = instanceOptions.find((o) => o.system_name === name) || null;
+                    setSelectedInstanceId(opt?.id || null);
+                    setSelectedInstanceStructure(opt?.structure || null);
+                    setSelectedInstanceLegacy(isLegacyAssignment(opt?.structure));
+                  }}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select a system…</option>
