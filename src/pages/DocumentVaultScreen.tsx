@@ -96,6 +96,16 @@ const DocumentVaultScreen = () => {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
+      // ---------------------------------------------------------------------
+      // Universal rule: deleting a document never destroys structured data
+      // already extracted from it. For warranty / insurance rows the document
+      // and the record share a row, so we *detach* (clear file pointers)
+      // instead of deleting the row.
+      // ---------------------------------------------------------------------
+      const isStructuredRecord =
+        pendingDelete.source_table === "warranties" ||
+        pendingDelete.source_table === "insurance_documents";
+
       // Remove the storage object first when we know the path.
       if (pendingDelete.storagePath && pendingDelete.bucket) {
         const { error: storageErr } = await supabase
@@ -105,11 +115,23 @@ const DocumentVaultScreen = () => {
         // Storage errors are non-fatal — the row delete is the source of truth.
         if (storageErr) console.warn("Storage remove failed:", storageErr);
       }
-      const { error: rowErr } = await supabase
-        .from(pendingDelete.source_table as any)
-        .delete()
-        .eq("id", pendingDelete.id);
-      if (rowErr) throw rowErr;
+
+      if (isStructuredRecord) {
+        // Detach the file but keep the warranty / insurance record so all
+        // extracted fields (provider, coverage dates, claim phone, etc.)
+        // remain on the homeowner's profile.
+        const { error: rowErr } = await supabase
+          .from(pendingDelete.source_table as any)
+          .update({ document_path: null, document_url: null, document_bucket: null })
+          .eq("id", pendingDelete.id);
+        if (rowErr) throw rowErr;
+      } else {
+        const { error: rowErr } = await supabase
+          .from(pendingDelete.source_table as any)
+          .delete()
+          .eq("id", pendingDelete.id);
+        if (rowErr) throw rowErr;
+      }
 
       const cardKey = `${pendingDelete.source_table}-${pendingDelete.id}`;
       setHiddenIds((s) => {
@@ -117,7 +139,11 @@ const DocumentVaultScreen = () => {
         next.add(cardKey);
         return next;
       });
-      toast.success("Document deleted");
+      toast.success(
+        isStructuredRecord
+          ? "Document removed — extracted details kept on your record"
+          : "Document deleted",
+      );
       setPendingDelete(null);
       // Background refresh so counts/categories stay in sync.
       void reload();
@@ -444,13 +470,25 @@ const DocumentVaultScreen = () => {
       <AlertDialog open={!!pendingDelete} onOpenChange={(v) => { if (!v && !deleting) setPendingDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingDelete && (pendingDelete.source_table === "warranties" || pendingDelete.source_table === "insurance_documents")
+                ? "Remove this document?"
+                : "Delete document?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-foreground">
-                "{pendingDelete?.title}"
-              </span>
-              ? This cannot be undone.
+              {pendingDelete && (pendingDelete.source_table === "warranties" || pendingDelete.source_table === "insurance_documents") ? (
+                <>
+                  This will remove the file{" "}
+                  <span className="font-semibold text-foreground">"{pendingDelete?.title}"</span>{" "}
+                  from your vault. The extracted details (provider, coverage,
+                  claim contacts) stay on your record so you don't lose them.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">"{pendingDelete?.title}"</span>? This cannot be undone.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

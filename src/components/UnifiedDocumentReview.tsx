@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, AlertTriangle, Pencil, Sparkles, Loader2, FileText } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Pencil, Sparkles, Loader2, FileText, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -18,6 +18,8 @@ interface Props {
   fileName: string;
   recordId: string | null;
   extracted: Record<string, any>;
+  /** True when this document was sourced from a public-records pull. */
+  isPublicRecord?: boolean;
   onSaved: () => void;
   onCompleteLater: () => void;
 }
@@ -36,6 +38,7 @@ export default function UnifiedDocumentReview({
   fileName,
   recordId,
   extracted,
+  isPublicRecord,
   onSaved,
   onCompleteLater,
 }: Props) {
@@ -154,6 +157,13 @@ export default function UnifiedDocumentReview({
         <span className="text-base leading-none">{confidence.icon}</span>
         <div className="text-xs font-semibold">{confidence.label}</div>
       </div>
+
+      {isPublicRecord && (
+        <div className="rounded-lg border border-brain-blue/40 bg-brain-blue/10 px-3 py-2 flex items-center gap-2 text-xs text-brain-blue font-semibold">
+          <Globe2 className="h-3.5 w-3.5" />
+          From Public Records — confirm or correct what we found
+        </div>
+      )}
 
       {/* Target system */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
