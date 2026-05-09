@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck, Flag, CheckCircle2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Wrench, Info, ChevronDown, ChevronUp, BookOpen, ShieldAlert, UserCheck, Flag, CheckCircle2, Pencil, Layers, Boxes } from "lucide-react";
 import { DisputeDialog } from "@/components/DisputeDialog";
 import FixVerificationModal from "@/components/FixVerificationModal";
 import { useInspectionFindings } from "@/hooks/useInspectionFindings";
 import { findingKey } from "@/lib/inspectionScoring";
 import FindingSourceLink from "@/components/FindingSourceLink";
 import FreeToReviewBanner from "@/components/FreeToReviewBanner";
+import { mapFindingToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { Link } from "react-router-dom";
 import { ExternalLink, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -94,14 +95,42 @@ interface Props {
   propertyRecordId?: string;
   /** Direct URL to the original PDF in storage — drives source links and viewer. */
   reportUrl?: string | null;
+  /**
+   * Fired when the user confirms or changes the system mapping for any finding
+   * in the by-system review. Caller persists overrides on save so each finding
+   * lands in the correct system card.
+   */
+  onMappingsChange?: (mapping: Record<string, string | null>) => void;
 }
 
-export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false, propertyId, propertyRecordId, reportUrl }: Props) {
+const SYSTEM_OPTIONS = [
+  "HVAC",
+  "Roof",
+  "Electrical Panel",
+  "Plumbing",
+  "Water Heater",
+  "Sewer and Waste",
+  "Water Source",
+  "Well Water",
+  "Natural Gas / Propane",
+  "Chimney & Fireplace",
+  "Foundation",
+  "Refrigerator",
+  "Washer / Dryer",
+  "Dishwasher",
+  "Garage Door Opener",
+  "Water Softener",
+];
+
+export default function InspectionFindingsReview({ data, showAttributionDisclaimer = false, propertyId, propertyRecordId, reportUrl, onMappingsChange }: Props) {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
   const [disputeFinding, setDisputeFinding] = useState<InspectionFinding | null>(null);
   const [fixFinding, setFixFinding] = useState<{ id: string; title: string } | null>(null);
   const [showFixed, setShowFixed] = useState(false);
+  const [groupBy, setGroupBy] = useState<"severity" | "system">("system");
+  // Manual overrides keyed by finding.id — null = "unsure" (✏️).
+  const [overrides, setOverrides] = useState<Record<string, string | null>>({});
   const canDispute = Boolean(propertyId);
   const canMarkFixed = Boolean(propertyId && propertyRecordId);
 
@@ -118,6 +147,41 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
   const grouped: Record<1 | 2 | 3 | 4, InspectionFinding[]> = { 1: [], 2: [], 3: [], 4: [] };
   for (const f of data.findings || []) {
     if ([1, 2, 3, 4].includes(f.level)) grouped[f.level].push(f);
+  }
+
+  // Resolve the current system slug for a finding (override → auto-map → null)
+  const systemFor = (f: InspectionFinding): string | null => {
+    if (f.id in overrides) return overrides[f.id];
+    const auto = mapFindingToSystems({
+      title: f.title,
+      description: f.description,
+      location: f.location ?? undefined,
+      category: f.category,
+      level: f.level,
+    });
+    return auto[0] ?? null;
+  };
+
+  const setOverride = (id: string, slug: string | null) => {
+    setOverrides((prev) => {
+      const next = { ...prev, [id]: slug };
+      onMappingsChange?.(next);
+      return next;
+    });
+  };
+
+  // Build system buckets when needed
+  const bySystem: Record<string, InspectionFinding[]> = {};
+  const unassigned: InspectionFinding[] = [];
+  if (groupBy === "system") {
+    for (const f of data.findings || []) {
+      const slug = systemFor(f);
+      if (slug) {
+        (bySystem[slug] = bySystem[slug] || []).push(f);
+      } else {
+        unassigned.push(f);
+      }
+    }
   }
 
   // Build a lookup so each finding card knows its DB row + status
