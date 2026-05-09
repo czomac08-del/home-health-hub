@@ -1137,34 +1137,34 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 const HONEST_EMPTY_PLACEHOLDER = "Unknown — tap to add";
 
-const Field = ({ label, value, onChange, placeholder, type = "text", ai = false }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean;
+const Field = ({ label, value, onChange, placeholder, type = "text", ai = false, est = false }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; ai?: boolean; est?: boolean;
 }) => {
   // Honest empty: when no value and no AI source, show "Unknown — tap to add"
-  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  const effectivePlaceholder = !value && !ai && !est ? HONEST_EMPTY_PLACEHOLDER : placeholder;
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-        {label} {ai && <AiBadge />}
+        {label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
       </label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
-        className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+        className={`w-full rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border"}`} />
     </div>
   );
 };
 
-const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, scanField }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; scanField: string;
+const FieldWithScan = ({ label, value, onChange, placeholder, ai = false, est = false, scanField }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; ai?: boolean; est?: boolean; scanField: string;
 }) => {
-  const effectivePlaceholder = !value && !ai ? HONEST_EMPTY_PLACEHOLDER : placeholder;
+  const effectivePlaceholder = !value && !ai && !est ? HONEST_EMPTY_PLACEHOLDER : placeholder;
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-        {label} {ai && <AiBadge />}
+        {label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
       </label>
       <div className="flex gap-2">
         <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={effectivePlaceholder}
-          className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : "border-border"}`} />
+          className={`flex-1 rounded-xl border bg-card py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 ${ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border"}`} />
         <AiFieldScanButton fieldName={scanField} onResult={onChange} />
       </div>
     </div>
@@ -1180,13 +1180,13 @@ const ToggleRow = ({ label, checked, onChange }: {
   </div>
 );
 
-const SpecFieldInput = ({ field, value, onChange, ai = false }: {
-  field: SpecField; value: string | boolean | string[] | undefined; onChange: (v: string | boolean | string[]) => void; ai?: boolean;
+const SpecFieldInput = ({ field, value, onChange, ai = false, est = false }: {
+  field: SpecField; value: string | boolean | string[] | undefined; onChange: (v: string | boolean | string[]) => void; ai?: boolean; est?: boolean;
 }) => {
-  const borderClass = ai ? "border-primary/40" : "border-border";
+  const borderClass = ai ? "border-primary/40" : est ? "border-muted-foreground/30 border-dashed" : "border-border";
   const labelEl = (
     <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-      {field.label}{field.suffix ? ` (${field.suffix})` : ""} {ai && <AiBadge />}
+      {field.label}{field.suffix ? ` (${field.suffix})` : ""} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}
     </label>
   );
 
