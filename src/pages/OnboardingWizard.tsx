@@ -264,7 +264,7 @@ const OnboardingWizard = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token && propertyId) {
           const res = await fetch(
-            `${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}`,
+            `${RENTCAST_URL}?address=${encodeURIComponent(selectedMatch.matchedAddress)}&rawAddress=${encodeURIComponent(addressInput.trim())}&state=${encodeURIComponent(selectedMatch.state || "")}&countyFips=${encodeURIComponent(selectedMatch.countyFips || "")}`,
             { headers: { Authorization: `Bearer ${session.access_token}` } },
           );
           if (res.ok) {

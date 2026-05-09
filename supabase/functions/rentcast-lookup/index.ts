@@ -139,6 +139,68 @@ async function buildCensusFallback(address: string, authHeader?: string) {
   };
 }
 
+async function tryRentCastAddresses(addresses: string[], apiKey: string): Promise<any | null> {
+  for (const addr of addresses) {
+    if (!addr?.trim()) continue;
+    try {
+      const url = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(addr.trim())}`;
+      const resp = await fetch(url, {
+        headers: { "X-Api-Key": apiKey, Accept: "application/json" },
+      });
+      if (!resp.ok) { console.warn(`RentCast attempt failed for "${addr}": ${resp.status}`); continue; }
+      const data = await resp.json();
+      const property = Array.isArray(data) ? data[0] : data;
+      if (property) { console.log(`RentCast hit on: "${addr}"`); return property; }
+    } catch (e) { console.warn(`RentCast attempt error for "${addr}":`, e); }
+  }
+  return null;
+}
+
+async function ncParcelLookup(address: string, countyFips?: string | null): Promise<{
+  parcelId?: string; yearBuilt?: number; propertyType?: string;
+  squareFootage?: number; lotSize?: number; siteAddress?: string;
+} | null> {
+  try {
+    const parts = address.trim().toUpperCase().split(/[\s,]+/).filter(Boolean);
+    const streetNum = parts[0];
+    const streetWord = parts[1] || "";
+    if (!streetNum || !streetWord) return null;
+
+    const whereClause = countyFips
+      ? `CNTY_FIPS='${countyFips}' AND SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`
+      : `SITE_ADDRESS LIKE '${streetNum} ${streetWord}%'`;
+
+    const url = `https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/FeatureServer/0/query?` +
+      `where=${encodeURIComponent(whereClause)}&` +
+      `outFields=PARCEL_APN,SITE_ADDRESS,SITE_CITY,YEAR_BUILT,PARCEL_TYPE,CALC_ACRES,TOTAL_BLDG_AREA&` +
+      `f=json&resultRecordCount=5`;
+
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const features = data?.features;
+    if (!features?.length) return null;
+
+    const match = features.find((f: any) =>
+      String(f.attributes?.SITE_ADDRESS || "").toUpperCase().startsWith(streetNum)
+    ) || features[0];
+
+    const a = match.attributes;
+    console.log("NC parcel hit:", JSON.stringify(a));
+    return {
+      parcelId: a.PARCEL_APN ?? null,
+      yearBuilt: a.YEAR_BUILT ?? null,
+      propertyType: a.PARCEL_TYPE ?? null,
+      squareFootage: a.TOTAL_BLDG_AREA ?? null,
+      lotSize: a.CALC_ACRES ?? null,
+      siteAddress: a.SITE_ADDRESS ?? null,
+    };
+  } catch (e) {
+    console.error("NC parcel lookup error:", e);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
   const __unauth = await requireJwt(req); if (__unauth) return __unauth;
@@ -167,79 +229,67 @@ Deno.serve(async (req) => {
       });
     }
 
+    const rawAddress = url.searchParams.get("rawAddress") || null;
+    const countyFips = url.searchParams.get("countyFips") || null;
+    const stateParam = url.searchParams.get("state") || null;
+    const isNC = stateParam === "NC" || (countyFips || "").startsWith("37");
+
     const apiKey = Deno.env.get("RENTCAST_API_KEY");
-    if (!apiKey) {
-      console.warn("RENTCAST_API_KEY missing — going straight to census fallback");
-      const fallback = await buildCensusFallback(address, __auth);
-      await writeCache(cacheKey, "rentcast", fallback, null, addrHash);
-      return new Response(JSON.stringify(fallback), {
+
+    // Build address variations to try with RentCast
+    const addressVariants = [
+      rawAddress,
+      address,
+      rawAddress?.replace(/\bRoad\b/i, "Rd").replace(/\bStreet\b/i, "St").replace(/\bAvenue\b/i, "Ave"),
+      rawAddress?.replace(/\bRd\b/i, "Road").replace(/\bSt\b/i, "Street"),
+    ].filter((v, i, arr) => v && arr.indexOf(v) === i) as string[];
+
+    let property: any = null;
+
+    if (apiKey) {
+      property = await tryRentCastAddresses(addressVariants, apiKey);
+    }
+
+    let ncParcel: Awaited<ReturnType<typeof ncParcelLookup>> = null;
+    if (isNC) {
+      ncParcel = await ncParcelLookup(rawAddress || address, countyFips);
+      console.log("NC parcel result:", JSON.stringify(ncParcel));
+    }
+
+    if (property || ncParcel) {
+      const result = {
+        found: true,
+        rentcast_available: !!property,
+        data_source: property ? "rentcast" : "nc_parcel",
+        yearBuilt:        property?.yearBuilt        ?? ncParcel?.yearBuilt        ?? null,
+        squareFootage:    property?.squareFootage    ?? property?.livingArea       ?? ncParcel?.squareFootage ?? null,
+        lotSize:          property?.lotSize          ?? ncParcel?.lotSize          ?? null,
+        propertyType:     property?.propertyType     ?? ncParcel?.propertyType     ?? null,
+        bedrooms:         property?.bedrooms         ?? null,
+        bathrooms:        property?.bathrooms        ?? property?.bathsFull        ?? null,
+        estimatedValue:   property?.price            ?? property?.estimatedValue   ?? null,
+        formattedAddress: property?.formattedAddress ?? property?.addressLine1     ?? ncParcel?.siteAddress ?? address,
+        lastSaleDate:     property?.lastSaleDate     ?? null,
+        lastSalePrice:    property?.lastSalePrice    ?? null,
+        priorSales:       property?.priorSales       ?? property?.salesHistory     ?? [],
+        county:           property?.county           ?? null,
+        state:            property?.state            ?? stateParam                 ?? null,
+        zipCode:          property?.zipCode          ?? null,
+        parcelId:         property?.assessorID       ?? property?.parcelId         ?? ncParcel?.parcelId    ?? null,
+        rentcastId:       property?.id               ?? null,
+        legalDescription: property?.legalDescription ?? null,
+        subdivision:      property?.subdivision      ?? null,
+      };
+      await writeCache(cacheKey, result.data_source, result, countyFips, addrHash);
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const rentcastUrl = `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address.trim())}`;
-    console.log("RentCast request URL:", rentcastUrl);
-
-    const resp = await fetch(rentcastUrl, {
-      headers: { "X-Api-Key": apiKey, Accept: "application/json" },
-    });
-
-    // Failure path (400/404/etc) — silently fall through to census + environmental fallback
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.warn("RentCast API error:", resp.status, errText, "— using census fallback");
-      const fallback = await buildCensusFallback(address, __auth);
-      await writeCache(cacheKey, "rentcast", fallback, (fallback as any)?.countyFips ?? null, addrHash);
-      return new Response(JSON.stringify(fallback), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await resp.json();
-    console.log("RentCast raw response:", JSON.stringify(data));
-
-    const property = Array.isArray(data) ? data[0] : data;
-
-    // Empty result path — also fall through to census + environmental fallback
-    if (!property) {
-      const fallback = await buildCensusFallback(address, __auth);
-      await writeCache(cacheKey, "rentcast", fallback, (fallback as any)?.countyFips ?? null, addrHash);
-      return new Response(JSON.stringify(fallback), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const result = {
-      found: true,
-      rentcast_available: true,
-      data_source: "rentcast",
-      yearBuilt: property.yearBuilt ?? null,
-      squareFootage: property.squareFootage ?? property.livingArea ?? null,
-      lotSize: property.lotSize ?? null,
-      propertyType: property.propertyType ?? null,
-      bedrooms: property.bedrooms ?? null,
-      bathrooms: property.bathrooms ?? property.bathsFull ?? null,
-      estimatedValue: property.price ?? property.estimatedValue ?? null,
-      formattedAddress: property.formattedAddress ?? property.addressLine1 ?? null,
-      lastSaleDate: property.lastSaleDate ?? null,
-      lastSalePrice: property.lastSalePrice ?? null,
-      priorSales: property.priorSales ?? property.salesHistory ?? [],
-      county: property.county ?? null,
-      state: property.state ?? null,
-      zipCode: property.zipCode ?? null,
-      // Parcel / assessor identifiers — critical for county lookup
-      parcelId: property.assessorID ?? property.parcelNumber ?? property.parcelId ?? null,
-      rentcastId: property.id ?? null,
-      legalDescription: property.legalDescription ?? null,
-      ownerName: property.ownerName ?? null,
-      subdivision: property.subdivision ?? null,
-    };
-
-    console.log("Mapped result:", JSON.stringify(result));
-
-    await writeCache(cacheKey, "rentcast", result, null, addrHash);
-
-    return new Response(JSON.stringify(result), {
+    const authHeader = req.headers.get("Authorization") || undefined;
+    const fallback = await buildCensusFallback(address, authHeader);
+    await writeCache(cacheKey, "rentcast", fallback, (fallback as any)?.countyFips ?? null, addrHash);
+    return new Response(JSON.stringify(fallback), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
