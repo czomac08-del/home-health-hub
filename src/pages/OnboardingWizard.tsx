@@ -149,6 +149,7 @@ const OnboardingWizard = () => {
     found?: boolean;
   } | null>(null);
   const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set());
+  const [confirmedFields, setConfirmedFields] = useState<Set<string>>(new Set());
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
@@ -177,12 +178,12 @@ const OnboardingWizard = () => {
     if (
       scanResults &&
       (scanResults as any).found !== false &&
-      prefilledFields.has("homeType")
+      confirmedFields.has("homeType")
     ) {
       const timer = setTimeout(() => setStep(3), 1500);
       return () => clearTimeout(timer);
     }
-  }, [step, prefilledFields, scanResults]);
+  }, [step, confirmedFields, scanResults]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -310,6 +311,7 @@ const OnboardingWizard = () => {
             }
 
             const filled = new Set<string>();
+            const confirmed = new Set<string>();
 
             if (hasPropertyData && json?.yearBuilt) {
               const yr = Number(json.yearBuilt);
@@ -327,33 +329,32 @@ const OnboardingWizard = () => {
               const ptRaw = json?.propertyType;
               const pt = (ptRaw == null ? "" : String(ptRaw)).toLowerCase().replace(/[_\-]+/g, " ").trim();
               const isMatch = (list: string[]) => list.some(v => pt === v || pt.includes(v));
-              let homeTypeId = "single_family";
-              if (!pt) {
-                homeTypeId = "single_family";
-              } else if (isMatch(["multi family", "multifamily", "duplex", "2-4 units", "2 4 units", "02", "03", "200", "300"])) {
-                homeTypeId = "multi_unit";
-              } else if (isMatch(["condo", "condominium", "cn", "04", "400"])) {
-                homeTypeId = "condo";
-              } else if (isMatch(["townhouse", "row house", "th"])) {
-                homeTypeId = "townhouse";
-              } else if (isMatch(["mobile home", "manufactured", "mh", "07"])) {
-                homeTypeId = "manufactured";
-              } else if (isMatch(["single family", "sfr", "residential", "res", "r1", "r", "01", "100"])) {
-                homeTypeId = "single_family";
-              } else {
-                homeTypeId = "single_family";
+              if (ptRaw) {
+                let homeTypeId = "single_family";
+                if (isMatch(["multi family", "multifamily", "duplex", "2-4 units", "2 4 units", "02", "03", "200", "300"])) {
+                  homeTypeId = "multi_unit";
+                } else if (isMatch(["condo", "condominium", "cn", "04", "400"])) {
+                  homeTypeId = "condo";
+                } else if (isMatch(["townhouse", "row house", "th"])) {
+                  homeTypeId = "townhouse";
+                } else if (isMatch(["mobile home", "manufactured", "mh", "07"])) {
+                  homeTypeId = "manufactured";
+                }
+                update("homeType", homeTypeId);
+                filled.add("homeType");
+                confirmed.add("homeType");
               }
-              update("homeType", homeTypeId);
-              filled.add("homeType");
             }
 
-            // Safety net: default homeType to single_family if scan didn't map it
+            // Safety net: default homeType to single_family if scan didn't return property type.
+            // Marked as prefilled (not confirmed) so user sees Step 2 to confirm/change.
             if (!filled.has("homeType")) {
               update("homeType", "single_family");
               filled.add("homeType");
             }
 
             setPrefilledFields(filled);
+            setConfirmedFields(confirmed);
 
             const found: string[] = [];
             if (json?.found) found.push("Property records");
