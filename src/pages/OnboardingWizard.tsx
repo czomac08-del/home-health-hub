@@ -836,10 +836,10 @@ const OnboardingWizard = () => {
     try {
       const propId = activeProperty.id;
 
-      // Only write year_built from wizard if scan didn't already give us a specific year
-      if (!scanResults?.yearBuilt && data.homeAge) {
-        await supabase.from("properties").update({ year_built: data.homeAge }).eq("id", propId);
-      }
+      // Never write year_built from the wizard's age-range picker — that field
+      // is a range string (e.g. "1970–1990") and storing the bottom of the range
+      // as a confirmed year is wrong. year_built is only written by confirmed
+      // sources (Regrid/RentCast/uploaded document) elsewhere in the flow.
 
       // Persist whether the homeowner indicated additional structures beyond the main home
       try {
