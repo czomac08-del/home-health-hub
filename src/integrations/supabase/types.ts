@@ -3224,6 +3224,7 @@ export type Database = {
           county_fips: string | null
           created_at: string
           data_status: Database["public"]["Enums"]["data_status"]
+          google_place_id: string | null
           has_additional_structures: boolean
           health_score: number | null
           id: string
@@ -3256,6 +3257,7 @@ export type Database = {
           county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          google_place_id?: string | null
           has_additional_structures?: boolean
           health_score?: number | null
           id?: string
@@ -3288,6 +3290,7 @@ export type Database = {
           county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          google_place_id?: string | null
           has_additional_structures?: boolean
           health_score?: number | null
           id?: string
