@@ -88,6 +88,52 @@ export default function UploadDocumentModal({
     return () => clearInterval(interval);
   }, [step]);
 
+  // Map a detected system slug to a regex matching candidate `system_name`s.
+  const SYSTEM_NAME_PATTERNS: Record<string, RegExp> = {
+    hvac: /hvac|heat|cool|furnace|ac\b|air handler/i,
+    electrical: /electric|panel|breaker/i,
+    plumbing: /plumb/i,
+    water_heater: /water\s*heater|tankless/i,
+    well: /\bwell\b/i,
+    water_filtration: /filtration|filter|softener/i,
+    septic: /septic|sewer|waste/i,
+    roof: /roof/i,
+  };
+
+  // When the modal enters the review step from a general Vault upload and the
+  // property already has multiple instances of the detected system type, load
+  // the candidate instances so the user can pick which one this doc applies to.
+  useEffect(() => {
+    if (step !== "review") return;
+    if (defaultSystemType) return; // came from a system card — auto-targeted
+    if (!detectedSystem || !activeProperty?.id) return;
+    const pattern = SYSTEM_NAME_PATTERNS[detectedSystem];
+    if (!pattern) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("id, system_name, specs, status")
+        .eq("property_id", activeProperty.id);
+      if (cancelled || !data) return;
+      const matches = data
+        .filter((r: any) => pattern.test(r.system_name || ""))
+        .map((r: any) => ({
+          id: r.id as string,
+          system_name: r.system_name as string,
+          structure: ((r.specs as any)?.structure_assignment as string) || null,
+        }));
+      if (matches.length > 1) {
+        setInstanceOptions(matches);
+        setSelectedInstanceName("");
+      } else {
+        setInstanceOptions([]);
+        setSelectedInstanceName(matches[0]?.system_name || "");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, detectedSystem, activeProperty?.id, defaultSystemType]);
+
   const reset = () => {
     setStep("form");
     setFile(null);
