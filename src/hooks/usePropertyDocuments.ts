@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { assessExtraction, type ExtractionTier } from "@/lib/documentCredit";
 
 export type DocCategory =
   | "inspection"
@@ -50,6 +51,16 @@ export interface UnifiedDocument {
   structureKey?: string | null;
   /** True if the assigned structure is legacy/former. */
   isLegacyStructure?: boolean;
+  /** Confidence tier for AI extraction quality. */
+  extractionTier?: ExtractionTier;
+  /** Partial-credit multiplier (1 / 0.75 / 0.5 / 0). */
+  extractionCredit?: number;
+  /** Honest one-line detail string about extraction quality. */
+  extractionDetail?: string;
+  /** Friendly credit label, e.g. "Full credit". */
+  extractionCreditLabel?: string;
+  /** True when document came from a public-records pull rather than user upload. */
+  isPublicRecord?: boolean;
   raw?: any;
 }
 
