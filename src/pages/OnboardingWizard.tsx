@@ -1069,7 +1069,8 @@ const OnboardingWizard = () => {
                 value={addressInput}
                 onChange={(e) => handleAddressChange(e.target.value)}
                 onFocus={() => {
-                  if (regridSuggestions.length > 0) setShowRegridSuggestions(true);
+                  if (googlePredictions.length > 0) setShowGoogleSuggestions(true);
+                  else if (regridSuggestions.length > 0) setShowRegridSuggestions(true);
                   else if (suggestions.length > 0) setShowSuggestions(true);
                 }}
                 placeholder="Start typing your address..."
@@ -1077,7 +1078,23 @@ const OnboardingWizard = () => {
                 autoComplete="off"
               />
 
-              {showRegridSuggestions && regridSuggestions.length > 0 && (
+              {showGoogleSuggestions && googlePredictions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
+                  {googlePredictions.map((p) => (
+                    <button
+                      key={p.place_id}
+                      type="button"
+                      onClick={() => selectGooglePrediction(p)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-0"
+                    >
+                      <MapPin className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm text-foreground">{p.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!showGoogleSuggestions && showRegridSuggestions && regridSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
                   {regridSuggestions.map((s, i) => (
                     <button
@@ -1093,7 +1110,7 @@ const OnboardingWizard = () => {
                 </div>
               )}
 
-              {showSuggestions && suggestions.length > 0 && !showRegridSuggestions && (
+              {showSuggestions && suggestions.length > 0 && !showRegridSuggestions && !showGoogleSuggestions && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-50 overflow-hidden">
                   {suggestions.map((s, i) => (
                     <button
