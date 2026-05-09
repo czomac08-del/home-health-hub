@@ -3848,6 +3848,57 @@ export type Database = {
         }
         Relationships: []
       }
+      record_attachments: {
+        Row: {
+          created_at: string
+          doc_type: string | null
+          document_record_id: string | null
+          file_name: string | null
+          id: string
+          notes: string | null
+          parent_id: string
+          parent_table: string
+          property_id: string | null
+          shared_with_homeowner: boolean
+          storage_bucket: string | null
+          storage_path: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type?: string | null
+          document_record_id?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          parent_id: string
+          parent_table: string
+          property_id?: string | null
+          shared_with_homeowner?: boolean
+          storage_bucket?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string | null
+          document_record_id?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          parent_id?: string
+          parent_table?: string
+          property_id?: string | null
+          shared_with_homeowner?: boolean
+          storage_bucket?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       record_sources: {
         Row: {
           api_endpoint: string | null
