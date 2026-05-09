@@ -458,6 +458,9 @@ const ContractorDashboard = () => {
         </button>
       </div>
 
+      {/* Submit via share link from homeowner */}
+      <ShareLinkSubmit />
+
       {jobs.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
 
       <div className="mb-6">
