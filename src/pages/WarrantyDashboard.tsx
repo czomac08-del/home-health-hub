@@ -51,16 +51,30 @@ const WarrantyDashboard = () => {
 
   const loadData = useCallback(async () => {
     if (!user || !activeProperty) return;
-    const [{ data: wData }, { data: sData }] = await Promise.all([
-      supabase.from("warranties").select("*").eq("user_id", user.id).eq("property_id", activeProperty.id),
+    const [{ data: wByProperty }, { data: wBySystem }, { data: sData }] = await Promise.all([
+      supabase.from("warranties").select("*")
+        .eq("user_id", user.id)
+        .eq("property_id", activeProperty.id),
+      supabase.from("warranties").select("*, system_details!inner(property_id)")
+        .eq("user_id", user.id)
+        .eq("system_details.property_id", activeProperty.id),
       supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
     ]);
-    // Deduplicate: one row per source_record_id, then per document_path
-    const seen = new Set<string>();
-    const deduped = ((wData as WarrantyRow[]) || []).filter((w) => {
-      const key = w.source_record_id || w.document_path || w.id;
-      if (seen.has(key)) return false;
-      seen.add(key);
+    const allWarranties = [
+      ...((wByProperty as WarrantyRow[]) || []),
+      ...((wBySystem as WarrantyRow[]) || []),
+    ];
+    // Deduplicate by id, then by source_record_id / document_path as fallback
+    const seenIds = new Set<string>();
+    const seenKeys = new Set<string>();
+    const deduped = allWarranties.filter((w) => {
+      if (seenIds.has(w.id)) return false;
+      seenIds.add(w.id);
+      const key = w.source_record_id || w.document_path;
+      if (key) {
+        if (seenKeys.has(key)) return false;
+        seenKeys.add(key);
+      }
       return true;
     });
     setWarranties(deduped);
