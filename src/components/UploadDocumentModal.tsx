@@ -58,6 +58,7 @@ export default function UploadDocumentModal({
   const [manualMode, setManualMode] = useState(false);
   const [manualDate, setManualDate] = useState("");
   const [manualDetails, setManualDetails] = useState("");
+  const [warrantyName, setWarrantyName] = useState("");
 
   const reset = () => {
     setStep("form");
@@ -73,6 +74,7 @@ export default function UploadDocumentModal({
     setManualMode(false);
     setManualDate("");
     setManualDetails("");
+    setWarrantyName("");
   };
 
   const handleClose = (next: boolean) => {
@@ -156,6 +158,13 @@ export default function UploadDocumentModal({
           setExtracted(ext?.extracted || {});
           setConfidence(ext?.confidence || "low");
           setInspectionReport(ext?.inspectionReport || null);
+          if (docType === "warranty") {
+            const suggested =
+              ext?.extracted?.provider_name ||
+              ext?.extracted?.product_name ||
+              file.name.replace(/\.[^.]+$/, "");
+            setWarrantyName(suggested || "");
+          }
         }
       }
       setStep("review");
@@ -194,6 +203,7 @@ export default function UploadDocumentModal({
             }
           }
           const providerLabel =
+            warrantyName.trim() ||
             w.provider_name || w.product_name ||
             file?.name?.replace(/\.[^.]+$/, "") || "Warranty";
 
@@ -522,6 +532,20 @@ export default function UploadDocumentModal({
 
         {step === "review" && (
           <div className="space-y-4">
+            {docType === "warranty" && (
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                  Warranty name <span className="text-muted-foreground/60">(you can edit this)</span>
+                </label>
+                <input
+                  type="text"
+                  value={warrantyName}
+                  onChange={(e) => setWarrantyName(e.target.value)}
+                  placeholder="e.g. HVAC Warranty – Carrier"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
             <div className="rounded-lg bg-secondary/40 p-3 flex gap-2">
               <CheckCircle2 className="h-4 w-4 text-health-green shrink-0 mt-0.5" />
               <div className="text-xs">
