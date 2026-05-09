@@ -806,7 +806,7 @@ const SystemConfigScreen = () => {
       {/* ═══ SEWER — TYPE SELECTOR ═══ */}
       {isSewerWaste && (
         <div className="mb-6">
-          <SewerTypeSelector onSelect={(t) => { setSewerType(t); setExpandedSections(new Set(["specs"])); }} selected={sewerType || undefined} />
+          <SewerTypeSelector onSelect={(t) => { setSewerType(t); setSpec("sewerType", t); setExpandedSections(new Set(["specs"])); }} selected={sewerType || undefined} />
           {sewerType && (
             <button onClick={() => setSewerType("")} className="text-xs text-primary hover:underline mt-3 flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" /> Change sewer type
