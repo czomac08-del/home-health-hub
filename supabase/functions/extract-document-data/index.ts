@@ -164,6 +164,13 @@ CRITICAL RULES:
 EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
 EXTRACTION_PROMPTS.inspection = INSPECTION_REPORT_PROMPT;
 
+// Aliases so callers tagging the document with the system label hit the
+// same septic-specific schema.
+EXTRACTION_PROMPTS.sewer_and_waste = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS["sewer-and-waste"] = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_system = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.sewer = EXTRACTION_PROMPTS.septic;
+
 // Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
 // used as a fallback in onboarding when public records aren't available for
 // an address. Pulls only the structural property facts the wizard needs.
@@ -306,7 +313,7 @@ EXTRACTION_PROMPTS.insurance_policy = `Extract details from a homeowner's insura
 // Safety-critical fields that require human confirmation when unclear
 const SAFETY_CRITICAL_FIELDS = new Set([
   "depth_ft", "pump_gpm", "static_water_level_ft", // well safety
-  "tank_size_gallons", // septic sizing
+  "tank_size_gallons", "tankSize", // septic sizing
   "panel_amperage", "voltage", // electrical safety
 ]);
 
