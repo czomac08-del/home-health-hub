@@ -538,6 +538,14 @@ export default function UploadDocumentModal({
 
         {step === "review" && (
           <div className="space-y-4">
+            {docType === "other" && detectedSystem && detectedSystem !== "other" && (
+              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  📍 Looks like: {detectedSystemName || detectedSystem.replace(/_/g, " ")}
+                </span>
+                <span className="text-blue-600 dark:text-blue-400 text-xs">— info will be added to that system</span>
+              </div>
+            )}
             {docType === "warranty" && (
               <div>
                 <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
