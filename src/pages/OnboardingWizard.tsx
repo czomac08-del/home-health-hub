@@ -222,8 +222,7 @@ const OnboardingWizard = () => {
     if (typeof window === "undefined") return Promise.resolve(null);
     const w = window as any;
     if (w.google?.maps?.places) return Promise.resolve(w.google);
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!apiKey) return Promise.resolve(null);
+    const apiKey = "AIzaSyDWUUIZUgMMn3Lrq8aT_oNJ8HgTrYgouhw";  // hardcoded - restricted by HTTP referrer
     if (w.__googleMapsLoading) return w.__googleMapsLoading;
     w.__googleMapsLoading = new Promise<any | null>((resolve) => {
       const existing = document.querySelector<HTMLScriptElement>(
