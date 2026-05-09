@@ -51,35 +51,34 @@ const WarrantyDashboard = () => {
 
   const loadData = useCallback(async () => {
     if (!user || !activeProperty) return;
-    const [{ data: wByProperty }, { data: wBySystem }, { data: sData }] = await Promise.all([
-      supabase.from("warranties").select("*")
-        .eq("user_id", user.id)
-        .eq("property_id", activeProperty.id),
-      supabase.from("warranties").select("*, system_details!inner(property_id)")
-        .eq("user_id", user.id)
-        .eq("system_details.property_id", activeProperty.id),
-      supabase.from("system_details").select("id, system_name, brand").eq("user_id", user.id).eq("property_id", activeProperty.id),
+    setLoading(true);
+    const [{ data: wData }, { data: sData }] = await Promise.all([
+      supabase.from("warranties").select("*").eq("user_id", user.id),
+      supabase.from("system_details").select("id, system_name, brand, property_id").eq("user_id", user.id),
     ]);
-    const allWarranties = [
-      ...((wByProperty as WarrantyRow[]) || []),
-      ...((wBySystem as WarrantyRow[]) || []),
-    ];
-    // Deduplicate by id, then by source_record_id / document_path as fallback
-    const seenIds = new Set<string>();
-    const seenKeys = new Set<string>();
-    const deduped = allWarranties.filter((w) => {
-      if (seenIds.has(w.id)) return false;
-      seenIds.add(w.id);
-      const key = w.source_record_id || w.document_path;
-      if (key) {
-        if (seenKeys.has(key)) return false;
-        seenKeys.add(key);
-      }
+
+    // Filter warranties to current property. Include warranties where property_id
+    // matches OR where the linked system belongs to this property (catches old data
+    // stored with wrong property_id). Never silently discard.
+    const systemsForProperty = new Set(
+      (sData || []).filter((s: any) => s.property_id === activeProperty.id).map((s: any) => s.id)
+    );
+    const filtered = ((wData as WarrantyRow[]) || []).filter((w: any) =>
+      w.property_id === activeProperty.id ||
+      (w.system_detail_id && systemsForProperty.has(w.system_detail_id))
+    );
+
+    // Deduplicate by id
+    const seen = new Set<string>();
+    const deduped = filtered.filter((w) => {
+      if (seen.has(w.id)) return false;
+      seen.add(w.id);
       return true;
     });
+
     setWarranties(deduped);
     const map: Record<string, SystemRow> = {};
-    (sData || []).forEach((s: SystemRow) => { map[s.id] = s; });
+    (sData || []).forEach((s: any) => { map[s.id] = s; });
     setSystems(map);
     setLoading(false);
   }, [user, activeProperty]);
@@ -220,7 +219,16 @@ const WarrantyDashboard = () => {
       {loading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-secondary rounded-xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">No warranties found. Add warranties from your system detail screens.</p>
+        <div className="text-center py-8 space-y-3">
+          <p className="text-sm text-muted-foreground">No warranties on file for this property.</p>
+          <p className="text-xs text-muted-foreground">
+            Upload a warranty document in the{" "}
+            <button onClick={() => navigate("/vault")} className="text-primary underline">
+              Document Vault
+            </button>
+            {" "}and click "Sync to Warranties."
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(w => {
