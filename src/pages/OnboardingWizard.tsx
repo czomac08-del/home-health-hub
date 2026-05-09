@@ -171,9 +171,14 @@ const OnboardingWizard = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — run once on mount only
 
-  // Auto-advance from Step 2 when scan pre-filled both type + age
+  // Auto-advance from Step 2 when scan found real data and homeType is pre-filled
   useEffect(() => {
-    if (step === 2 && prefilledFields.has("homeType") && prefilledFields.has("homeAge") && scanResults) {
+    if (step !== 2) return;
+    if (
+      scanResults &&
+      (scanResults as any).found !== false &&
+      prefilledFields.has("homeType")
+    ) {
       const timer = setTimeout(() => setStep(3), 1500);
       return () => clearTimeout(timer);
     }
@@ -342,6 +347,12 @@ const OnboardingWizard = () => {
 
             // Force homeType if we have yearBuilt or squareFootage but no propertyType
             if (!filled.has("homeType") && (json?.yearBuilt || json?.squareFootage)) {
+              update("homeType", "single_family");
+              filled.add("homeType");
+            }
+
+            // Safety net: any real property signal → default homeType to single_family
+            if (!filled.has("homeType") && (json?.yearBuilt || json?.squareFootage || json?.parcelId || json?.bedrooms)) {
               update("homeType", "single_family");
               filled.add("homeType");
             }
