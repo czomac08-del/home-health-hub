@@ -13,6 +13,7 @@ import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
 import { writeSystemFields } from "@/lib/systemFieldWrite";
 import UnifiedDocumentReview from "./UnifiedDocumentReview";
+import VaultRecordReview from "./VaultRecordReview";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -21,6 +22,7 @@ const DOC_TYPES = [
   { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance" },
   { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance" },
   { value: "repair_receipt", label: "Repair Receipt", systemType: "maintenance" },
+  { value: "invoice", label: "Invoice / Receipt", systemType: "maintenance" },
   { value: "other", label: "Other", systemType: "other" },
 ];
 
@@ -601,11 +603,26 @@ export default function UploadDocumentModal({
     (defaultSystemType ? SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()] : "") ||
     (detectedSystem ? SYSTEM_NAME_MAP[detectedSystem] : "") ||
     "";
+
+  // Pick a review variant based on the document type. Each variant uses the
+  // same shell (confidence header → field rows → Save / Complete Later) so
+  // every upload point goes through one unified flow.
+  const vaultReviewKind: "warranty" | "insurance" | "receipt" | null =
+    docType === "warranty" ? "warranty"
+    : docType === "insurance_policy" ? "insurance"
+    : (docType === "repair_receipt" || docType === "invoice") ? "receipt"
+    : null;
+
+  const usingVaultReview = !inspectionReport && !extractionEmpty && vaultReviewKind !== null;
+
   const usingUnifiedReview =
     !inspectionReport &&
     !extractionEmpty &&
+    !usingVaultReview &&
     !!unifiedTargetName &&
     !(instanceOptions.length > 1 && !selectedInstanceName);
+
+  const usingAnyReviewComponent = usingUnifiedReview || usingVaultReview;
 
   const handleReanalyze = async () => {
     if (!recordId) return;
@@ -872,6 +889,30 @@ export default function UploadDocumentModal({
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
               <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
+            ) : vaultReviewKind && activeProperty?.id && user?.id && !extractionEmpty ? (
+              <VaultRecordReview
+                kind={vaultReviewKind}
+                propertyId={activeProperty.id}
+                userId={user.id}
+                fileName={file?.name || "Document"}
+                recordId={recordId}
+                extracted={extracted}
+                systemName={detectedSystemName || (defaultSystemType ? defaultSystemType : null)}
+                onSaved={() => {
+                  try {
+                    recordRecentUpload({
+                      id: recordId || "",
+                      name: file?.name || "Document",
+                      uploadedAt: new Date().toISOString(),
+                      category: docType,
+                      url: null,
+                    });
+                  } catch {}
+                  setStep("saved");
+                  setTimeout(() => handleClose(false), 1200);
+                }}
+                onCompleteLater={() => handleClose(false)}
+              />
             ) : (() => {
               // Determine target system name for the unified review.
               const SYSTEM_NAME_MAP: Record<string, string> = {
@@ -1034,14 +1075,14 @@ export default function UploadDocumentModal({
         </div>
 
         {/* Pinned footer — primary action always visible */}
-        {(step === "form" || step === "error" || (step === "review" && !usingUnifiedReview)) && (
+        {(step === "form" || step === "error" || (step === "review" && !usingAnyReviewComponent)) && (
           <div className="shrink-0 border-t border-border px-6 py-3 bg-background">
             {step === "form" && (
               <Button onClick={handleUpload} disabled={!file} className="w-full">
                 Upload & Analyze
               </Button>
             )}
-            {step === "review" && !usingUnifiedReview && (
+            {step === "review" && !usingAnyReviewComponent && (
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
                   Save file only
