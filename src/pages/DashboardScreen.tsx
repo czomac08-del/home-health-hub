@@ -20,6 +20,7 @@ import DroughtAlertBanner from "@/components/DroughtAlertBanner";
 import ShareAndSaveWidget from "@/components/ShareAndSaveWidget";
 import PendingRewardsCard from "@/components/PendingRewardsCard";
 import InspectionNotificationBanner from "@/components/InspectionNotificationBanner";
+import InspectionAutoAppliedBanner from "@/components/InspectionAutoAppliedBanner";
 import DocumentHub from "@/components/DocumentHub";
 import RecentUploadBanner from "@/components/RecentUploadBanner";
 import DashboardInsuranceCard from "@/components/DashboardInsuranceCard";
