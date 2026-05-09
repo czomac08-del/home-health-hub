@@ -40,6 +40,16 @@ export interface UnifiedDocument {
   aiAnalyzed?: boolean;
   /** For system_photos: parent system_details id, used to merge AI results. */
   systemDetailId?: string | null;
+  /** Friendly system label for badge (e.g. "Septic", "HVAC"). */
+  systemLabel?: string | null;
+  /** Slug for filtering (e.g. "septic", "hvac"). */
+  systemSlug?: string | null;
+  /** Friendly structure name for badge (e.g. "Main House", "Barn"). */
+  structureLabel?: string | null;
+  /** Raw structure_assignment value for filtering. */
+  structureKey?: string | null;
+  /** True if the assigned structure is legacy/former. */
+  isLegacyStructure?: boolean;
   raw?: any;
 }
 
@@ -50,6 +60,63 @@ function inferFileType(name: string | null | undefined): UnifiedDocument["fileTy
   if (/\.(jpe?g|png|heic|webp|gif)$/.test(n)) return "image";
   if (/\.(docx?|rtf|txt)$/.test(n)) return "doc";
   return "other";
+}
+
+const SYSTEM_NAME_PATTERNS: Record<string, RegExp> = {
+  hvac: /hvac|heat|cool|furnace|ac\b|air handler/i,
+  electrical: /electric|panel|breaker/i,
+  plumbing: /plumb/i,
+  water_heater: /water\s*heater|tankless/i,
+  well: /\bwell\b/i,
+  water_filtration: /filtration|filter|softener/i,
+  septic: /septic|sewer|waste/i,
+  sewer_waste: /septic|sewer|waste/i,
+  roof: /roof/i,
+};
+
+const SYSTEM_LABELS: Record<string, string> = {
+  hvac: "HVAC",
+  electrical: "Electrical",
+  plumbing: "Plumbing",
+  water_heater: "Water Heater",
+  well: "Well",
+  water_filtration: "Water Filtration",
+  septic: "Septic",
+  sewer_waste: "Sewer & Waste",
+  roof: "Roof",
+  inspection: "Inspection",
+  warranty: "Warranty",
+  permit: "Permit",
+  insurance: "Insurance",
+};
+
+function titleCase(s: string): string {
+  return s
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
+function systemLabelFor(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  const key = slug.toLowerCase();
+  return SYSTEM_LABELS[key] || titleCase(slug);
+}
+
+function isLegacyStructureKey(key: string | null | undefined): boolean {
+  if (!key) return false;
+  const k = key.toLowerCase();
+  return k.includes("former") || k.includes("legacy") || k.includes("no_longer");
+}
+
+function structureLabelFor(key: string | null | undefined, customName?: string | null): string | null {
+  if (customName && customName.trim()) return customName.trim();
+  if (!key) return null;
+  // Special-case the "former structure" enum so the badge reads naturally.
+  if (isLegacyStructureKey(key)) {
+    return "Legacy — Former Structure";
+  }
+  return titleCase(key);
 }
 
 function categorizeRecord(record_type: string | null, system_type: string | null): DocCategory {
@@ -76,7 +143,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     setLoading(true);
     const all: UnifiedDocument[] = [];
 
-    const [recs, media, ins, fixes, warrantyDocs] = await Promise.all([
+    const [recs, media, ins, fixes, warrantyDocs, systemRows] = await Promise.all([
       supabase
         .from("property_records")
         .select("id, record_type, system_type, file_name, url, storage_path, created_at, ai_extracted_data, ai_verified, notes")
@@ -102,7 +169,41 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         .select("id, warranty_type, provider_name, document_path, document_url, document_bucket, extended_doc_path, extended_doc_url, created_at, property_id, source_record_id")
         .eq("property_id", propertyId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("system_details")
+        .select("id, system_name, instance_name, specs, status")
+        .eq("property_id", propertyId),
     ]);
+
+    // Build a map of systemType slug -> assigned structure (when unambiguous).
+    // We only assign a structure when there's exactly one matching system row
+    // for that type, otherwise multiple instances make it ambiguous.
+    const systemsBySlug: Record<string, Array<{ structureKey: string | null; customName: string | null; status: string | null }>> = {};
+    (systemRows.data || []).forEach((s: any) => {
+      const name = (s.system_name || "").toLowerCase();
+      Object.entries(SYSTEM_NAME_PATTERNS).forEach(([slug, pattern]) => {
+        if (pattern.test(name)) {
+          const specs = (s.specs as any) || {};
+          (systemsBySlug[slug] = systemsBySlug[slug] || []).push({
+            structureKey: specs.structure_assignment || null,
+            customName: specs.structure_assignment_custom || null,
+            status: s.status || null,
+          });
+        }
+      });
+    });
+    const lookupStructure = (slug: string | null | undefined) => {
+      if (!slug) return { structureKey: null, structureLabel: null, isLegacy: false };
+      const matches = systemsBySlug[slug.toLowerCase()] || [];
+      if (matches.length !== 1) return { structureKey: null, structureLabel: null, isLegacy: false };
+      const m = matches[0];
+      const isLegacy = isLegacyStructureKey(m.structureKey) || m.status === "inactive_legacy";
+      return {
+        structureKey: m.structureKey,
+        structureLabel: structureLabelFor(m.structureKey, m.customName),
+        isLegacy,
+      };
+    };
 
     // Diagnostic logging — remove once warranty visibility is confirmed.
     console.info("[DocumentsVault] propertyId:", propertyId, {
@@ -146,6 +247,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
       const extractedKeys = ext ? Object.keys(r.ai_extracted_data as any).filter((k) => k !== "inspection_report") : [];
       const hasFindings = !!(rep && Array.isArray(rep.findings) && rep.findings.length);
       const extractionFailed = !ext || (extractedKeys.length === 0 && !hasFindings);
+      const struct = lookupStructure(r.system_type);
       all.push({
         id: r.id,
         source_table: "property_records",
@@ -158,6 +260,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         bucket: "property-records",
         recordType: r.record_type,
         systemType: r.system_type,
+        systemSlug: r.system_type || null,
+        systemLabel: systemLabelFor(r.system_type),
+        structureKey: struct.structureKey,
+        structureLabel: struct.structureLabel,
+        isLegacyStructure: struct.isLegacy,
         inspectorName: rep?.inspector?.inspector_name ?? null,
         findingsCount: Array.isArray(rep?.findings) ? rep.findings.length : null,
         overallScore: null,
@@ -169,6 +276,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
     });
 
     (media.data || []).forEach((m: any) => {
+      const struct = lookupStructure(m.system_type);
       all.push({
         id: m.id,
         source_table: "inspector_media",
@@ -180,6 +288,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         storagePath: m.storage_path,
         bucket: "inspector-media",
         systemType: m.system_type,
+        systemSlug: m.system_type || null,
+        systemLabel: systemLabelFor(m.system_type),
+        structureKey: struct.structureKey,
+        structureLabel: struct.structureLabel,
+        isLegacyStructure: struct.isLegacy,
         inspectorName: m.inspector_name,
         raw: m,
       });
@@ -197,6 +310,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         storagePath: d.storage_path,
         bucket: "insurance-documents",
         recordType: d.doc_type,
+        systemLabel: "Insurance",
         raw: d,
       });
     });
@@ -219,6 +333,7 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           storagePath: null,
           bucket: "fix-verification",
           recordType: f.fix_type,
+          systemLabel: f.fix_type ? titleCase(f.fix_type) : null,
           raw: f,
         });
       });
@@ -226,6 +341,8 @@ export function usePropertyDocuments(propertyId: string | undefined) {
 
     (warrantyDocs.data || []).forEach((w: any) => {
       const label = `${(w.warranty_type || "warranty").replace(/_/g, " ")}${w.provider_name ? ` · ${w.provider_name}` : ""}`;
+      const struct = lookupStructure(w.warranty_type);
+      const sysLabel = systemLabelFor(w.warranty_type) || "Warranty";
       if (w.document_path || w.document_url) {
         all.push({
           id: w.id,
@@ -238,6 +355,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           storagePath: w.document_path,
           bucket: w.document_bucket || "warranty-documents",
           recordType: w.warranty_type,
+          systemSlug: w.warranty_type || null,
+          systemLabel: sysLabel,
+          structureKey: struct.structureKey,
+          structureLabel: struct.structureLabel,
+          isLegacyStructure: struct.isLegacy,
           raw: w,
         });
       }
@@ -253,6 +375,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
           storagePath: w.extended_doc_path,
           bucket: w.document_bucket || "warranty-documents",
           recordType: w.warranty_type,
+          systemSlug: w.warranty_type || null,
+          systemLabel: sysLabel,
+          structureKey: struct.structureKey,
+          structureLabel: struct.structureLabel,
+          isLegacyStructure: struct.isLegacy,
           raw: w,
         });
       }
