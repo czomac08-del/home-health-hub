@@ -603,11 +603,26 @@ export default function UploadDocumentModal({
     (defaultSystemType ? SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()] : "") ||
     (detectedSystem ? SYSTEM_NAME_MAP[detectedSystem] : "") ||
     "";
+
+  // Pick a review variant based on the document type. Each variant uses the
+  // same shell (confidence header → field rows → Save / Complete Later) so
+  // every upload point goes through one unified flow.
+  const vaultReviewKind: "warranty" | "insurance" | "receipt" | null =
+    docType === "warranty" ? "warranty"
+    : docType === "insurance_policy" ? "insurance"
+    : (docType === "repair_receipt" || docType === "invoice") ? "receipt"
+    : null;
+
+  const usingVaultReview = !inspectionReport && !extractionEmpty && vaultReviewKind !== null;
+
   const usingUnifiedReview =
     !inspectionReport &&
     !extractionEmpty &&
+    !usingVaultReview &&
     !!unifiedTargetName &&
     !(instanceOptions.length > 1 && !selectedInstanceName);
+
+  const usingAnyReviewComponent = usingUnifiedReview || usingVaultReview;
 
   const handleReanalyze = async () => {
     if (!recordId) return;
