@@ -681,7 +681,7 @@ const OnboardingWizard = () => {
       case 2: {
         const selectedPropType = propertyTypes.find(p => p.id === data.homeType);
         const isManufactured = selectedPropType?.isManufactured;
-        const hasPublicRecords = !!publicRecordsData && (!!data.homeType || !!data.homeAge);
+        const hasPublicRecords = prefilledFields.size > 0 && (!!data.homeType || !!data.homeAge);
         if (hasPublicRecords) {
           return (
             <div className="flex flex-col gap-6 animate-fade-in">
@@ -727,7 +727,7 @@ const OnboardingWizard = () => {
                 )}
               </div>
               <button
-                onClick={() => setPublicRecordsData(null)}
+                onClick={() => setPrefilledFields(new Set())}
                 className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 self-center transition-colors"
               >
                 Something looks wrong — let me correct it
