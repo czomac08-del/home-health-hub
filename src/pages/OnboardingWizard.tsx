@@ -148,13 +148,18 @@ const OnboardingWizard = () => {
   } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const initialSkipDone = useRef(false);
 
-  // If the user already has a property with an address, skip Step 1.
+  // If the user already has a property with an address, skip Step 1 — but
+  // only on initial mount. Otherwise the Back button gets trapped (step
+  // becomes 1 → effect bumps it back to 2, infinite loop).
   useEffect(() => {
-    if (step === 1 && properties.length > 0 && properties[0].address) {
+    if (!initialSkipDone.current && properties.length > 0 && properties[0].address) {
+      initialSkipDone.current = true;
       setStep(2);
     }
-  }, [step, properties]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [properties.length]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -272,8 +277,30 @@ const OnboardingWizard = () => {
             }
 
             if (json?.found) {
-              if (json.yearBuilt) update("homeAge", String(json.yearBuilt));
-              if (json.propertyType) update("homeType", json.propertyType);
+              // Map raw yearBuilt → wizard age range string
+              if (json.yearBuilt) {
+                const yr = Number(json.yearBuilt);
+                let ageRange = "";
+                if (yr < 1950) ageRange = "Built before 1950";
+                else if (yr < 1970) ageRange = "1950–1970";
+                else if (yr < 1990) ageRange = "1970–1990";
+                else if (yr < 2010) ageRange = "1990–2010";
+                else if (yr < 2020) ageRange = "2010–2020";
+                else ageRange = "2020 or newer";
+                update("homeAge", ageRange);
+              }
+              // Map RentCast propertyType → wizard homeType id
+              if (json.propertyType) {
+                const pt = String(json.propertyType).toLowerCase();
+                let homeTypeId = "";
+                if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
+                else if (pt.includes("condo")) homeTypeId = "condo";
+                else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
+                else if (pt.includes("multi") || pt.includes("duplex")) homeTypeId = "multi_family";
+                else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
+                else if (pt.includes("land") || pt.includes("lot")) homeTypeId = "land";
+                if (homeTypeId) update("homeType", homeTypeId);
+              }
               const foundItems: string[] = [];
               if (json.yearBuilt) foundItems.push(`Year built: ${json.yearBuilt}`);
               if (json.squareFootage) foundItems.push(`${Number(json.squareFootage).toLocaleString()} sq ft`);
