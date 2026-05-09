@@ -67,6 +67,21 @@ async function writeCache(
 const FALLBACK_NOTE =
   "Property valuation data is not available for this address. Location and environmental data shown from public records.";
 
+// Map a raw assessor/Regrid `usedesc`/`propertyType` value to a normalized
+// homeType id. Handles verbose strings, abbreviations, and numeric codes.
+// Anything unrecognized — including null/empty — defaults to "single_family".
+function mapHomeType(raw: unknown): string {
+  const pt = (raw == null ? "" : String(raw)).toLowerCase().replace(/[_\-]+/g, " ").trim();
+  const isMatch = (list: string[]) => list.some((v) => pt === v || pt.includes(v));
+  if (!pt) return "single_family";
+  if (isMatch(["multi family", "multifamily", "duplex", "2 4 units", "02", "03", "200", "300"])) return "multi_unit";
+  if (isMatch(["condo", "condominium", "cn", "04", "400"])) return "condo";
+  if (isMatch(["townhouse", "row house", "th"])) return "townhouse";
+  if (isMatch(["mobile home", "manufactured", "mh", "07"])) return "manufactured";
+  if (isMatch(["single family", "sfr", "residential", "res", "r1", "r", "01", "100"])) return "single_family";
+  return "single_family";
+}
+
 async function callFn(
   path: string,
   params: Record<string, string> = {},
@@ -322,7 +337,8 @@ Deno.serve(async (req) => {
         yearBuilt:        property?.yearBuilt         ?? parcelData?.yearBuilt        ?? null,
         squareFootage:    property?.squareFootage     ?? property?.livingArea         ?? parcelData?.squareFootage ?? null,
         lotSize:          property?.lotSize           ?? parcelData?.lotSize          ?? null,
-        propertyType:     property?.propertyType      ?? parcelData?.propertyType     ?? null,
+        propertyType:     mapHomeType(property?.propertyType ?? parcelData?.propertyType),
+        propertyTypeRaw:  property?.propertyType      ?? parcelData?.propertyType     ?? null,
         bedrooms:         property?.bedrooms          ?? null,
         bathrooms:        property?.bathrooms         ?? property?.bathsFull          ?? null,
         estimatedValue:   property?.price             ?? property?.estimatedValue    ?? null,
