@@ -271,6 +271,8 @@ const OnboardingWizard = () => {
             const json = await res.json();
             setScanResults(json);
 
+            const hasPropertyData = json?.found === true && (json?.yearBuilt || json?.propertyType || json?.squareFootage);
+
             const patch: Record<string, unknown> = {};
             if (json?.yearBuilt)        patch.year_built      = String(json.yearBuilt);
             if (json?.squareFootage)    patch.square_footage  = json.squareFootage;
@@ -304,7 +306,7 @@ const OnboardingWizard = () => {
 
             const filled = new Set<string>();
 
-            if (json?.yearBuilt) {
+            if (hasPropertyData && json?.yearBuilt) {
               const yr = Number(json.yearBuilt);
               let ageRange = "Built before 1950";
               if (yr >= 2020)      ageRange = "2020 or newer";
@@ -316,7 +318,7 @@ const OnboardingWizard = () => {
               filled.add("homeAge");
             }
 
-            if (json?.propertyType) {
+            if (hasPropertyData && json?.propertyType) {
               const pt = (json.propertyType as string).toLowerCase().replace(/[_\s-]+/g, " ");
               let homeTypeId = "";
               if (pt.includes("single") || pt === "residential" || pt === "sfr" || pt === "sfd") homeTypeId = "single_family";
@@ -513,6 +515,7 @@ const OnboardingWizard = () => {
           ];
 
           if (scanPhase === "complete") {
+            const hasPropertyData = scanResults?.found === true && (scanResults?.yearBuilt || scanResults?.propertyType || scanResults?.squareFootage);
             const fields = [
               scanResults?.propertyType   && { label: "Property type",   value: scanResults.propertyType },
               scanResults?.yearBuilt      && { label: "Year built",       value: String(scanResults.yearBuilt) },
@@ -523,17 +526,15 @@ const OnboardingWizard = () => {
               scanResults?.parcelId       && { label: "Parcel ID",        value: scanResults.parcelId },
             ].filter(Boolean) as { label: string; value: string }[];
 
-            return (
+            if (hasPropertyData) return (
               <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
                 <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-500" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-xl font-bold text-foreground">Records found!</h2>
+                  <h2 className="text-xl font-bold text-foreground">Property records found!</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {fields.length > 0
-                      ? "We pre-filled what we found. You'll only be asked about the rest."
-                      : "No detailed records found — we'll ask a few quick questions."}
+                    We pre-filled your home profile. You'll only be asked about what we couldn't find.
                   </p>
                 </div>
                 {fields.length > 0 && (
@@ -546,10 +547,29 @@ const OnboardingWizard = () => {
                     ))}
                   </div>
                 )}
-                {fields.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center rounded-xl border border-border bg-card p-4">
-                    No property records found for this address. We'll ask a few quick questions instead.
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Continuing to setup…
+                </div>
+              </div>
+            );
+
+            return (
+              <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
+                <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <MapPin className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-foreground">Location confirmed</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    We found your county and environmental data. No detailed property records were available — we'll ask a few quick questions instead.
                   </p>
+                </div>
+                {selectedMatch?.county && (
+                  <div className="w-full rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">County</span>
+                    <span className="text-xs font-semibold text-foreground">{selectedMatch.county}{selectedMatch.state ? `, ${selectedMatch.state}` : ""}</span>
+                  </div>
                 )}
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
