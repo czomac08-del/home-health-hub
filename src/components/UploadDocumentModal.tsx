@@ -11,6 +11,7 @@ import FreeToReviewBanner from "./FreeToReviewBanner";
 import { recordRecentUpload } from "./RecentUploadBanner";
 import LegalAcknowledgmentDialog from "./LegalAcknowledgmentDialog";
 import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsToSystems";
+import { writeSystemFields } from "@/lib/systemFieldWrite";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -322,37 +323,28 @@ export default function UploadDocumentModal({
             septic: "Septic",
           };
           const targetSystemName = detectedSystemName || systemNameMap[detectedSystem] || detectedSystem;
-
-          const { data: existingSystems } = await supabase
-            .from("system_details")
-            .select("id, system_name, brand, model, notes")
-            .eq("property_id", activeProperty.id)
-            .eq("user_id", user.id)
-            .ilike("system_name", `%${systemNameMap[detectedSystem] || detectedSystem}%`)
-            .limit(1);
-
           const w = extracted as any;
-          const updatePayload: any = {};
-          if (w.brand && !existingSystems?.[0]?.brand) updatePayload.brand = w.brand;
-          if (w.model) updatePayload.model = w.model;
-          if (w.serial) updatePayload.serial_number = w.serial;
-          if (w.install_date) updatePayload.install_date = w.install_date;
-          if (w.notes) updatePayload.notes = w.notes;
-
-          if (existingSystems && existingSystems.length > 0) {
-            if (Object.keys(updatePayload).length > 0) {
-              await supabase
-                .from("system_details")
-                .update(updatePayload)
-                .eq("id", existingSystems[0].id);
-            }
-          } else {
-            await supabase.from("system_details").insert({
-              property_id: activeProperty.id,
-              user_id: user.id,
-              system_name: targetSystemName,
-              ...updatePayload,
-            });
+          const docDate =
+            w.inspection_date || w.report_date || w.service_date ||
+            w.install_date || w.purchase_date || null;
+          const result = await writeSystemFields({
+            propertyId: activeProperty.id,
+            userId: user.id,
+            systemName: targetSystemName,
+            fields: {
+              brand: w.brand,
+              model: w.model,
+              serial_number: w.serial,
+              install_date: w.install_date,
+              notes: w.notes,
+            },
+            source: "DOCUMENT_EXTRACTED",
+            documentDate: docDate,
+          });
+          if (result.conflicts > 0) {
+            toast.warning(
+              `${result.conflicts} field${result.conflicts === 1 ? "" : "s"} differ from your existing ${targetSystemName} record — review on the system page.`,
+            );
           }
         } catch (sysErr) {
           console.warn("System fan-out failed (non-fatal):", sysErr);
@@ -398,7 +390,7 @@ export default function UploadDocumentModal({
           if (Object.keys(newSpecs).length > 0) {
             const { data: septicRows } = await supabase
               .from("system_details")
-              .select("id, specs, install_date, notes")
+              .select("id, system_name")
               .eq("property_id", activeProperty.id)
               .eq("user_id", user.id)
               .or(
@@ -406,31 +398,30 @@ export default function UploadDocumentModal({
               )
               .limit(1);
 
-            const targetRow = septicRows?.[0];
-            const updatePayload: any = {
-              specs: { ...((targetRow?.specs as any) || {}), ...newSpecs },
-            };
-            if (newSpecs.installDate && !targetRow?.install_date) {
-              updatePayload.install_date = newSpecs.installDate;
-            }
-            if (newSpecs.notes && !targetRow?.notes) {
-              updatePayload.notes = newSpecs.notes;
-            }
-
-            if (targetRow?.id) {
-              await supabase
-                .from("system_details")
-                .update(updatePayload)
-                .eq("id", targetRow.id);
-            } else {
-              await supabase.from("system_details").insert({
-                property_id: activeProperty.id,
-                user_id: user.id,
-                system_name: "Septic System",
-                install_date: newSpecs.installDate || null,
-                notes: newSpecs.notes || null,
-                specs: newSpecs,
-              });
+            const targetSystemName = septicRows?.[0]?.system_name || "Septic System";
+            // Newer pump-out / inspection / install date is the most authoritative
+            // signal for septic docs.
+            const docDate =
+              newSpecs.lastPumpDate ||
+              (e as any).inspection_date ||
+              (e as any).report_date ||
+              newSpecs.installDate ||
+              null;
+            const result = await writeSystemFields({
+              propertyId: activeProperty.id,
+              userId: user.id,
+              systemName: targetSystemName,
+              fields: {
+                ...newSpecs,
+                ...(newSpecs.installDate ? { install_date: newSpecs.installDate } : {}),
+              },
+              source: "DOCUMENT_EXTRACTED",
+              documentDate: docDate,
+            });
+            if (result.conflicts > 0) {
+              toast.warning(
+                `${result.conflicts} septic field${result.conflicts === 1 ? "" : "s"} disagree with your existing record — open the system to confirm which is correct.`,
+              );
             }
           }
         }
