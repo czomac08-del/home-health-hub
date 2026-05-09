@@ -593,7 +593,7 @@ const SystemConfigScreen = () => {
         const { data: existing } = await supabase.from("system_documents").select("id").eq("storage_path", doc.storagePath).maybeSingle();
         if (!existing) {
           await supabase.from("system_documents").insert({
-            system_detail_id: savedSystemDetailId,
+            system_detail_id: doc.targetSystemDetailId || savedSystemDetailId,
             user_id: user.id,
             storage_path: doc.storagePath,
             doc_type: docType,
