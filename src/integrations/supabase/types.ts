@@ -650,6 +650,104 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_submissions: {
+        Row: {
+          approved_at: string | null
+          contractor_email: string | null
+          contractor_name: string | null
+          created_at: string
+          homeowner_approved: boolean | null
+          id: string
+          invoice_amount: number | null
+          labor_hours: number | null
+          maintenance_record_id: string | null
+          notes: string | null
+          part_models: string[] | null
+          parts_replaced: string[] | null
+          photos: string[] | null
+          property_id: string
+          share_id: string
+          share_token: string
+          source_tag: string
+          submitted_at: string
+          system_id: string | null
+          work_performed: string
+        }
+        Insert: {
+          approved_at?: string | null
+          contractor_email?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          homeowner_approved?: boolean | null
+          id?: string
+          invoice_amount?: number | null
+          labor_hours?: number | null
+          maintenance_record_id?: string | null
+          notes?: string | null
+          part_models?: string[] | null
+          parts_replaced?: string[] | null
+          photos?: string[] | null
+          property_id: string
+          share_id: string
+          share_token: string
+          source_tag?: string
+          submitted_at?: string
+          system_id?: string | null
+          work_performed: string
+        }
+        Update: {
+          approved_at?: string | null
+          contractor_email?: string | null
+          contractor_name?: string | null
+          created_at?: string
+          homeowner_approved?: boolean | null
+          id?: string
+          invoice_amount?: number | null
+          labor_hours?: number | null
+          maintenance_record_id?: string | null
+          notes?: string | null
+          part_models?: string[] | null
+          parts_replaced?: string[] | null
+          photos?: string[] | null
+          property_id?: string
+          share_id?: string
+          share_token?: string
+          source_tag?: string
+          submitted_at?: string
+          system_id?: string | null
+          work_performed?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_submissions_maintenance_record_id_fkey"
+            columns: ["maintenance_record_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "property_shares"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       county_agencies: {
         Row: {
           accepts_email_requests: boolean | null
@@ -2186,6 +2284,88 @@ export type Database = {
           },
         ]
       }
+      inspector_submissions: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          deficiency_level: string | null
+          findings_summary: string
+          homeowner_approved: boolean | null
+          id: string
+          inspector_email: string | null
+          inspector_name: string | null
+          notes: string | null
+          parts_replaced: string[] | null
+          photos: string[] | null
+          property_id: string
+          share_id: string
+          share_token: string
+          source_tag: string
+          submitted_at: string
+          system_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          deficiency_level?: string | null
+          findings_summary: string
+          homeowner_approved?: boolean | null
+          id?: string
+          inspector_email?: string | null
+          inspector_name?: string | null
+          notes?: string | null
+          parts_replaced?: string[] | null
+          photos?: string[] | null
+          property_id: string
+          share_id: string
+          share_token: string
+          source_tag?: string
+          submitted_at?: string
+          system_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          deficiency_level?: string | null
+          findings_summary?: string
+          homeowner_approved?: boolean | null
+          id?: string
+          inspector_email?: string | null
+          inspector_name?: string | null
+          notes?: string | null
+          parts_replaced?: string[] | null
+          photos?: string[] | null
+          property_id?: string
+          share_id?: string
+          share_token?: string
+          source_tag?: string
+          submitted_at?: string
+          system_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspector_submissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspector_submissions_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "property_shares"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspector_submissions_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_claims: {
         Row: {
           amount_claimed: number | null
@@ -2527,9 +2707,17 @@ export type Database = {
           action: string
           created_at: string
           id: string
+          invoice_amount: number | null
+          labor_hours: number | null
+          notes: string | null
+          part_models: string[] | null
+          parts_replaced: string[] | null
           performed_by: string | null
           performed_date: string
+          photos: string[] | null
           property_id: string
+          source_tag: string
+          system_id: string | null
           system_name: string
           user_id: string
           verified: boolean | null
@@ -2538,9 +2726,17 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
+          invoice_amount?: number | null
+          labor_hours?: number | null
+          notes?: string | null
+          part_models?: string[] | null
+          parts_replaced?: string[] | null
           performed_by?: string | null
           performed_date: string
+          photos?: string[] | null
           property_id: string
+          source_tag?: string
+          system_id?: string | null
           system_name: string
           user_id: string
           verified?: boolean | null
@@ -2549,9 +2745,17 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
+          invoice_amount?: number | null
+          labor_hours?: number | null
+          notes?: string | null
+          part_models?: string[] | null
+          parts_replaced?: string[] | null
           performed_by?: string | null
           performed_date?: string
+          photos?: string[] | null
           property_id?: string
+          source_tag?: string
+          system_id?: string | null
           system_name?: string
           user_id?: string
           verified?: boolean | null
@@ -2562,6 +2766,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_history_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
             referencedColumns: ["id"]
           },
         ]
@@ -3343,46 +3554,67 @@ export type Database = {
       property_shares: {
         Row: {
           access_count: number
+          access_notes: string | null
+          allow_submission: boolean
           created_at: string
           documents_included: Json
           expires_at: string
           id: string
+          job_description: string | null
           last_accessed_at: string | null
           message: string | null
           property_id: string
           recipient_email: string | null
           recipient_name: string | null
           revoked_at: string | null
+          share_scope: string
+          share_type: string
+          submission_status: string
+          system_id: string | null
           token: string
           user_id: string
         }
         Insert: {
           access_count?: number
+          access_notes?: string | null
+          allow_submission?: boolean
           created_at?: string
           documents_included?: Json
           expires_at?: string
           id?: string
+          job_description?: string | null
           last_accessed_at?: string | null
           message?: string | null
           property_id: string
           recipient_email?: string | null
           recipient_name?: string | null
           revoked_at?: string | null
+          share_scope?: string
+          share_type?: string
+          submission_status?: string
+          system_id?: string | null
           token?: string
           user_id: string
         }
         Update: {
           access_count?: number
+          access_notes?: string | null
+          allow_submission?: boolean
           created_at?: string
           documents_included?: Json
           expires_at?: string
           id?: string
+          job_description?: string | null
           last_accessed_at?: string | null
           message?: string | null
           property_id?: string
           recipient_email?: string | null
           recipient_name?: string | null
           revoked_at?: string | null
+          share_scope?: string
+          share_type?: string
+          submission_status?: string
+          system_id?: string | null
           token?: string
           user_id?: string
         }
@@ -3392,6 +3624,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_shares_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "system_details"
             referencedColumns: ["id"]
           },
         ]
@@ -4805,6 +5044,31 @@ export type Database = {
           is_subscribed: boolean
           one_time_access_expires_at: string
           status: string
+        }[]
+      }
+      get_job_share_package: {
+        Args: { _token: string }
+        Returns: {
+          access_notes: string
+          allow_submission: boolean
+          brand: string
+          expires_at: string
+          has_submission: boolean
+          install_date: string
+          job_description: string
+          last_service: string
+          model: string
+          property_address_short: string
+          property_id: string
+          recent_history: Json
+          serial_number: string
+          share_id: string
+          share_type: string
+          specs: Json
+          status: string
+          submission_status: string
+          system_id: string
+          system_name: string
         }[]
       }
       get_share_status: {
