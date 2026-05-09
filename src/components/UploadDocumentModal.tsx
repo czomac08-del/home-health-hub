@@ -852,7 +852,56 @@ export default function UploadDocumentModal({
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
               <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
-            ) : (
+            ) : (() => {
+              // Determine target system name for the unified review.
+              const SYSTEM_NAME_MAP: Record<string, string> = {
+                water_filtration: "Water Filtration",
+                plumbing: "Plumbing",
+                hvac: "HVAC",
+                electrical: "Electrical",
+                structural: "Structural",
+                roof: "Roof",
+                appliance: "Appliances",
+                water_heater: "Water Heater",
+                well: "Well",
+                septic: "Septic System",
+                sewer_waste: "Septic System",
+              };
+              const targetSystemName =
+                selectedInstanceName ||
+                detectedSystemName ||
+                (defaultSystemType && SYSTEM_NAME_MAP[defaultSystemType.toLowerCase()]) ||
+                (detectedSystem && SYSTEM_NAME_MAP[detectedSystem]) ||
+                "";
+
+              const showInstancePicker = instanceOptions.length > 1 && !selectedInstanceName;
+              if (!showInstancePicker && targetSystemName && activeProperty?.id && user?.id && !extractionEmpty) {
+                return (
+                  <UnifiedDocumentReview
+                    propertyId={activeProperty.id}
+                    userId={user.id}
+                    systemName={targetSystemName}
+                    fileName={file?.name || "Document"}
+                    recordId={recordId}
+                    extracted={extracted}
+                    onSaved={() => {
+                      try {
+                        recordRecentUpload({
+                          id: recordId || "",
+                          name: file?.name || "Document",
+                          uploadedAt: new Date().toISOString(),
+                          category: docType,
+                          url: null,
+                        });
+                      } catch {}
+                      setStep("saved");
+                      setTimeout(() => handleClose(false), 1200);
+                    }}
+                    onCompleteLater={() => handleClose(false)}
+                  />
+                );
+              }
+              return (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Extracted details {confidence && <span className="ml-1 normal-case font-normal">({confidence} confidence)</span>}
@@ -936,7 +985,8 @@ export default function UploadDocumentModal({
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
