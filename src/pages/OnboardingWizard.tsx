@@ -429,10 +429,13 @@ const OnboardingWizard = () => {
     setAddressInput(v);
     setSelectedMatch(null);
     setGeocodeError(null);
+    setGooglePlaceId(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(v), 400);
     if (regridDebounceRef.current) clearTimeout(regridDebounceRef.current);
     regridDebounceRef.current = setTimeout(() => fetchRegridSuggestions(v), 300);
+    if (googleDebounceRef.current) clearTimeout(googleDebounceRef.current);
+    googleDebounceRef.current = setTimeout(() => fetchGoogleSuggestions(v), 250);
   };
 
   /** User tapped a Regrid suggestion — set the field text and let the
