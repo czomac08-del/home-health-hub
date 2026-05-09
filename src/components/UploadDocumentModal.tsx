@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, Sparkles, CheckCircle2, Loader2, AlertCircle, X, Home, Wand2, Pencil } from "lucide-react";
@@ -39,6 +40,7 @@ export default function UploadDocumentModal({
   defaultSystemType,
 }: UploadDocumentModalProps) {
   const { user, activeProperty } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("form");
   const [file, setFile] = useState<File | null>(null);
@@ -178,6 +180,58 @@ export default function UploadDocumentModal({
         .update({ ai_verified: true, ai_extracted_data: merged })
         .eq("id", recordId);
 
+      // Auto-sync warranty documents directly to the warranties table so the
+      // user doesn't have to find the doc in the vault and click "Sync".
+      if (docType === "warranty" && recordId && activeProperty?.id && user?.id) {
+        try {
+          const w = extracted as any;
+          let coverageEnd = w.coverage_end || null;
+          if (!coverageEnd && w.coverage_start && w.coverage_term_years) {
+            const d = new Date(w.coverage_start);
+            if (!isNaN(d.getTime())) {
+              d.setFullYear(d.getFullYear() + Number(w.coverage_term_years));
+              coverageEnd = d.toISOString().slice(0, 10);
+            }
+          }
+          const providerLabel =
+            w.provider_name || w.product_name ||
+            file?.name?.replace(/\.[^.]+$/, "") || "Warranty";
+
+          const { data: existing } = await supabase
+            .from("warranties")
+            .select("id")
+            .eq("source_record_id", recordId)
+            .maybeSingle();
+
+          if (!existing) {
+            const { data: prRow } = await supabase
+              .from("property_records")
+              .select("storage_path, url")
+              .eq("id", recordId)
+              .maybeSingle();
+
+            await supabase.from("warranties").insert({
+              user_id: user.id,
+              property_id: activeProperty.id,
+              source_record_id: recordId,
+              warranty_type: w.warranty_type || "manufacturer",
+              provider_name: providerLabel,
+              coverage_start: w.coverage_start || null,
+              coverage_end: coverageEnd,
+              claim_phone: w.claim_phone || null,
+              claim_website: w.claim_website || null,
+              claim_notes: w.coverage_summary || null,
+              is_transferable: w.is_transferable ?? null,
+              document_path: prRow?.storage_path || null,
+              document_url: prRow?.url || null,
+              document_bucket: "property-records",
+            });
+          }
+        } catch (warrantyErr) {
+          console.warn("Auto-sync to warranties failed (non-fatal):", warrantyErr);
+        }
+      }
+
       // Fan extracted findings out to the Systems list so HVAC/Roof/etc. flip
       // from grey "Not yet documented" to documented (or flagged) immediately.
       if (docType === "inspection_report" && activeProperty?.id && user?.id && inspectionReport?.findings?.length) {
@@ -222,7 +276,13 @@ export default function UploadDocumentModal({
         }
       }
 
-      if (docType === "inspection_report") {
+      if (docType === "warranty") {
+        toast.success("Warranty saved", {
+          description: "Added to your Warranties dashboard automatically.",
+          action: { label: "View Warranties →", onClick: () => navigate("/warranties") },
+          duration: 6000,
+        });
+      } else if (docType === "inspection_report") {
         toast.success("Your inspection review is ready — free for the next 60 days.", {
           duration: 5000,
         });

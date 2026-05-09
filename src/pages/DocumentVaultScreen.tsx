@@ -515,7 +515,7 @@ function DocCard({
           }}
           className="text-[11px] font-medium text-primary-foreground bg-primary hover:opacity-90 px-2.5 py-1 rounded-md"
         >
-          Review {doc.category === "inspection" ? "Findings" : ""}
+          Review {doc.category === "warranty" ? "& Sync" : doc.category === "inspection" ? "Findings" : ""}
         </button>
         {canImport && (
           <button
