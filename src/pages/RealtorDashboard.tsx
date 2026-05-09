@@ -12,6 +12,7 @@ import RealtorInbox from "@/components/RealtorInbox";
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import ProUploadButton from "@/components/ProUploadButton";
 import {
   Home, TrendingUp, FileText, Send, Plus, Clock, Eye, Download, Share2, Mail,
   CheckCircle2, AlertTriangle, Shield, Calendar, Ruler, Search as SearchIcon,
