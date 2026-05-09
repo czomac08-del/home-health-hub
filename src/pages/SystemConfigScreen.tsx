@@ -46,7 +46,7 @@ const CollapsibleSectionView = ({ isOpen, title, onToggle, children }: {
 );
 
 interface PhotoItem { url: string; label: string; storagePath?: string; id?: string; ai_analyzed?: boolean; }
-interface DocItem { name: string; date: string; storagePath?: string; url?: string; }
+interface DocItem { name: string; date: string; storagePath?: string; url?: string; targetSystemDetailId?: string }
 interface AiSuggestion { key: string; label: string; value: string; target: "brand" | "model" | "serial" | "installDate" | "notes" | "spec"; specKey?: string; }
 
 // Small teal badge
