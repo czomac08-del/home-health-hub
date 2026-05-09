@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProperties = async (userId: string) => {
     const { data } = await supabase
       .from("properties")
-      .select("id, address, label, is_active, health_score, year_built, square_footage, city, state, zip, county, county_fips")
+      .select("id, address, label, is_active, health_score, year_built, square_footage, city, state, zip, county, county_fips, has_additional_structures, additional_structures_banner_dismissed_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
     if (data) {
