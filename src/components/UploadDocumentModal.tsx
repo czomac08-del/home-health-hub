@@ -376,7 +376,13 @@ export default function UploadDocumentModal({
             well: "Well",
             septic: "Septic",
           };
-          const targetSystemName = detectedSystemName || systemNameMap[detectedSystem] || detectedSystem;
+          // If multiple instances exist on this property and the user picked
+          // one in the review step, that selection wins over the AI's guess.
+          const targetSystemName =
+            selectedInstanceName ||
+            detectedSystemName ||
+            systemNameMap[detectedSystem] ||
+            detectedSystem;
           const w = extracted as any;
           const docDate =
             w.inspection_date || w.report_date || w.service_date ||
