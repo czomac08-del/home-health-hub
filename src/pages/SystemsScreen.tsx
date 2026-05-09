@@ -132,7 +132,9 @@ const SystemsScreen = () => {
         const grouped: Record<string, { id: string; label: string; documented: boolean }[]> = {};
         (data as SystemDetailSummary[] | null)?.forEach((record) => {
           const documented = hasRealSystemData(record);
-          if (documented) next.add(record.system_name);
+          const isLegacy = record.status === "inactive_legacy";
+          if (documented && !isLegacy) next.add(record.system_name);
+          if (isLegacy) inactive.add(record.system_name);
           if (record.status === "needs_attention") flags.add(record.system_name);
           const specs = (record.specs as Record<string, any> | null) || null;
           if (specs) {
@@ -147,11 +149,14 @@ const SystemsScreen = () => {
               if (summary) summaries[record.system_name] = summary;
             }
           }
+          if (isLegacy) {
+            summaries[record.system_name] = "Legacy — Structure Removed";
+          }
           if (MULTI_INSTANCE_SYSTEM_NAMES.has(record.system_name)) {
             const arr = grouped[record.system_name] || (grouped[record.system_name] = []);
             arr.push({
               id: record.id,
-              label: record.instance_name || record.system_name,
+              label: (record.instance_name || record.system_name) + (isLegacy ? " (Legacy)" : ""),
               documented,
             });
           }
