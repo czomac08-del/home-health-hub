@@ -60,8 +60,15 @@ export async function writeSystemField(args: {
   value: string | number | boolean | null;
   source: SystemSourceTag;
   notes?: string;
+  /**
+   * Optional ISO-ish date for the incoming document/source. When both the
+   * existing and incoming source are document-extracted, the newer date wins
+   * (treated as authoritative) instead of routing to pending verification.
+   * Manually-entered (OWNER_PROVIDED) values are still never overwritten.
+   */
+  documentDate?: string | null;
 }): Promise<{ ok: boolean; conflict?: boolean }> {
-  const { propertyId, userId, systemName, field, value, source, notes } = args;
+  const { propertyId, userId, systemName, field, value, source, notes, documentDate } = args;
   if (value == null || value === "") return { ok: false };
 
   const { data: existing } = await supabase
@@ -74,11 +81,22 @@ export async function writeSystemField(args: {
   const currentValue = existing ? readField(existing, field) : null;
   const existingTags = (existing?.source_tags as Record<string, string> | null) || {};
   const existingSource = (existingTags?.[field] as SystemSourceTag | undefined) || "OWNER_PROVIDED";
+  const existingDateKey = `__date_${field}`;
+  const existingDate = (existingTags?.[existingDateKey] as string | undefined) || null;
+
+  const parseDate = (s: string | null | undefined): number => {
+    if (!s) return 0;
+    const t = Date.parse(String(s));
+    return Number.isFinite(t) ? t : 0;
+  };
 
   // Conflict path
   if (valuesConflict(currentValue, value)) {
     const incomingRank = TRUST_RANK[source];
     const existingRank = TRUST_RANK[existingSource];
+    // Tie-breaker for two doc-extracted values: the newer document wins.
+    const bothDocs = source === "DOCUMENT_EXTRACTED" && existingSource === "DOCUMENT_EXTRACTED";
+    const incomingNewer = bothDocs && parseDate(documentDate) > parseDate(existingDate);
     // Always log a pending verification so the user can review.
     await supabase.from("system_pending_verifications" as any).insert({
       property_id: propertyId,
@@ -91,10 +109,10 @@ export async function writeSystemField(args: {
       source_b: source,
     });
     // Lower- or equal-trust source: do NOT overwrite.
-    if (incomingRank <= existingRank) {
+    if (incomingRank < existingRank || (incomingRank === existingRank && !incomingNewer)) {
       return { ok: false, conflict: true };
     }
-    // higher-trust falls through to update
+    // higher-trust OR newer doc → fall through to update
   }
 
   // Build update payload
@@ -104,7 +122,11 @@ export async function writeSystemField(args: {
   } else {
     update.specs = { ...(existing?.specs as object | null ?? {}), [field]: value };
   }
-  update.source_tags = { ...existingTags, [field]: source };
+  update.source_tags = {
+    ...existingTags,
+    [field]: source,
+    ...(documentDate ? { [existingDateKey]: documentDate } : {}),
+  };
   if (notes && !existing?.notes) update.notes = notes;
 
   if (existing) {
@@ -132,6 +154,7 @@ export async function writeSystemFields(args: {
   fields: Record<string, string | number | boolean | null | undefined>;
   source: SystemSourceTag;
   notes?: string;
+  documentDate?: string | null;
 }) {
   let written = 0;
   let conflicts = 0;
@@ -145,6 +168,7 @@ export async function writeSystemFields(args: {
       value: value as any,
       source: args.source,
       notes: args.notes,
+      documentDate: args.documentDate,
     });
     if (r.ok) written++;
     if (r.conflict) conflicts++;
