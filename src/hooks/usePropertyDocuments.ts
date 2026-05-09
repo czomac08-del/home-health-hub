@@ -259,6 +259,14 @@ export function usePropertyDocuments(propertyId: string | undefined) {
       const hasFindings = !!(rep && Array.isArray(rep.findings) && rep.findings.length);
       const extractionFailed = !ext || (extractedKeys.length === 0 && !hasFindings);
       const struct = lookupStructure(r.system_type);
+      const assess = assessExtraction(r.ai_extracted_data, { hasDocument: true });
+      const sourceLower = (r.source || "").toString().toLowerCase();
+      const isPublicRecord =
+        sourceLower === "public_records" ||
+        sourceLower === "civic" ||
+        sourceLower === "county" ||
+        sourceLower === "regrid" ||
+        sourceLower === "rentcast";
       all.push({
         id: r.id,
         source_table: "property_records",
@@ -282,6 +290,11 @@ export function usePropertyDocuments(propertyId: string | undefined) {
         hasExtractedData: !!ext,
         extractionFailed,
         addedToProfile: !!r.ai_verified,
+        extractionTier: assess.tier,
+        extractionCredit: assess.creditMultiplier,
+        extractionDetail: assess.detail,
+        extractionCreditLabel: assess.creditLabel,
+        isPublicRecord,
         raw: r,
       });
     });
