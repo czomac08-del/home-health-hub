@@ -875,9 +875,13 @@ const SystemConfigScreen = () => {
           {specFields.length > 0 && !(isWaterSource && waterType === "city") && !isChimneyOrFireplace && (
             <CollapsibleSectionView isOpen={expandedSections.has("specs")} title="Specifications" onToggle={() => toggleSection("specs")}>
               <div className="space-y-3">
-                {specFields.map((field) => (
-                  <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={hasAiSource(`spec:${field.key}`)} />
-                ))}
+                {specFields.map((field) => {
+                  const aiNow = isAiField(`spec:${field.key}`);
+                  const estNow = !aiNow && (sourceTags[`spec:${field.key}`] === "AI_INFERRED" || sourceTags[field.key] === "AI_INFERRED");
+                  return (
+                    <SpecFieldInput key={field.key} field={field} value={specs[field.key]} onChange={(v) => setSpec(field.key, v)} ai={aiNow} est={estNow} />
+                  );
+                })}
               </div>
             </CollapsibleSectionView>
           )}
