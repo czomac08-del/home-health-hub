@@ -228,7 +228,7 @@ export default function UploadDocumentModal({
       }
       await supabase
         .from("property_records")
-        .update(updatePayload)
+        .update(updatePayload as any)
         .eq("id", recordId);
 
       // If AI found a parcel ID in this document, save it to the property record
