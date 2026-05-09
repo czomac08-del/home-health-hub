@@ -1034,7 +1034,7 @@ export default function UploadDocumentModal({
         </div>
 
         {/* Pinned footer — primary action always visible */}
-        {(step === "form" || step === "review" || step === "error") && (
+        {(step === "form" || step === "error" || (step === "review" && !usingUnifiedReview)) && (
           <div className="shrink-0 border-t border-border px-6 py-3 bg-background">
             {step === "form" && (
               <Button onClick={handleUpload} disabled={!file} className="w-full">
