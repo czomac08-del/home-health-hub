@@ -279,6 +279,8 @@ const AppContent = () => {
             <Route path="/handover" element={<ProtectedRoute><HandoverWizardScreen /></ProtectedRoute>} />
             <Route path="/handover/disclosure" element={<ProtectedRoute><SellerDisclosureScreen /></ProtectedRoute>} />
             <Route path="/share/:token" element={<SharedPropertyView />} />
+            <Route path="/job/:token" element={<JobShareScreen />} />
+            <Route path="/inspection/:token" element={<JobShareScreen />} />
             <Route path="/claim" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
             <Route path="/claim/:propertyId" element={<ProtectedRoute><ClaimHomeScreen /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
