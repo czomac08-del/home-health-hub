@@ -611,7 +611,7 @@ const OnboardingWizard = () => {
   }, [step, activeProperty]);
 
   const next = () => {
-    if (step === 7) {
+    if (step === 8) {
       // Always allow finishing — save in background, navigate immediately
       if (user && activeProperty) {
         saveOnboarding();
