@@ -600,9 +600,36 @@ function DocCard({
                 {doc.findingsCount} finding{doc.findingsCount !== 1 ? "s" : ""}
               </span>
             )}
+            {doc.extractionTier && (
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tierBadgeClasses(doc.extractionTier)}`}
+                title={`${doc.extractionCreditLabel ?? ""} toward Home IQ Score`}
+              >
+                {doc.extractionTier === "clear"
+                  ? "AI read clearly"
+                  : doc.extractionTier === "partial"
+                    ? "AI partially read"
+                    : doc.extractionTier === "trouble"
+                      ? "AI had trouble"
+                      : ""}
+                {doc.extractionCreditLabel ? ` · ${doc.extractionCreditLabel}` : ""}
+              </span>
+            )}
+            {doc.isPublicRecord && (doc.extractionTier === "partial" || doc.extractionTier === "trouble") && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[hsl(var(--health-amber))]/15 text-[hsl(var(--health-amber))] border border-[hsl(var(--health-amber))]/30">
+                Needs Review
+              </span>
+            )}
           </div>
         </div>
       </div>
+      {(doc.extractionTier === "partial" || doc.extractionTier === "trouble") && doc.extractionDetail && (
+        <div className="mt-2 rounded-lg border border-border bg-muted/30 px-2.5 py-2">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            {doc.extractionDetail}
+          </p>
+        </div>
+      )}
       <div className="flex flex-wrap gap-1.5 mt-2 ml-13 pl-0">
         {doc.url && (
           <button
@@ -654,7 +681,10 @@ function DocCard({
             }}
             className="text-[11px] font-medium text-primary border border-primary/40 hover:bg-primary/10 px-2.5 py-1 rounded-md inline-flex items-center gap-1"
           >
-            <Sparkles className="h-3 w-3" /> Add to Profile
+            <Sparkles className="h-3 w-3" />
+            {doc.extractionTier === "partial" || doc.extractionTier === "trouble"
+              ? "Review & Complete"
+              : "Add to Profile"}
           </button>
         )}
         {doc.source_table === "property_records" && doc.hasExtractedData && alreadyAdded && (
