@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { HealthRing } from "@/components/HealthRing";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info, Share2 } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Circle, Sparkles, Calendar, Fan, Droplets, Zap, Home, ShoppingCart, Info, Share2, ShieldCheck } from "lucide-react";
 import { systems } from "./DashboardScreen";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -322,6 +322,36 @@ const SystemDetailScreen = () => {
       </div>
 
       {/* Not Assessed prompt — only when there's no system_details row at all */}
+      {/* Inspection data summary — shows what the inspection actually captured */}
+      {rows.some(r => r.data_status === "inspector_verified") && (
+        <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 space-y-2 mb-6">
+          <div className="flex items-center gap-2 text-sm font-semibold text-blue-800 dark:text-blue-300">
+            <ShieldCheck className="h-4 w-4" />
+            From your inspection report
+          </div>
+          {inspector?.name && (
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              Inspector: {inspector.name}{inspector.date ? ` · ${inspector.date}` : ""}
+            </p>
+          )}
+          {rows.find(r => r.specs?.condition) && (
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              Condition noted: <span className="font-medium">{rows.find(r => r.specs?.condition)?.specs.condition}</span>
+            </p>
+          )}
+          {rows.find(r => r.specs?.inspector_findings_count) && (
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              {rows.find(r => r.specs?.inspector_findings_count)?.specs.inspector_findings_count} finding(s) recorded for this system
+            </p>
+          )}
+          {!rows.find(r => r.brand || r.model) && (
+            <p className="text-xs text-muted-foreground italic mt-1">
+              Brand and model weren't in the report — tap "Add Details" to fill those in manually.
+            </p>
+          )}
+        </div>
+      )}
+
       {loaded && !isAssessed && (
         <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-start gap-3 mb-6">
           <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
