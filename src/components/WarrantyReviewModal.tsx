@@ -323,7 +323,7 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isWarrantyDetailMode ? "max-w-6xl h-[90vh] flex flex-col" : (isDirectMode || (!loading && !hasDetails) ? "max-w-4xl h-[85vh] flex flex-col" : "max-w-lg")}>
+      <DialogContent className={isWarrantyDetailMode ? "max-w-6xl h-[90vh] flex flex-col" : (isDirectMode || (!loading && !hasDetails) ? "max-w-4xl h-[85vh] flex flex-col" : "max-w-lg max-h-[85vh] flex flex-col overflow-hidden")}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -436,7 +436,7 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
             </div>
           </div>
         ) : (
-          <div className="space-y-3 text-sm">
+          <div className="space-y-3 text-sm overflow-y-auto flex-1 min-h-0 pr-1">
             <DetailRow label="Provider" value={warranty.provider_name} />
             <DetailRow label="Covers" value={warranty.product_name} />
             <DetailRow
