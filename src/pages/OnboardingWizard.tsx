@@ -136,7 +136,6 @@ const OnboardingWizard = () => {
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
   const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
-  const [scanning, setScanning] = useState(false);
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
@@ -150,16 +149,14 @@ const OnboardingWizard = () => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const initialSkipDone = useRef(false);
 
-  // If the user already has a property with an address, skip Step 1 — but
-  // only on initial mount. Otherwise the Back button gets trapped (step
-  // becomes 1 → effect bumps it back to 2, infinite loop).
+  // Skip Step 1 on initial load only if property already exists — NOT on back navigation.
   useEffect(() => {
     if (!initialSkipDone.current && properties.length > 0 && properties[0].address) {
       initialSkipDone.current = true;
       setStep(2);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — run once on mount only
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
