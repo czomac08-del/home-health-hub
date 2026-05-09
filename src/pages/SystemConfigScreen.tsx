@@ -23,6 +23,7 @@ import SaveButtonMessage from "@/components/SaveButtonMessage";
 import RefreshButton from "@/components/RefreshButton";
 import SystemApplicabilityGate from "@/components/SystemApplicabilityGate";
 import SystemInstanceSwitcher, { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
+import StructureAssignmentSelector, { LEGACY_OPTION, LEGACY_STATUS } from "@/components/StructureAssignmentSelector";
 import type { RefreshScope } from "@/hooks/useDataRefresh";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
@@ -165,6 +166,8 @@ const SystemConfigScreen = () => {
   const [utilityContacts, setUtilityContacts] = useState<Record<string, string>>({});
   const [hvacHouseholdFactors, setHvacHouseholdFactors] = useState<string[]>([]);
   const [systemDetailId, setSystemDetailId] = useState<string | null>(null);
+  const [structureAssignment, setStructureAssignment] = useState<string>("");
+  const [rowStatus, setRowStatus] = useState<string | null>(null);
 
   const { searching: manualSearching, search: searchManual } = useManualSearch({
     brand, model, onResult: setManualResult,
@@ -685,6 +688,13 @@ const SystemConfigScreen = () => {
         if (s && typeof s.is_applicable === "boolean") setIsApplicable(s.is_applicable);
       }
       if ((data as any).source_tags && typeof (data as any).source_tags === "object") setSourceTags((data as any).source_tags as Record<string, string>);
+      // Restore structure assignment + status (for legacy detection)
+      {
+        const s = (data.specs as Record<string, any>) || {};
+        if (typeof s.structure_assignment === "string") setStructureAssignment(s.structure_assignment);
+        else if ((data as any).status === LEGACY_STATUS) setStructureAssignment(LEGACY_OPTION);
+      }
+      if ((data as any).status) setRowStatus((data as any).status);
       // Restore water/sewer type selectors from specs if saved
       {
         const s = (data.specs as Record<string, any>) || {};
@@ -811,6 +821,22 @@ const SystemConfigScreen = () => {
           systemName={displayName}
           activeInstanceId={systemDetailId || instanceParam}
           reloadKey={switcherKey}
+        />
+      )}
+
+      {activeProperty && user && (
+        <StructureAssignmentSelector
+          systemDetailId={systemDetailId}
+          propertyId={activeProperty.id}
+          userId={user.id}
+          systemName={displayName}
+          value={structureAssignment}
+          status={rowStatus}
+          onChange={({ value, isLegacy }) => {
+            setStructureAssignment(value);
+            setSpecs((prev) => ({ ...prev, structure_assignment: value }));
+            setRowStatus(isLegacy ? LEGACY_STATUS : rowStatus === LEGACY_STATUS ? "documented" : rowStatus);
+          }}
         />
       )}
 
