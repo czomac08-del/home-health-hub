@@ -319,6 +319,16 @@ const SystemConfigScreen = () => {
 
   const isAiField = (key: string) => aiApplied && !aiConfirmed && aiFilledKeys.has(key);
   const hasAiSource = (key: string) => isAiField(key) || sourceTags[key] === "AI_INFERRED";
+  // Map UI form-keys to canonical source_tags keys written by seedSystems / systemFieldWrite
+  const SEED_KEY_MAP: Record<string, string> = {
+    installDate: "install_date",
+    purchaseDate: "purchase_date",
+    serial: "serial_number",
+  };
+  const isEstField = (key: string) => {
+    const stKey = SEED_KEY_MAP[key] ?? key;
+    return !isAiField(key) && (sourceTags[stKey] === "AI_INFERRED" || sourceTags[key] === "AI_INFERRED");
+  };
 
   const applyAiSuggestion = (suggestion: AiSuggestion) => {
     if (suggestion.target === "brand") setBrand(suggestion.value);
