@@ -548,7 +548,7 @@ const OnboardingWizard = () => {
             if (hasPropertyData) return (
               <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
                 {process.env.NODE_ENV !== "production" && (
-                  <pre className="text-[9px] text-muted-foreground/50 w-full overflow-auto max-h-40 bg-muted/30 rounded p-2">
+                  <pre className="text-[9px] text-muted-foreground/50 w-full overflow-auto max-h-48 bg-muted/30 rounded p-2">
                     {JSON.stringify({ found: (scanResults as any)?.found, yearBuilt: (scanResults as any)?.yearBuilt, squareFootage: (scanResults as any)?.squareFootage, propertyType: (scanResults as any)?.propertyType, parcelId: (scanResults as any)?.parcelId, bedrooms: (scanResults as any)?.bedrooms, data_source: (scanResults as any)?.data_source, prefilled: [...prefilledFields] }, null, 2)}
                   </pre>
                 )}
