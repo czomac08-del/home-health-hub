@@ -369,8 +369,6 @@ const OnboardingWizard = () => {
       }
 
       setScanPhase("complete");
-      await new Promise(r => setTimeout(r, 2000));
-      setStep(2);
     } catch (e) {
       toast.error("Could not save your address. Please try again.");
       setScanPhase("idle");
@@ -548,8 +546,8 @@ const OnboardingWizard = () => {
             if (hasPropertyData) return (
               <div className="flex flex-col items-center gap-5 animate-fade-in py-2">
                 {process.env.NODE_ENV !== "production" && (
-                  <pre className="text-[9px] text-muted-foreground/50 w-full overflow-auto max-h-24 bg-muted/30 rounded p-2">
-                    {JSON.stringify({ found: (scanResults as any)?.found, yearBuilt: (scanResults as any)?.yearBuilt, propertyType: (scanResults as any)?.propertyType, parcelId: (scanResults as any)?.parcelId, prefilled: [...prefilledFields] }, null, 2)}
+                  <pre className="text-[9px] text-muted-foreground/50 w-full overflow-auto max-h-40 bg-muted/30 rounded p-2">
+                    {JSON.stringify({ found: (scanResults as any)?.found, yearBuilt: (scanResults as any)?.yearBuilt, squareFootage: (scanResults as any)?.squareFootage, propertyType: (scanResults as any)?.propertyType, parcelId: (scanResults as any)?.parcelId, bedrooms: (scanResults as any)?.bedrooms, data_source: (scanResults as any)?.data_source, prefilled: [...prefilledFields] }, null, 2)}
                   </pre>
                 )}
                 <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -571,10 +569,13 @@ const OnboardingWizard = () => {
                     ))}
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Continuing to setup…
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                >
+                  Continue →
+                </button>
               </div>
             );
 
@@ -595,10 +596,13 @@ const OnboardingWizard = () => {
                     <span className="text-xs font-semibold text-foreground">{selectedMatch.county}{selectedMatch.state ? `, ${selectedMatch.state}` : ""}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Continuing to setup…
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="w-full rounded-xl bg-primary py-3.5 font-semibold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                >
+                  Continue →
+                </button>
               </div>
             );
           }
