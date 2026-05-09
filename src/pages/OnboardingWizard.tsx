@@ -1127,8 +1127,48 @@ const OnboardingWizard = () => {
           </div>
         );
 
-      /* STEP 8 — Final celebration */
+      /* STEP 8 — Additional structures question */
       case 8:
+        return (
+          <div className="flex flex-col gap-5 animate-fade-in">
+            <h2 className="text-xl font-bold text-foreground">One last question</h2>
+            <p className="text-sm text-muted-foreground">
+              Does your property have any additional structures beyond the main home?
+              <span className="block mt-1 text-xs text-muted-foreground/80">
+                Things like a detached garage, ADU, workshop, pool house, or addition.
+              </span>
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => update("hasAdditionalStructures", false)}
+                className={`w-full text-left rounded-xl border px-4 py-4 transition-colors ${
+                  data.hasAdditionalStructures === false
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:bg-muted"
+                }`}
+              >
+                <div className="text-sm font-semibold text-foreground">No, just the main house</div>
+                <div className="text-xs text-muted-foreground mt-0.5">My profile is complete.</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => update("hasAdditionalStructures", true)}
+                className={`w-full text-left rounded-xl border px-4 py-4 transition-colors ${
+                  data.hasAdditionalStructures === true
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:bg-muted"
+                }`}
+              >
+                <div className="text-sm font-semibold text-foreground">Yes — I'll add them after setup</div>
+                <div className="text-xs text-muted-foreground mt-0.5">We'll remind you on your dashboard.</div>
+              </button>
+            </div>
+          </div>
+        );
+
+      /* STEP 9 — Final celebration */
+      case 9:
         return (
           <div className="flex flex-col items-center text-center gap-6 animate-fade-in">
             <div className="relative h-32 w-32">
