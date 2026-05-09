@@ -532,6 +532,20 @@ export default function UploadDocumentModal({
 
         {step === "review" && (
           <div className="space-y-4">
+            {docType === "warranty" && (
+              <div>
+                <label className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                  Warranty name <span className="text-muted-foreground/60">(you can edit this)</span>
+                </label>
+                <input
+                  type="text"
+                  value={warrantyName}
+                  onChange={(e) => setWarrantyName(e.target.value)}
+                  placeholder="e.g. HVAC Warranty – Carrier"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
             <div className="rounded-lg bg-secondary/40 p-3 flex gap-2">
               <CheckCircle2 className="h-4 w-4 text-health-green shrink-0 mt-0.5" />
               <div className="text-xs">
