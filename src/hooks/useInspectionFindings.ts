@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { findingKey, isDiy, type FindingStatus } from "@/lib/inspectionScoring";
 import type { InspectionFinding, InspectionReportData } from "@/components/InspectionFindingsReview";
+import { mapFindingToSystems } from "@/lib/applyInspectionFindingsToSystems";
 
 export interface DbFinding {
   id: string;
@@ -65,7 +66,14 @@ export function useInspectionFindings(args: {
         const toInsert = reportFindings
           .map((f, i) => ({ f, key: findingKey(f as InspectionFinding, i) }))
           .filter(({ key }) => !existingKeys.has(key))
-          .map(({ f, key }) => ({
+          .map(({ f, key }) => {
+            // Prefer an explicit override the user confirmed in the by-system review,
+            // otherwise auto-map by keyword. Null when the AI is unsure — UI shows ✏️.
+            const overrideSystem = (f as any).systemOverride as string | null | undefined;
+            const mapped = overrideSystem
+              ? overrideSystem
+              : (mapFindingToSystems({ title: f.title, description: f.description, location: (f as any).location, category: f.category, level: f.level })[0] ?? null);
+            return ({
             user_id: userId!,
             property_id: propertyId,
             inspection_record_id: inspectionRecordId,
@@ -73,7 +81,7 @@ export function useInspectionFindings(args: {
             finding_key: key,
             level: f.level,
             category: f.category ?? null,
-            system_category: f.category ?? null,
+            system_category: mapped,
             severity_label:
               f.level === 1 ? "Safety" : f.level === 2 ? "Major" : f.level === 3 ? "Minor" : "Informational",
             title: f.title,
@@ -83,7 +91,8 @@ export function useInspectionFindings(args: {
             recommendation: (f as any).recommendation ?? null,
             is_diy: isDiy({ level: f.level, title: f.title, description: f.description }),
             status: "open" as FindingStatus,
-          }));
+            });
+          });
         if (toInsert.length > 0 && userId) {
           await supabase.from("inspection_findings").insert(toInsert);
         }
