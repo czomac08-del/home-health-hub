@@ -136,6 +136,19 @@ const OnboardingWizard = () => {
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
   const [savingAddress, setSavingAddress] = useState(false);
   const [scanSummary, setScanSummary] = useState<{ sources: number; details: string[] } | null>(null);
+  const [scanPhase, setScanPhase] = useState<"idle" | "connecting" | "extracting" | "complete">("idle");
+  const [scanResults, setScanResults] = useState<{
+    yearBuilt?: number | null;
+    propertyType?: string | null;
+    squareFootage?: number | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    lastSaleDate?: string | null;
+    lastSalePrice?: number | null;
+    parcelId?: string | null;
+    found?: boolean;
+  } | null>(null);
+  const [prefilledFields, setPrefilledFields] = useState<Set<string>>(new Set());
   const [publicRecordsData, setPublicRecordsData] = useState<{
     yearBuilt?: string;
     waterSource?: string;
