@@ -646,6 +646,15 @@ const OnboardingWizard = () => {
         }
         return (
           <div className="flex flex-col gap-6 animate-fade-in">
+            {scanSummary && (data.homeType || data.homeAge) && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs text-foreground">
+                  <p className="font-semibold text-primary">Pre-filled from public records — just verify</p>
+                  <p className="text-muted-foreground mt-0.5">Found data from {scanSummary.sources} source{scanSummary.sources !== 1 ? "s" : ""}. Adjust anything that looks wrong.</p>
+                </div>
+              </div>
+            )}
             <h2 className="text-xl font-bold text-foreground">What type of property do you have?</h2>
             <div className="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1">
               {propertyTypes.map(h => (
