@@ -14,6 +14,8 @@ import { applyInspectionFindingsToSystems } from "@/lib/applyInspectionFindingsT
 import { writeSystemFields } from "@/lib/systemFieldWrite";
 import UnifiedDocumentReview from "./UnifiedDocumentReview";
 import VaultRecordReview from "./VaultRecordReview";
+import UploadStructurePrompt from "./UploadStructurePrompt";
+import { isLegacyAssignment } from "./StructureAssignmentSelector";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -68,8 +70,14 @@ export default function UploadDocumentModal({
   // When uploading from the general Document Vault and the property has more
   // than one system of the detected type, the user must pick which one this
   // document belongs to before extraction is fanned out.
-  const [instanceOptions, setInstanceOptions] = useState<Array<{ id: string; system_name: string; structure: string | null }>>([]);
+  const [instanceOptions, setInstanceOptions] = useState<Array<{ id: string; system_name: string; structure: string | null; status: string | null }>>([]);
   const [selectedInstanceName, setSelectedInstanceName] = useState<string>("");
+  // Currently-selected instance details. Enables Step 2 (structure
+  // assignment) to target the right system_details row and lets the review
+  // header show the full "System — Structure" label.
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [selectedInstanceStructure, setSelectedInstanceStructure] = useState<string | null>(null);
+  const [selectedInstanceLegacy, setSelectedInstanceLegacy] = useState<boolean>(false);
 
   const AI_MESSAGES = [
     "AI is reading your document...",
@@ -124,13 +132,21 @@ export default function UploadDocumentModal({
           id: r.id as string,
           system_name: r.system_name as string,
           structure: ((r.specs as any)?.structure_assignment as string) || null,
+          status: (r.status as string) || null,
         }));
       if (matches.length > 1) {
         setInstanceOptions(matches);
         setSelectedInstanceName("");
+        setSelectedInstanceId(null);
+        setSelectedInstanceStructure(null);
+        setSelectedInstanceLegacy(false);
       } else {
         setInstanceOptions([]);
-        setSelectedInstanceName(matches[0]?.system_name || "");
+        const only = matches[0];
+        setSelectedInstanceName(only?.system_name || "");
+        setSelectedInstanceId(only?.id || null);
+        setSelectedInstanceStructure(only?.structure || null);
+        setSelectedInstanceLegacy(isLegacyAssignment(only?.structure));
       }
     })();
     return () => { cancelled = true; };
@@ -155,6 +171,9 @@ export default function UploadDocumentModal({
     setDetectedSystemName(null);
     setInstanceOptions([]);
     setSelectedInstanceName("");
+    setSelectedInstanceId(null);
+    setSelectedInstanceStructure(null);
+    setSelectedInstanceLegacy(false);
   };
 
   const handleClose = (next: boolean) => {
@@ -850,7 +869,14 @@ export default function UploadDocumentModal({
                 </p>
                 <select
                   value={selectedInstanceName}
-                  onChange={(e) => setSelectedInstanceName(e.target.value)}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setSelectedInstanceName(name);
+                    const opt = instanceOptions.find((o) => o.system_name === name) || null;
+                    setSelectedInstanceId(opt?.id || null);
+                    setSelectedInstanceStructure(opt?.structure || null);
+                    setSelectedInstanceLegacy(isLegacyAssignment(opt?.structure));
+                  }}
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Select a system…</option>
@@ -936,12 +962,48 @@ export default function UploadDocumentModal({
                 "";
 
               const showInstancePicker = instanceOptions.length > 1 && !selectedInstanceName;
+
+              // Step 2 — only triggered for systems instances we know about
+              // (we have an id) that haven't yet been linked to a structure.
+              // Skip when there's no instance row at all (the bare detected
+              // system without a system_details record yet).
+              const needsStructurePrompt =
+                !!selectedInstanceId &&
+                !selectedInstanceStructure &&
+                !showInstancePicker;
+
+              if (!showInstancePicker && needsStructurePrompt) {
+                return (
+                  <UploadStructurePrompt
+                    systemDetailId={selectedInstanceId!}
+                    systemName={targetSystemName || selectedInstanceName}
+                    onResolved={({ value, isLegacy }) => {
+                      setSelectedInstanceStructure(value);
+                      setSelectedInstanceLegacy(isLegacy);
+                      // Update the corresponding instanceOptions entry too so
+                      // the dropdown reflects the new assignment if reopened.
+                      setInstanceOptions((prev) =>
+                        prev.map((o) => (o.id === selectedInstanceId ? { ...o, structure: value } : o)),
+                      );
+                    }}
+                  />
+                );
+              }
+
+              const structureSubtitle = selectedInstanceStructure
+                ? selectedInstanceLegacy
+                  ? `Legacy (${selectedInstanceStructure})`
+                  : selectedInstanceStructure
+                : null;
+
               if (!showInstancePicker && targetSystemName && activeProperty?.id && user?.id && !extractionEmpty) {
                 return (
                   <UnifiedDocumentReview
                     propertyId={activeProperty.id}
                     userId={user.id}
                     systemName={targetSystemName}
+                    subtitle={structureSubtitle}
+                    isLegacy={selectedInstanceLegacy}
                     fileName={file?.name || "Document"}
                     recordId={recordId}
                     extracted={extracted}
