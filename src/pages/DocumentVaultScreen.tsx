@@ -539,7 +539,11 @@ function DocCard({
   };
 
   return (
-    <div className="relative rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors">
+    <div
+      className={`relative rounded-xl border border-border bg-card p-3 hover:border-primary/40 transition-colors ${
+        doc.isLegacyStructure ? "opacity-75" : ""
+      }`}
+    >
       {onDelete && (
         <button
           type="button"
@@ -563,6 +567,30 @@ function DocCard({
             <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
               {CATEGORY_LABEL[doc.category]}
             </span>
+            {doc.structureLabel && (
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                  doc.isLegacyStructure
+                    ? "text-muted-foreground bg-muted line-through"
+                    : "text-foreground bg-secondary"
+                }`}
+                title={doc.isLegacyStructure ? "Legacy / former structure" : "Structure"}
+              >
+                {doc.structureLabel}
+              </span>
+            )}
+            {doc.systemLabel && (
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                  doc.isLegacyStructure
+                    ? "text-muted-foreground bg-muted"
+                    : "text-navy-light bg-secondary/60 border border-border"
+                }`}
+                title="System"
+              >
+                {doc.systemLabel}
+              </span>
+            )}
             {doc.inspectorName && (
               <span className="text-[10px] text-muted-foreground truncate">· {doc.inspectorName}</span>
             )}
