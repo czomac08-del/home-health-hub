@@ -10,6 +10,7 @@ import InspectionNotificationBanner from "@/components/InspectionNotificationBan
 import { DemoBadge, DemoTag } from "@/components/DemoBadge";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import ProUploadButton from "@/components/ProUploadButton";
 import {
   Search, ClipboardList, CheckCircle2, AlertTriangle, Shield, Home, FileText,
   Clock, Zap, TrendingUp, Check, Camera, Plus, Loader2, X, Calendar, ChevronRight,
@@ -421,6 +422,10 @@ const InspectorDashboard = () => {
           <Plug2 className="h-4 w-4 text-primary mx-auto mb-1" />
           <p className="text-[10px] font-semibold text-foreground">Integrations</p>
         </button>
+      </div>
+
+      <div className="mb-4">
+        <ProUploadButton role="inspector" defaultDocType="inspector.inspection_report" label="Upload Inspection Report" />
       </div>
 
       {inspections.length === 0 && showDemo && <DemoBadge onDismiss={dismissDemo} />}
