@@ -1,0 +1,1 @@
+ALTER TABLE public.property_records ALTER COLUMN system_type DROP NOT NULL;
