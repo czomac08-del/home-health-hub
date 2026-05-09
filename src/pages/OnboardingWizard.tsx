@@ -260,6 +260,10 @@ const OnboardingWizard = () => {
     try {
       const google = await loadGoogleMaps();
       if (!google?.maps?.places) {
+        console.warn(
+          "[OnboardingWizard] Google Maps Places unavailable — falling back. " +
+          "Likely cause: API key HTTP-referrer restriction does not include this domain.",
+        );
         setGooglePredictions([]);
         setShowGoogleSuggestions(false);
         return;
@@ -271,11 +275,21 @@ const OnboardingWizard = () => {
         googleSessionTokenRef.current =
           new google.maps.places.AutocompleteSessionToken();
       }
+      // Bias results toward North Carolina (rough bounding box of the state)
+      // so addresses like "556 Sunnyside Shady Rest Rd, Bessemer City, NC"
+      // surface ahead of similar street names elsewhere. `locationBias` is a
+      // soft bias — out-of-state matches are still returned when the input
+      // clearly points elsewhere.
+      const ncBounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(33.8, -84.4), // SW corner
+        new google.maps.LatLng(36.6, -75.4), // NE corner
+      );
       googleAutocompleteRef.current.getPlacePredictions(
         {
           input: q,
           types: ["address"],
           componentRestrictions: { country: "us" },
+          locationBias: ncBounds,
           sessionToken: googleSessionTokenRef.current,
         },
         (predictions: any[] | null, status: string) => {
