@@ -1041,7 +1041,7 @@ export default function UploadDocumentModal({
                 Upload & Analyze
               </Button>
             )}
-            {step === "review" && (
+            {step === "review" && !usingUnifiedReview && (
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={handleSkipExtraction} className="flex-1">
                   Save file only
