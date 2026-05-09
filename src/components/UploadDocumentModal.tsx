@@ -889,6 +889,30 @@ export default function UploadDocumentModal({
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
               <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
+            ) : vaultReviewKind && activeProperty?.id && user?.id && !extractionEmpty ? (
+              <VaultRecordReview
+                kind={vaultReviewKind}
+                propertyId={activeProperty.id}
+                userId={user.id}
+                fileName={file?.name || "Document"}
+                recordId={recordId}
+                extracted={extracted}
+                systemName={detectedSystemName || (defaultSystemType ? defaultSystemType : null)}
+                onSaved={() => {
+                  try {
+                    recordRecentUpload({
+                      id: recordId || "",
+                      name: file?.name || "Document",
+                      uploadedAt: new Date().toISOString(),
+                      category: docType,
+                      url: null,
+                    });
+                  } catch {}
+                  setStep("saved");
+                  setTimeout(() => handleClose(false), 1200);
+                }}
+                onCompleteLater={() => handleClose(false)}
+              />
             ) : (() => {
               // Determine target system name for the unified review.
               const SYSTEM_NAME_MAP: Record<string, string> = {
