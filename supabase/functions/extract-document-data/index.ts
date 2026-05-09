@@ -524,17 +524,30 @@ serve(async (req) => {
       });
     }
 
-    const callAI = (model: string) =>
-      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const callAI = (model: string, timeoutMs: number) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), timeoutMs);
+      return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ model, messages }),
-      });
+        signal: ctrl.signal,
+      }).finally(() => clearTimeout(t));
+    };
 
-    let response = await callAI("google/gemini-2.5-flash");
+    let response: Response;
+    try {
+      response = await callAI("google/gemini-2.5-flash", 75_000);
+    } catch (err) {
+      console.error("Flash call timed out/aborted:", err);
+      return new Response(JSON.stringify({
+        error: "AI extraction timed out. Try a smaller or clearer document.",
+        fallback: true, extracted: {}, confidence: "low",
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     let usedModel = "google/gemini-2.5-flash";
 
     if (!response.ok) {
@@ -592,7 +605,7 @@ serve(async (req) => {
     if (!content || !content.trim()) {
       console.warn("First-pass extraction returned empty; retrying with gemini-2.5-pro vision");
       try {
-        response = await callAI("google/gemini-2.5-pro");
+        response = await callAI("google/gemini-2.5-pro", 60_000);
         usedModel = "google/gemini-2.5-pro";
         rawText = await response.text();
         try { aiResponse = rawText ? JSON.parse(rawText) : {}; } catch { aiResponse = {}; }
