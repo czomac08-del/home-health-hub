@@ -168,6 +168,16 @@ const OnboardingWizard = () => {
   const regridDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [regridSuggestions, setRegridSuggestions] = useState<string[]>([]);
   const [showRegridSuggestions, setShowRegridSuggestions] = useState(false);
+  // ── Google Places Autocomplete (primary) ──
+  const googleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const googleAutocompleteRef = useRef<any>(null);
+  const googlePlacesServiceRef = useRef<any>(null);
+  const googleSessionTokenRef = useRef<any>(null);
+  const [googlePredictions, setGooglePredictions] = useState<
+    { place_id: string; description: string }[]
+  >([]);
+  const [showGoogleSuggestions, setShowGoogleSuggestions] = useState(false);
+  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const initialSkipDone = useRef(false);
 
