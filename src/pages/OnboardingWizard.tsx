@@ -278,6 +278,22 @@ const OnboardingWizard = () => {
               await supabase.from("properties").update(patch as any).eq("id", propertyId);
             }
 
+            // ── Estimate system ages from year built ──
+            if (json?.yearBuilt) {
+              try {
+                const { estimateSystemAgesFromYearBuilt } = await import("@/lib/seedSystems");
+                await estimateSystemAgesFromYearBuilt(propertyId, user.id, Number(json.yearBuilt));
+              } catch (e) { console.warn("estimateSystemAges failed", e); }
+            }
+
+            // ── Apply environmental flags (FEMA/NOAA/EPA) to systems ──
+            if (json?.fema || json?.noaa || json?.epa) {
+              try {
+                const { applyApiFlagsToSystems } = await import("@/lib/seedSystems");
+                await applyApiFlagsToSystems({ propertyId, userId: user.id, fema: json.fema, noaa: json.noaa, epa: json.epa });
+              } catch (e) { console.warn("applyApiFlags failed", e); }
+            }
+
             const filled = new Set<string>();
 
             if (json?.yearBuilt) {
@@ -372,16 +388,17 @@ const OnboardingWizard = () => {
     try {
       const propId = activeProperty.id;
 
-      // update property metadata
-      await supabase.from("properties").update({
-        year_built: data.homeAge,
-      }).eq("id", propId);
+      // Only write year_built from wizard if scan didn't already give us a specific year
+      if (!scanResults?.yearBuilt && data.homeAge) {
+        await supabase.from("properties").update({ year_built: data.homeAge }).eq("id", propId);
+      }
 
       // build system list
       const systems: string[] = [];
       if (data.hvacType && data.hvacType !== "none") systems.push("HVAC");
-      systems.push("Electrical");
-      if (data.waterSource === "well") { systems.push("Well Water"); } else { systems.push("Plumbing"); }
+      systems.push("Electrical Panel");
+      // Water Source is seeded by seedSystemsFromOnboarding. For city water, also add Plumbing.
+      if (data.waterSource !== "well") systems.push("Plumbing");
       if (data.hasGenerator) systems.push("Generator");
       if (data.hasSolar) systems.push("Solar");
       if (data.septicOrSewer === "septic") systems.push("Septic");
