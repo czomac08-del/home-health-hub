@@ -12,6 +12,7 @@ import CivicDashboard from "@/components/CivicDashboard";
 import DataPermanenceBanner from "@/components/DataPermanenceBanner";
 import CommunityImpactSection from "@/components/CommunityImpactSection";
 import DevResetButton from "@/components/DevResetButton";
+import SharedLinksList from "@/components/SharedLinksList";
 import AccountSecuritySection from "@/components/AccountSecuritySection";
 import ReferralDashboard from "@/components/ReferralDashboard";
 
