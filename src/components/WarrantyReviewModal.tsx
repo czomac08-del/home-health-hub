@@ -125,21 +125,28 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
     setSynced(false);
     setSignedUrl(null);
     (async () => {
-      const { data } = await supabase
+      const { data, error: fetchErr } = await supabase
         .from("property_records")
         .select("id, file_name, storage_path, url, ai_extracted_data, property_id")
         .eq("id", recordId)
         .maybeSingle();
+      if (fetchErr) {
+        toast.error("Could not load warranty document.");
+        setLoading(false);
+        return;
+      }
       setRecord(data || null);
       setWarranty(unwrap(data?.ai_extracted_data));
-      // Detect a previous sync by matching the source document path.
-      if (data?.storage_path) {
+      // Detect a previous sync via the canonical source_record_id back-reference.
+      if (data?.id) {
         const { data: existing } = await supabase
           .from("warranties")
           .select("id")
-          .eq("document_path", data.storage_path)
+          .eq("source_record_id", data.id)
           .limit(1);
         if (existing && existing.length > 0) setSynced(true);
+      }
+      if (data?.storage_path) {
         // Also resolve a signed URL up-front so the inline PDF fallback
         // renders immediately if extraction returned nothing.
         const { data: urlData } = await supabase.storage
@@ -187,7 +194,10 @@ export default function WarrantyReviewModal({ open, onOpenChange, recordId, dire
   };
 
   const syncToWarranties = async () => {
-    if (!user || !record) return;
+    if (!user || !record) {
+      toast.error("Document not found — try closing and reopening the warranty.");
+      return;
+    }
     setSyncing(true);
     try {
       // Compute coverage_end if only term is available.
