@@ -611,10 +611,16 @@ const SystemConfigScreen = () => {
         if (s && typeof s.is_applicable === "boolean") setIsApplicable(s.is_applicable);
       }
       if ((data as any).source_tags && typeof (data as any).source_tags === "object") setSourceTags((data as any).source_tags as Record<string, string>);
-      // Restore water type from specs if saved
-      if (displayName.toLowerCase().includes("water source")) {
-        const s = data.specs as Record<string, any>;
-        if (s?.waterType) setWaterType(s.waterType);
+      // Restore water/sewer type selectors from specs if saved
+      {
+        const s = (data.specs as Record<string, any>) || {};
+        const dn = displayName.toLowerCase();
+        if (dn.includes("water source") || dn.includes("well") || dn.includes("plumbing")) {
+          if (s?.waterType) setWaterType(s.waterType);
+        }
+        if (dn.includes("sewer") || dn.includes("waste")) {
+          if (s?.systemType) setSewerType(s.systemType);
+        }
       }
       if (data.notes) setNotes(data.notes);
       if (data.location_in_home) setLocation(data.location_in_home);
