@@ -222,12 +222,11 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
   };
 
-  const [scanning, setScanning] = useState(false);
-
-  /** Save address, AWAIT public-records scan, pre-fill wizard answers, then advance. */
+  /** Save address, run blocking public-records scan with animated phases, pre-fill wizard. */
   const saveAddressAndContinue = async () => {
     if (!user || !selectedMatch) return;
-    setSavingAddress(true);
+
+    setScanPhase("connecting");
     try {
       const { street, city, state, zip } = parseMatchedAddress(selectedMatch.matchedAddress);
       const insertRow = {
@@ -241,7 +240,6 @@ const OnboardingWizard = () => {
         county: selectedMatch.county || null,
         county_fips: selectedMatch.countyFips || null,
       };
-      // Use .select("id") so we get the new property's ID back for the patch
       const { data: inserted, error } = await supabase
         .from("properties")
         .insert(insertRow as any)
@@ -249,12 +247,11 @@ const OnboardingWizard = () => {
         .single();
       if (error) throw error;
       await refreshProperties();
-
       const propertyId = inserted?.id;
 
-      // ── BLOCKING scan: wait for public-records results before advancing ──
-      setSavingAddress(false);
-      setScanning(true);
+      await new Promise(r => setTimeout(r, 800));
+      setScanPhase("extracting");
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token && propertyId) {
@@ -264,48 +261,50 @@ const OnboardingWizard = () => {
           );
           if (res.ok) {
             const json = await res.json();
+            setScanResults(json);
 
-            // ── Patch property row with everything we found ──
             const patch: Record<string, unknown> = {};
-            if (json?.yearBuilt)     patch.year_built      = String(json.yearBuilt);
-            if (json?.squareFootage) patch.square_footage  = json.squareFootage;
-            if (json?.propertyType)  patch.property_type   = json.propertyType;
-            if (json?.bedrooms  != null) patch.bedrooms    = json.bedrooms;
-            if (json?.bathrooms != null) patch.bathrooms   = json.bathrooms;
-            if (json?.lotSize)       patch.lot_size        = json.lotSize;
-            if (json?.lastSaleDate)  patch.last_sale_date  = json.lastSaleDate;
-            if (json?.lastSalePrice) patch.last_sale_price = json.lastSalePrice;
-            if (json?.parcelId)      patch.parcel_id       = json.parcelId;
-            if (json?.rentcastId)    patch.rentcast_id     = json.rentcastId;
-
+            if (json?.yearBuilt)        patch.year_built      = String(json.yearBuilt);
+            if (json?.squareFootage)    patch.square_footage  = json.squareFootage;
+            if (json?.propertyType)     patch.property_type   = json.propertyType;
+            if (json?.bedrooms  != null) patch.bedrooms       = json.bedrooms;
+            if (json?.bathrooms != null) patch.bathrooms      = json.bathrooms;
+            if (json?.lotSize)          patch.lot_size        = json.lotSize;
+            if (json?.lastSaleDate)     patch.last_sale_date  = json.lastSaleDate;
+            if (json?.lastSalePrice)    patch.last_sale_price = json.lastSalePrice;
+            if (json?.parcelId)         patch.parcel_id       = json.parcelId;
+            if (json?.rentcastId)       patch.rentcast_id     = json.rentcastId;
             if (Object.keys(patch).length > 0) {
               await supabase.from("properties").update(patch as any).eq("id", propertyId);
             }
 
-            // ── Pre-fill wizard answers so user just verifies ──
+            const filled = new Set<string>();
+
             if (json?.yearBuilt) {
               const yr = Number(json.yearBuilt);
               let ageRange = "Built before 1950";
-              if (yr >= 2020) ageRange = "2020 or newer";
+              if (yr >= 2020)      ageRange = "2020 or newer";
               else if (yr >= 2010) ageRange = "2010–2020";
               else if (yr >= 1990) ageRange = "1990–2010";
               else if (yr >= 1970) ageRange = "1970–1990";
               else if (yr >= 1950) ageRange = "1950–1970";
               update("homeAge", ageRange);
+              filled.add("homeAge");
             }
 
             if (json?.propertyType) {
               const pt = (json.propertyType as string).toLowerCase();
               let homeTypeId = "";
               if (pt.includes("single") || pt === "residential") homeTypeId = "single_family";
-              else if (pt.includes("condo"))                     homeTypeId = "condo";
+              else if (pt.includes("condo"))                      homeTypeId = "condo";
               else if (pt.includes("townhouse") || pt.includes("townhome")) homeTypeId = "townhouse";
               else if (pt.includes("multi") || pt.includes("duplex"))       homeTypeId = "multi_family";
               else if (pt.includes("mobile") || pt.includes("manufactured")) homeTypeId = "manufactured";
-              if (homeTypeId) update("homeType", homeTypeId);
+              if (homeTypeId) { update("homeType", homeTypeId); filled.add("homeType"); }
             }
 
-            // ── Build scan summary badge ──
+            setPrefilledFields(filled);
+
             const found: string[] = [];
             if (json?.found) found.push("Property records");
             if (selectedMatch.countyFips) {
@@ -318,16 +317,15 @@ const OnboardingWizard = () => {
           }
         }
       } catch (scanErr) {
-        console.warn("Public records scan failed (non-blocking):", scanErr);
-        // Don't block the user — just advance without pre-fill
-      } finally {
-        setScanning(false);
+        console.warn("Scan error (non-blocking):", scanErr);
       }
 
+      setScanPhase("complete");
+      await new Promise(r => setTimeout(r, 2000));
       setStep(2);
     } catch (e) {
       toast.error("Could not save your address. Please try again.");
-      setSavingAddress(false);
+      setScanPhase("idle");
     }
   };
 
