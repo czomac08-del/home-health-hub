@@ -707,6 +707,27 @@ const SystemConfigScreen = () => {
     if (usesApplicabilityGate) setGateLoaded(true);
   }, [usesApplicabilityGate]);
 
+  // Load sibling system rows of the same category + the property flag so we
+  // can prompt the user to route uploads to the correct instance when the
+  // home has multiple of the same system.
+  useEffect(() => {
+    if (!user || !activeProperty || !displayName) return;
+    (async () => {
+      const baseTerm = displayName.replace(/\s*\d+$/, "").trim();
+      const { data } = await supabase
+        .from("system_details")
+        .select("id, system_name, instance_name")
+        .eq("property_id", activeProperty.id)
+        .ilike("system_name", `${baseTerm}%`);
+      const rows = (data || []).map((r: any) => ({
+        id: r.id as string,
+        name: (r.instance_name as string) || (r.system_name as string),
+      }));
+      setSiblingSystems(rows);
+      setHasAdditionalStructures(!!(activeProperty as any).has_additional_structures);
+    })();
+  }, [user, activeProperty, displayName]);
+
   const saveIsApplicable = useCallback(async (next: boolean) => {
     setIsApplicable(next);
     if (!user || !activeProperty) return;
