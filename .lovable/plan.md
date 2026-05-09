@@ -1,64 +1,49 @@
-## Goal
+## Reality check
 
-Make every document upload — onboarding, Document Vault, system card, FAB — funnel through one identical AI-extraction → review → save flow. No upload point silently writes fields. The document is always saved to the vault even if review is skipped.
+I audited the codebase to find every upload touchpoint by role. Today the **only place documents actually get uploaded** is `UploadDocumentModal` (used by Document Vault, FAB, DocumentHub, system cards) plus the listing pre-fill in `OnboardingWizard`. The Contractor / Realtor / Inspector / Investor dashboards manage records (jobs, listings, inspections, flip projects) but don't have document upload UI yet — they `INSERT` into `contractor_jobs`, `realtor_listings`, `inspections`, `flip_projects`. None of them call `extract-document-data` or `storage.upload`.
 
-## Current state (what exists)
+That changes the scope significantly. The spec describes upload behavior across roles, but most of the role-specific upload UIs **don't exist yet**. I shouldn't pretend to wire all of them up in one pass — half would be net-new screens, not refactors.
 
-- `UploadDocumentModal.tsx` (~1,000 lines) — the most complete flow today: handles upload, calls `extract-document-data`, shows multi-instance picker, renders `AiExtractionResults`, calls `writeSystemFields` on confirm.
-- `DocumentHub.tsx`, `UploadDocumentFab.tsx`, `DocumentVaultScreen.tsx` — entry points that already open `UploadDocumentModal` (vault path is consistent).
-- `OnboardingWizard.tsx` — has its own inline upload steps that call extraction directly and write fields without a unified review screen.
-- `systemFieldWrite.ts` — already does conflict detection and trust-ranked writes.
-- `documentCredit.ts` — already classifies extraction quality (`clear` / `partial` / `trouble` / `none`).
-- `AiExtractionResults.tsx` — currently a 4-tier component; not aligned with the spec the user wants (✅ / ✏️ / ⚠️ per-field rows + confidence header + Save / Complete Later).
+## Recommended phased rollout
 
-## Target unified flow
+### Phase 1 (now) — Per-doc-type review screens for the existing modal
+The unified review I just shipped only handles "system spec" docs (HVAC, septic, etc.). It needs siblings for the other doc types so the same flow works regardless of what the user uploaded:
 
-1. **Upload**: file uploaded to storage + `documents` row created → record exists in vault immediately.
-2. **Extract**: call `extract-document-data` edge function (already shared).
-3. **Assess**: run `assessExtraction` → confidence tier (`clear` / `partial` / `trouble`).
-4. **Review screen** (single component, used everywhere):
-   - Header banner: "AI read this clearly / partially / had trouble" + colored.
-   - System target line ("Saving to: Main House — Septic"). If multi-instance, structure picker.
-   - List of expected spec fields for the document's system type (driven by `systemSpecFields.ts`), each row in one of three states:
-     - ✅ **Confirmed** — pre-filled value, editable inline.
-     - ✏️ **Empty** — AI didn't find it; input box, optional.
-     - ⚠️ **Conflict** — current value vs new value; radio choice required to save that field (otherwise skipped).
-   - Footer: **Save to [System Name]** (writes only filled rows; conflicts respect user's choice) and **Complete Later** (closes; vault row already exists and is tagged `needs_review`).
-5. **Write**: confirmed/edited fields go through `writeSystemFields` with `OWNER_PROVIDED` for any user-edited row, `DOCUMENT_EXTRACTED` for accepted-as-is rows. Empty rows are skipped.
-6. **Mark vault entry**: if user clicks Complete Later or leaves blanks, set `needs_review = true` on the document so it shows the existing "Review & Complete" badge in the vault.
+| Doc type        | Writes to                  | Status today              |
+|-----------------|----------------------------|---------------------------|
+| System specs    | `system_details`            | Done last turn            |
+| Warranty        | `warranties`               | Auto-syncs silently — needs review screen |
+| Insurance       | `insurance_policies` (?)    | Needs review screen        |
+| Receipt/invoice | `maintenance_history`       | Needs review screen        |
+| Inspection      | `system_details` + timeline | Already has `InspectionFindingsReview` (keep) |
+| Public records  | Same as homeowner uploads + "From Public Records" tag | Add tag in review header |
 
-## Files to add/edit
+**Work**: extend `UnifiedDocumentReview` (or add per-type review components that share the same shell — confidence header, ✅/✏️/⚠️ rows, Save / Complete Later) for warranty, insurance, and receipt. Wire `UploadDocumentModal` to pick the right review based on `docType`. Delete the silent auto-sync in `handleConfirm` for warranties (already exists) so the user reviews fields first.
 
-**New**
-- `src/components/UnifiedDocumentReview.tsx` — the single review UI described above. Props: `{ propertyId, userId, systemName, systemType, fileName, extracted, conflicts, confidenceTier, onSaved, onCompleteLater }`. Internally builds the row list from `systemSpecFields[systemType]` + extracted values, fetches current `system_details` to detect conflicts, renders ✅ / ✏️ / ⚠️ states, calls `writeSystemFields`.
-- `src/lib/documentReviewFlow.ts` — small helper: `prepareReview(extracted, currentSpecs)` returning `{ confirmed, empty, conflicts }` row buckets, plus a `markDocumentNeedsReview(documentId)` helper.
+### Phase 2 — Pro role uploads piggyback on the same modal
+Add an "Attach Documents" action on each Pro dashboard's record screens (`ContractorJobDetail`, `RealtorListingDetail`, `InspectionChecklistScreen`, `FlipProjectDetail`) that opens `UploadDocumentModal` pre-configured with:
+- `defaultDocType` (estimate / invoice / disclosure / appraisal / bid…)
+- A new `linkedRecord` prop: `{ table: "contractor_jobs" | "realtor_listings" | "inspections" | "flip_projects", id: string }`
+After save, write a foreign-key row into a new `record_attachments` table linking the property record and the role-specific record. Same review flow, same confidence indicators.
 
-**Edit**
-- `src/components/UploadDocumentModal.tsx` — replace the bespoke review block + final confirm step with `<UnifiedDocumentReview />`. Keep upload + multi-instance picker logic; delete the duplicated row-rendering code that's now in the new component.
-- `src/pages/OnboardingWizard.tsx` — every place that currently extracts + writes silently is updated to (a) save the document to the vault, (b) open `UnifiedDocumentReview` in a modal/sheet, (c) advance the wizard either on Save or Complete Later. Keep wizard navigation untouched otherwise.
-- `src/components/DocumentHub.tsx`, `UploadDocumentFab.tsx` — already use `UploadDocumentModal`; verify they still work after the modal swap. No logic change expected.
-- `src/pages/DocumentVaultScreen.tsx` — vault uploads already use `UploadDocumentModal`. Ensure "Review & Complete" button on existing low-confidence documents opens `UnifiedDocumentReview` directly with the stored extracted JSON.
+**Work**: new doc-type review components for estimate / invoice / disclosure / appraisal / bid; new `record_attachments` table; "Attach" button + modal trigger on each Pro detail screen.
 
-**Leave as-is**
-- `extract-document-data` edge function (already shared).
-- `systemFieldWrite.ts`, `documentCredit.ts`, `StructureAssignmentSelector.tsx`.
-- `AiExtractionResults.tsx` stays but is no longer used by the upload flow (used elsewhere for inline AI hints). Mark for later cleanup.
+### Phase 3 — Cross-role sharing + notifications
+- When a contractor / inspector / realtor uploads a document for a property that has a homeowner with a CHIQ account, prompt: "Share a copy with the homeowner?" (default on). On confirm, copy the `property_records` row (or grant read access) to the homeowner's vault.
+- Inspector uploads emit a notification via the existing `notify_property_connections` RPC (already used for inspection reports — extend to other inspector docs).
+- Surface "Shared by [role]" badges in the homeowner's vault.
 
-## Non-goals
+**Work**: a `property_record_shares` table (or reuse `property_shares`); confirm UI in the modal; vault badge + filter; notification fan-out.
 
-- No DB schema changes. `documents` table already has fields for `extracted_fields`, `extraction_confidence`, and a "needs review" flag (or we use existing `extraction_tier` from the credit work).
-- No edge function changes.
-- No styling overhaul beyond the new review component.
+### Phase 4 — Universal rules audit
+- Audit any code path that writes to `system_details` / `warranties` / `insurance_policies` from a document and confirm none of them silently overwrite. (Already done for `system_details` via `writeSystemFields`. Need the same for `warranties` and insurance.)
+- Confirm "deletion never removes extracted field data" — verify the warranty/insurance vaults don't cascade-delete on document removal.
+- Add the "From Public Records" badge in the review header when `source = "public_records"`.
 
-## Risks / things I'll verify while implementing
+## My recommendation
 
-- Onboarding has multiple distinct upload spots — I'll audit each before swapping.
-- `writeSystemFields` uses `OWNER_PROVIDED` to mean "user typed it." I'll pass that explicitly for any field the user edits in the review screen so it never gets auto-overwritten later.
-- The "Complete Later" path must not roll back the vault row.
+Start with **Phase 1** in the next message — it's a self-contained refactor of `UploadDocumentModal` and adds 2–3 new review components. It immediately gives every homeowner upload the unified review the user asked for, which is the bulk of traffic today. Phases 2–4 each deserve their own session because they involve schema changes and new screens.
 
-## Acceptance check
+If you want me to do all four in one go I will, but the response will be long, the diff will be large, and the risk of something subtle breaking in your B2B dashboards goes up. I'd rather ship Phase 1 cleanly, you verify it on /documents, then we move on.
 
-- Uploading the same septic PDF from (a) onboarding, (b) vault, (c) a system card produces an identical review screen.
-- Saving with blanks does not wipe existing values.
-- Conflict rows force a choice; skipping leaves the existing value.
-- Closing the review without saving still leaves the document in the vault tagged "Needs Review."
+Tell me which phase to execute next (or "all four") and I'll proceed.
