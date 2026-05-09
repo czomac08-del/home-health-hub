@@ -4219,6 +4219,59 @@ export type Database = {
           },
         ]
       }
+      system_pending_verifications: {
+        Row: {
+          created_at: string
+          field_path: string
+          id: string
+          property_id: string
+          resolution: string | null
+          resolved_at: string | null
+          source_a: string | null
+          source_b: string | null
+          system_name: string
+          user_id: string
+          value_a: string | null
+          value_b: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_path: string
+          id?: string
+          property_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          source_a?: string | null
+          source_b?: string | null
+          system_name: string
+          user_id: string
+          value_a?: string | null
+          value_b?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_path?: string
+          id?: string
+          property_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          source_a?: string | null
+          source_b?: string | null
+          system_name?: string
+          user_id?: string
+          value_a?: string | null
+          value_b?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_pending_verifications_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_photos: {
         Row: {
           ai_analysis_result: Json | null
