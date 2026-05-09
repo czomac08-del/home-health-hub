@@ -330,7 +330,7 @@ function classifyTier(result: ExtractionResult, source: string): {
 
   // Check each field
   for (const [key, field] of Object.entries(result.fields)) {
-    if (field.value == null || field.value === "") continue;
+    if (!field || field.value == null || field.value === "") continue;
 
     const isSafety = SAFETY_CRITICAL_FIELDS.has(key);
 
