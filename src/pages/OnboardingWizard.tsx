@@ -214,33 +214,32 @@ const OnboardingWizard = () => {
       return;
     }
     try {
-      const { data, error } = await supabase.functions.invoke("regrid-typeahead", {
-        body: null,
-        // We pass the query via the URL so we can keep the function GET-style.
-        method: "GET" as any,
-      } as any).catch(() => ({ data: null, error: null } as any));
-      // The supabase-js invoke helper doesn't expose query params directly,
-      // so use a direct fetch to the function URL with the user's token.
-      let suggestions: string[] = (data as any)?.suggestions || [];
-      if (!Array.isArray(suggestions) || suggestions.length === 0) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const url = `https://${projectRef}.supabase.co/functions/v1/regrid-typeahead?query=${encodeURIComponent(q)}`;
-        const res = await fetch(url, {
-          headers: session?.access_token
+      // The supabase-js invoke helper doesn't pass URL query params for GET,
+      // so call the edge function directly. The function tolerates anonymous
+      // calls — REGRID_API_KEY stays on the server either way.
+      const { data: { session } } = await supabase.auth.getSession();
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const endpoint = `https://${projectRef}.supabase.co/functions/v1/regrid-typeahead?query=${encodeURIComponent(q)}`;
+      const res = await fetch(endpoint, {
+        headers: {
+          ...(session?.access_token
             ? { Authorization: `Bearer ${session.access_token}` }
-            : {},
-        });
-        if (res.ok) {
-          const json = await res.json().catch(() => ({}));
-          suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
-        }
+            : apiKey
+              ? { Authorization: `Bearer ${apiKey}` }
+              : {}),
+          ...(apiKey ? { apikey: apiKey } : {}),
+        },
+      });
+      let suggestions: string[] = [];
+      if (res.ok) {
+        const json = await res.json().catch(() => ({}));
+        suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
       }
       setRegridSuggestions(suggestions);
       setShowRegridSuggestions(suggestions.length > 0);
       // Hide the legacy geocode dropdown when Regrid has results to show.
       if (suggestions.length > 0) setShowSuggestions(false);
-      void error;
     } catch {
       setRegridSuggestions([]);
       setShowRegridSuggestions(false);
