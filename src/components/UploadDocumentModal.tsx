@@ -248,6 +248,60 @@ export default function UploadDocumentModal({
         }
       }
 
+      // Fan extracted data out to system_details when an "Other" upload was
+      // identified by AI as belonging to a known system category.
+      if (detectedSystem && detectedSystem !== "other" && user && activeProperty?.id && recordId) {
+        try {
+          const systemNameMap: Record<string, string> = {
+            water_filtration: "Water Filtration",
+            plumbing: "Plumbing",
+            hvac: "HVAC",
+            electrical: "Electrical",
+            structural: "Structural",
+            roof: "Roof",
+            appliance: "Appliances",
+            water_heater: "Water Heater",
+            well: "Well",
+            septic: "Septic",
+          };
+          const targetSystemName = detectedSystemName || systemNameMap[detectedSystem] || detectedSystem;
+
+          const { data: existingSystems } = await supabase
+            .from("system_details")
+            .select("id, system_name, brand, model, notes")
+            .eq("property_id", activeProperty.id)
+            .eq("user_id", user.id)
+            .ilike("system_name", `%${systemNameMap[detectedSystem] || detectedSystem}%`)
+            .limit(1);
+
+          const w = extracted as any;
+          const updatePayload: any = {};
+          if (w.brand && !existingSystems?.[0]?.brand) updatePayload.brand = w.brand;
+          if (w.model) updatePayload.model = w.model;
+          if (w.serial) updatePayload.serial_number = w.serial;
+          if (w.install_date) updatePayload.install_date = w.install_date;
+          if (w.notes) updatePayload.notes = w.notes;
+
+          if (existingSystems && existingSystems.length > 0) {
+            if (Object.keys(updatePayload).length > 0) {
+              await supabase
+                .from("system_details")
+                .update(updatePayload)
+                .eq("id", existingSystems[0].id);
+            }
+          } else {
+            await supabase.from("system_details").insert({
+              property_id: activeProperty.id,
+              user_id: user.id,
+              system_name: targetSystemName,
+              ...updatePayload,
+            });
+          }
+        } catch (sysErr) {
+          console.warn("System fan-out failed (non-fatal):", sysErr);
+        }
+      }
+
       // Fan extracted findings out to the Systems list so HVAC/Roof/etc. flip
       // from grey "Not yet documented" to documented (or flagged) immediately.
       if (docType === "inspection_report" && activeProperty?.id && user?.id && inspectionReport?.findings?.length) {
