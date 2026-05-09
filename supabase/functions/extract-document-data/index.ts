@@ -25,19 +25,19 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
 }`,
-  septic: `Extract these fields from this septic system document (install record, pump receipt, inspection, or permit). For each field, rate confidence 0-100. Return JSON only:
+  septic: `Extract these fields from this septic system document (septic inspection, pump-out record, install record, or septic permit). For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
     "tankSize": { "value": number or null, "confidence": 90 },
     "tankCount": { "value": number or null, "confidence": 85 },
-    "systemType": { "value": "conventional|aerobic|mound|chamber" or null, "confidence": 90 },
+    "systemType": { "value": "conventional|aerobic|mound|chamber|sand_filter|drip|pressure_dosed|cesspool|holding_tank|other" or null, "confidence": 90 },
     "lastPumpDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
     "drainFieldCondition": { "value": "good|fair|poor|failing" or null, "confidence": 80 },
     "permitNumber": { "value": string or null, "confidence": 90 },
     "installDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
     "technicianName": { "value": string or null, "confidence": 80 },
-    "company": { "value": string or null, "confidence": 85 },
-    "conditionRating": { "value": "pass|fail|needs attention" or null, "confidence": 80 },
+    "companyName": { "value": string or null, "confidence": 85 },
+    "conditionRating": { "value": 1 | 2 | 3 | 4 | 5 | null, "confidence": 80 },
     "propertyAddress": { "value": string or null, "confidence": 95 },
     "notes": { "value": string or null, "confidence": 70 }
   },
@@ -47,7 +47,7 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "possible_values": { "field_name": ["option1", "option2"] }
 }
 
-tankSize is in gallons. Only return values explicitly present in the document — do not infer.`,
+tankSize is in gallons. companyName is the servicing/installing company. conditionRating is an integer 1-5 (1=failing, 2=poor, 3=fair, 4=good, 5=excellent) — infer from condition language only when explicit (e.g. "system in excellent condition" → 5, "needs replacement" → 1); otherwise return null. Only return values explicitly present in the document — do not invent values.`,
   permit: `Extract these fields from this building/construction permit. For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
@@ -170,6 +170,10 @@ EXTRACTION_PROMPTS.sewer_and_waste = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS["sewer-and-waste"] = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_system = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.sewer = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_inspection = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_pump_out = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_pumpout = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_permit = EXTRACTION_PROMPTS.septic;
 
 // Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
 // used as a fallback in onboarding when public records aren't available for
