@@ -58,6 +58,7 @@ interface WizardData {
   hasGenerator: boolean;
   hasSolar: boolean;
   septicOrSewer: string;
+  hasMultipleSeptic: boolean;
   hasGarage: boolean;
   garageDoors: number;
   hasPool: boolean;
