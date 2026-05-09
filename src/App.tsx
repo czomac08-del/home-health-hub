@@ -31,6 +31,7 @@ import PropertyDetailScreen from "./pages/PropertyDetailScreen";
 import HandoverWizardScreen from "./pages/HandoverWizardScreen";
 import SellerDisclosureScreen from "./pages/SellerDisclosureScreen";
 import SharedPropertyView from "./pages/SharedPropertyView";
+import JobShareScreen from "./pages/JobShareScreen";
 import ClaimHomeScreen from "./pages/ClaimHomeScreen";
 import RealtorDashboard from "./pages/RealtorDashboard";
 import InspectorDashboard from "./pages/InspectorDashboard";
@@ -80,7 +81,7 @@ import SEO from "./components/SEO";
 const queryClient = new QueryClient();
 
 const hideNavRoutes = ["/", "/auth", "/join", "/forgot-password", "/reset-password", "/verify-email", "/two-factor", "/scanning", "/report", "/welcome", "/onboarding", "/privacy-reminder", "/pricing", "/terms", "/privacy", "/privacy-rights", "/legal-onboarding", "/subto", "/contrarian", "/partners", "/centriq-alternative", "/blog", "/unsubscribe"];
-const hideNavPrefixes = ["/inspection-review/", "/blog/", "/share/"];
+const hideNavPrefixes = ["/inspection-review/", "/blog/", "/share/", "/job/", "/inspection/"];
 
 /**
  * Routes that have their own per-page SEO and should be crawled.
