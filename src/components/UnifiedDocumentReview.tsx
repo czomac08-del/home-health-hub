@@ -15,6 +15,10 @@ interface Props {
   propertyId: string;
   userId: string;
   systemName: string;
+  /** Extra context shown next to the system name, e.g. "Garage" or "Legacy (Former Trailer)". */
+  subtitle?: string | null;
+  /** Render the header in the legacy/warning style. */
+  isLegacy?: boolean;
   fileName: string;
   recordId: string | null;
   extracted: Record<string, any>;
@@ -35,6 +39,8 @@ export default function UnifiedDocumentReview({
   propertyId,
   userId,
   systemName,
+  subtitle,
+  isLegacy,
   fileName,
   recordId,
   extracted,
@@ -168,8 +174,12 @@ export default function UnifiedDocumentReview({
       {/* Target system */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <FileText className="h-3.5 w-3.5" />
-        Saving <span className="font-medium text-foreground">{fileName}</span> to
-        <span className="font-semibold text-foreground">{systemName}</span>
+        Reviewing: <span className="font-medium text-foreground">{fileName}</span>
+        <span className="text-muted-foreground/70">→</span>
+        <span className={`font-semibold ${isLegacy ? "text-warning" : "text-foreground"}`}>
+          {systemName}
+          {subtitle ? <span className="font-normal text-muted-foreground"> — {subtitle}</span> : null}
+        </span>
       </div>
 
       {/* Field rows */}
