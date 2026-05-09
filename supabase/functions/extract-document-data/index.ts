@@ -153,6 +153,102 @@ CRITICAL RULES:
 EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
 EXTRACTION_PROMPTS.inspection = INSPECTION_REPORT_PROMPT;
 
+// Service & receipt-style extraction prompts so the document upload pipeline
+// can flow real values straight into the right system_details row.
+EXTRACTION_PROMPTS.hvac_service = `Extract HVAC service-record details from this document. For each field, rate confidence 0-100. Return JSON only:
+{
+  "fields": {
+    "service_date": { "value": "YYYY-MM-DD" or null, "confidence": 90 },
+    "company_name": { "value": string or null, "confidence": 85 },
+    "technician": { "value": string or null, "confidence": 80 },
+    "work_performed": { "value": string or null, "confidence": 80 },
+    "parts_replaced": { "value": string or null, "confidence": 75 },
+    "model_number": { "value": string or null, "confidence": 85 },
+    "serial_number": { "value": string or null, "confidence": 85 },
+    "refrigerant_type": { "value": string or null, "confidence": 80 },
+    "next_service_date": { "value": "YYYY-MM-DD" or null, "confidence": 70 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
+EXTRACTION_PROMPTS.water_heater_service = `Extract water heater service or install record details. Rate confidence 0-100. JSON only:
+{
+  "fields": {
+    "service_date": { "value": "YYYY-MM-DD" or null, "confidence": 90 },
+    "brand": { "value": string or null, "confidence": 85 },
+    "model": { "value": string or null, "confidence": 85 },
+    "serial": { "value": string or null, "confidence": 85 },
+    "capacity_gallons": { "value": number or null, "confidence": 85 },
+    "fuel_type": { "value": "gas|electric|propane|tankless|heat_pump|null", "confidence": 80 },
+    "install_date": { "value": "YYYY-MM-DD" or null, "confidence": 80 },
+    "work_performed": { "value": string or null, "confidence": 75 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
+EXTRACTION_PROMPTS.roof_inspection = `Extract roof inspection details. Rate confidence 0-100. JSON only:
+{
+  "fields": {
+    "inspection_date": { "value": "YYYY-MM-DD" or null, "confidence": 90 },
+    "inspector_name": { "value": string or null, "confidence": 85 },
+    "roof_age_years": { "value": number or null, "confidence": 75 },
+    "material": { "value": string or null, "confidence": 85 },
+    "condition": { "value": "good|fair|poor|failing|null", "confidence": 80 },
+    "issues_found": { "value": string or null, "confidence": 80 },
+    "estimated_remaining_life": { "value": "years remaining (number or text) or null", "confidence": 70 },
+    "repair_recommendations": { "value": string or null, "confidence": 75 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
+EXTRACTION_PROMPTS.appliance_receipt = `Extract details from an appliance purchase receipt. Rate confidence 0-100. JSON only:
+{
+  "fields": {
+    "purchase_date": { "value": "YYYY-MM-DD" or null, "confidence": 90 },
+    "store_name": { "value": string or null, "confidence": 85 },
+    "brand": { "value": string or null, "confidence": 90 },
+    "model": { "value": string or null, "confidence": 85 },
+    "serial": { "value": string or null, "confidence": 80 },
+    "price": { "value": number or null, "confidence": 85 },
+    "warranty_term_years": { "value": number or null, "confidence": 75 },
+    "warranty_expiry": { "value": "YYYY-MM-DD" or null, "confidence": 75 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
+EXTRACTION_PROMPTS.insurance_policy = `Extract details from a homeowner's insurance declarations page. Rate confidence 0-100. JSON only:
+{
+  "fields": {
+    "provider_name": { "value": string or null, "confidence": 90 },
+    "policy_number": { "value": string or null, "confidence": 90 },
+    "coverage_start": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "coverage_end": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "dwelling_coverage": { "value": number or null, "confidence": 85 },
+    "personal_property_coverage": { "value": number or null, "confidence": 80 },
+    "liability_coverage": { "value": number or null, "confidence": 80 },
+    "deductible": { "value": number or null, "confidence": 85 },
+    "flood_coverage": { "value": true | false | null, "confidence": 80 },
+    "earthquake_coverage": { "value": true | false | null, "confidence": 80 },
+    "premium_annual": { "value": number or null, "confidence": 85 }
+  },
+  "overall_confidence": 85,
+  "document_quality": "good|fair|poor|damaged",
+  "unclear_fields": [],
+  "possible_values": {}
+}`;
+
 // Safety-critical fields that require human confirmation when unclear
 const SAFETY_CRITICAL_FIELDS = new Set([
   "depth_ft", "pump_gpm", "static_water_level_ft", // well safety

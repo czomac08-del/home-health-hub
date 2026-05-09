@@ -347,6 +347,36 @@ const SystemConfigScreen = () => {
       const { data: signedData } = await supabase.storage.from("system-photos").createSignedUrl(path, 3600);
       if (!signedData?.signedUrl) { toast.error("Failed to get photo URL"); continue; }
       setPhotos((prev) => [...prev, { url: signedData.signedUrl, label: photoLabel, storagePath: path }]);
+
+      // Fire-and-forget AI analysis to auto-fill empty fields.
+      (async () => {
+        try {
+          const fileBuf = await file.arrayBuffer();
+          let binary = ""; const bytes = new Uint8Array(fileBuf); const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+          const dataUrl = `data:${file.type || "image/jpeg"};base64,${btoa(binary)}`;
+          const { data } = await supabase.functions.invoke("ai-scan", {
+            body: { mode: "full_unit", imageBase64: dataUrl },
+          });
+          const r = (data?.result ?? data) as any;
+          if (!r) return;
+          let touched = false;
+          const setIfEmpty = (cur: string, val: any, setter: (v: string) => void) => {
+            if (!cur && val) { setter(String(val)); touched = true; }
+          };
+          setIfEmpty(brand, r.manufacturer || r.brand, setBrand);
+          setIfEmpty(model, r.modelNumber || r.model || r.modelName, setModel);
+          setIfEmpty(serial, r.serialNumber || r.serial, setSerial);
+          setIfEmpty(installDate, r.manufactureYear ? `${r.manufactureYear}-01-01` : "", setInstallDate);
+          if (touched) {
+            setSourceTags((prev) => ({ ...prev, ...(r.manufacturer && !brand ? { brand: "AI_INFERRED" } : {}), ...(r.modelNumber && !model ? { model: "AI_INFERRED" } : {}) }));
+            setAiPhotoBanner(true);
+            toast.info("IQ identified details from your photo — review below");
+          }
+        } catch (err) {
+          console.warn("[SystemConfig] photo auto-analyze failed", err);
+        }
+      })();
     }
   };
 

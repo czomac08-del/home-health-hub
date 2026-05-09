@@ -328,6 +328,22 @@ const OnboardingWizard = () => {
         await supabase.from("system_details").insert(newSystems);
       }
 
+      // Seed standard system rows + prefill known answers (water source, HVAC, etc.)
+      try {
+        const { seedSystemsFromOnboarding } = await import("@/lib/seedSystems");
+        await seedSystemsFromOnboarding(propId, user.id, {
+          waterSource: data.waterSource,
+          knowsFilterLocation: data.knowsFilterLocation,
+          knowsWaterShutoff: data.knowsWaterShutoff,
+          hvacType: data.hvacType,
+          fuelType: data.fuelType,
+          septicOrSewer: data.septicOrSewer,
+          homeAge: data.homeAge,
+        });
+      } catch (e) {
+        console.warn("seedSystemsFromOnboarding failed", e);
+      }
+
       await refreshProperties();
       navigate("/dashboard");
       toast.success("ComingHomeIQ setup complete!");
