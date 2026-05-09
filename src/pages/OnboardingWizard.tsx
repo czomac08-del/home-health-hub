@@ -265,6 +265,7 @@ const OnboardingWizard = () => {
       if (error) throw error;
       await refreshProperties();
       const propertyId = inserted?.id;
+      if (propertyId) setCreatedPropertyId(propertyId);
 
       await new Promise(r => setTimeout(r, 800));
       setScanPhase("extracting");
