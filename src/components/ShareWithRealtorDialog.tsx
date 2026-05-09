@@ -31,50 +31,28 @@ export default function ShareWithRealtorDialog({
     }
     setBusy(true);
     try {
-      // Compute expires_at — null for "never" caps at 10 years to satisfy NOT NULL
-      const days = expiry === "never" ? 365 * 10 : parseInt(expiry, 10);
-      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-
-      const { data, error } = await supabase
-        .from("property_shares")
-        .insert({
-          user_id: user.id,
-          property_id: propertyId,
-          recipient_email: sendEmail ? email.trim() : null,
-          recipient_name: sendEmail ? (name.trim() || null) : null,
-          message: message.trim() || null,
-          documents_included: documents || {},
-          expires_at: expiresAt,
-        })
-        .select("token, expires_at")
-        .single();
-      if (error) throw error;
-      const url = `${window.location.origin}/share/${data.token}`;
-      setResult({ token: data.token as string, url });
-      if (sendEmail) {
-        // Fetch owner full name + property address for the email
-        const [{ data: profile }, { data: prop }] = await Promise.all([
-          supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle(),
-          supabase.from("properties").select("address").eq("id", propertyId).maybeSingle(),
-        ]);
-        await supabase.functions.invoke("send-transactional-email", {
+      const expiryDays = expiry === "never" ? 365 * 10 : parseInt(expiry, 10);
+      const { data, error } = await supabase.functions.invoke(
+        "send-realtor-share",
+        {
           body: {
-            templateName: "realtor-share-invite",
-            recipientEmail: email.trim(),
-            idempotencyKey: `realtor-share-${data.token}`,
-            templateData: {
-              ownerName: profile?.full_name || "A homeowner",
-              recipientName: name.trim() || null,
-              propertyAddress: prop?.address || null,
-              shareUrl: url,
-              expiresOn: expiry === "never" ? null : new Date(data.expires_at as string).toLocaleDateString(),
-              message: message.trim() || null,
-            },
+            propertyId,
+            recipientEmail: sendEmail ? email.trim() : null,
+            recipientName: sendEmail ? name.trim() || null : null,
+            message: message.trim() || null,
+            expiryDays,
+            documents: documents || {},
+            sendEmail,
           },
-        });
+        },
+      );
+      if (error) throw error;
+      if (!data?.url) throw new Error("Share creation failed");
+      setResult({ token: data.token, url: data.url });
+      if (sendEmail) {
         toast.success(`Shared with ${email}`);
       } else {
-        await navigator.clipboard?.writeText(url).catch(() => {});
+        await navigator.clipboard?.writeText(data.url).catch(() => {});
         toast.success("Link created and copied");
       }
     } catch (e: any) {
