@@ -3214,6 +3214,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          additional_structures_banner_dismissed_at: string | null
           address: string
           assessor_id: string | null
           bathrooms: number | null
@@ -3223,6 +3224,7 @@ export type Database = {
           county_fips: string | null
           created_at: string
           data_status: Database["public"]["Enums"]["data_status"]
+          has_additional_structures: boolean
           health_score: number | null
           id: string
           is_active: boolean
@@ -3244,6 +3246,7 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          additional_structures_banner_dismissed_at?: string | null
           address: string
           assessor_id?: string | null
           bathrooms?: number | null
@@ -3253,6 +3256,7 @@ export type Database = {
           county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          has_additional_structures?: boolean
           health_score?: number | null
           id?: string
           is_active?: boolean
@@ -3274,6 +3278,7 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          additional_structures_banner_dismissed_at?: string | null
           address?: string
           assessor_id?: string | null
           bathrooms?: number | null
@@ -3283,6 +3288,7 @@ export type Database = {
           county_fips?: string | null
           created_at?: string
           data_status?: Database["public"]["Enums"]["data_status"]
+          has_additional_structures?: boolean
           health_score?: number | null
           id?: string
           is_active?: boolean
