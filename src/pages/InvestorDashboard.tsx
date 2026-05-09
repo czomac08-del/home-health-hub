@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import SEO from "@/components/SEO";
+import ProUploadButton from "@/components/ProUploadButton";
 
 type FlipProject = {
   id: string;
@@ -502,6 +503,13 @@ const InvestorDashboard = () => {
         <span className="text-sm font-semibold text-foreground">Documents Vault</span>
         <span className="text-[10px] text-muted-foreground ml-auto">Property files, deal docs, ROI exports</span>
       </button>
+
+      <div className="grid grid-cols-2 gap-2">
+        <ProUploadButton role="investor" defaultDocType="investor.contractor_bid" label="Upload Contractor Bid" />
+        <ProUploadButton role="investor" defaultDocType="investor.renovation_receipt" label="Upload Receipt" />
+        <ProUploadButton role="investor" defaultDocType="investor.before_after_photo" label="Upload Before/After Photo" />
+        <ProUploadButton role="investor" defaultDocType="investor.arv_appraisal" label="Upload ARV Appraisal" />
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
