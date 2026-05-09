@@ -469,12 +469,17 @@ const OnboardingWizard = () => {
       const matches: AddressMatch[] = payload?.matches || [];
       setSuggestions(matches);
       setShowSuggestions(matches.length > 0);
-      if (matches.length === 0) {
+      // Suppress the fallback error if the user already selected a valid
+      // address from Google Places (googlePlaceId set) or already has a
+      // synthesized selectedMatch. The Google selection is authoritative.
+      if (matches.length === 0 && !googlePlaceId && !selectedMatch) {
         setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
       }
     } catch {
       setSuggestions([]);
-      setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+      if (!googlePlaceId && !selectedMatch) {
+        setGeocodeError("We couldn't find that address. Try including your city and state, or check for typos.");
+      }
     } finally {
       setSearching(false);
     }
