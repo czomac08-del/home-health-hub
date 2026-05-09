@@ -25,23 +25,29 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
 }`,
-  septic: `Extract these fields from this septic system document. For each field, rate confidence 0-100. Return JSON only:
+  septic: `Extract these fields from this septic system document (install record, pump receipt, inspection, or permit). For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
-    "tank_size_gallons": { "value": number or null, "confidence": 90 },
-    "tank_material": { "value": string or null, "confidence": 85 },
-    "system_type": { "value": string or null, "confidence": 90 },
-    "installation_date": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
-    "contractor_name": { "value": string or null, "confidence": 90 },
-    "leach_field_size": { "value": string or null, "confidence": 80 },
-    "leach_field_type": { "value": string or null, "confidence": 80 },
-    "address": { "value": string or null, "confidence": 95 }
+    "tankSize": { "value": number or null, "confidence": 90 },
+    "tankCount": { "value": number or null, "confidence": 85 },
+    "systemType": { "value": "conventional|aerobic|mound|chamber" or null, "confidence": 90 },
+    "lastPumpDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "drainFieldCondition": { "value": "good|fair|poor|failing" or null, "confidence": 80 },
+    "permitNumber": { "value": string or null, "confidence": 90 },
+    "installDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "technicianName": { "value": string or null, "confidence": 80 },
+    "company": { "value": string or null, "confidence": 85 },
+    "conditionRating": { "value": "pass|fail|needs attention" or null, "confidence": 80 },
+    "propertyAddress": { "value": string or null, "confidence": 95 },
+    "notes": { "value": string or null, "confidence": 70 }
   },
   "overall_confidence": 88,
   "document_quality": "good|fair|poor|damaged",
   "unclear_fields": ["field_name"],
   "possible_values": { "field_name": ["option1", "option2"] }
-}`,
+}
+
+tankSize is in gallons. Only return values explicitly present in the document — do not infer.`,
   permit: `Extract these fields from this building/construction permit. For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {
@@ -157,6 +163,13 @@ CRITICAL RULES:
 
 EXTRACTION_PROMPTS.inspection_report = INSPECTION_REPORT_PROMPT;
 EXTRACTION_PROMPTS.inspection = INSPECTION_REPORT_PROMPT;
+
+// Aliases so callers tagging the document with the system label hit the
+// same septic-specific schema.
+EXTRACTION_PROMPTS.sewer_and_waste = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS["sewer-and-waste"] = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.septic_system = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.sewer = EXTRACTION_PROMPTS.septic;
 
 // Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
 // used as a fallback in onboarding when public records aren't available for
@@ -300,7 +313,7 @@ EXTRACTION_PROMPTS.insurance_policy = `Extract details from a homeowner's insura
 // Safety-critical fields that require human confirmation when unclear
 const SAFETY_CRITICAL_FIELDS = new Set([
   "depth_ft", "pump_gpm", "static_water_level_ft", // well safety
-  "tank_size_gallons", // septic sizing
+  "tank_size_gallons", "tankSize", // septic sizing
   "panel_amperage", "voltage", // electrical safety
 ]);
 

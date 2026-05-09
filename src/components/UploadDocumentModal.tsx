@@ -323,6 +323,85 @@ export default function UploadDocumentModal({
         }
       }
 
+      // Septic / Sewer & Waste fan-out — when a document was uploaded to a
+      // septic system (or AI detected one), merge the extracted septic-specific
+      // fields into that system_details row's specs JSON so the system page
+      // shows real values from the document.
+      try {
+        const docSystemType = (defaultSystemType || "").toLowerCase();
+        const isSepticDoc =
+          docSystemType === "septic" ||
+          docSystemType === "septic_system" ||
+          docSystemType === "sewer_and_waste" ||
+          docSystemType === "sewer-and-waste" ||
+          docSystemType === "sewer" ||
+          detectedSystem === "septic";
+
+        if (isSepticDoc && user && activeProperty?.id) {
+          const e = extracted as any;
+          const septicSpecKeys = [
+            "tankSize",
+            "tankCount",
+            "systemType",
+            "lastPumpDate",
+            "drainFieldCondition",
+            "permitNumber",
+            "installDate",
+            "technicianName",
+            "company",
+            "conditionRating",
+            "propertyAddress",
+            "notes",
+          ] as const;
+
+          const newSpecs: Record<string, any> = {};
+          for (const k of septicSpecKeys) {
+            if (e?.[k] != null && e[k] !== "") newSpecs[k] = e[k];
+          }
+
+          if (Object.keys(newSpecs).length > 0) {
+            const { data: septicRows } = await supabase
+              .from("system_details")
+              .select("id, specs, install_date, notes")
+              .eq("property_id", activeProperty.id)
+              .eq("user_id", user.id)
+              .or(
+                "system_name.ilike.%septic%,system_name.ilike.%sewer%,system_name.ilike.%waste%",
+              )
+              .limit(1);
+
+            const targetRow = septicRows?.[0];
+            const updatePayload: any = {
+              specs: { ...((targetRow?.specs as any) || {}), ...newSpecs },
+            };
+            if (newSpecs.installDate && !targetRow?.install_date) {
+              updatePayload.install_date = newSpecs.installDate;
+            }
+            if (newSpecs.notes && !targetRow?.notes) {
+              updatePayload.notes = newSpecs.notes;
+            }
+
+            if (targetRow?.id) {
+              await supabase
+                .from("system_details")
+                .update(updatePayload)
+                .eq("id", targetRow.id);
+            } else {
+              await supabase.from("system_details").insert({
+                property_id: activeProperty.id,
+                user_id: user.id,
+                system_name: "Septic System",
+                install_date: newSpecs.installDate || null,
+                notes: newSpecs.notes || null,
+                specs: newSpecs,
+              });
+            }
+          }
+        }
+      } catch (septicErr) {
+        console.warn("Septic fan-out failed (non-fatal):", septicErr);
+      }
+
       // Fan extracted findings out to the Systems list so HVAC/Roof/etc. flip
       // from grey "Not yet documented" to documented (or flagged) immediately.
       if (docType === "inspection_report" && activeProperty?.id && user?.id && inspectionReport?.findings?.length) {
