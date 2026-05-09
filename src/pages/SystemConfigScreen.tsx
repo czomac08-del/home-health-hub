@@ -1232,7 +1232,7 @@ const SpecFieldInput = ({ field, value, onChange, ai = false, est = false }: {
     case "toggle":
       return (
         <div className={`flex items-center justify-between rounded-xl border ${borderClass} bg-card px-4 py-3`}>
-          <span className="text-sm text-foreground flex items-center gap-1.5">{field.label} {ai && <AiBadge />}</span>
+          <span className="text-sm text-foreground flex items-center gap-1.5">{field.label} {ai && <AiBadge />} {!ai && est && <EstimatedBadge />}</span>
           <Switch checked={!!value} onCheckedChange={(v) => onChange(v)} />
         </div>
       );
