@@ -165,6 +165,9 @@ const OnboardingWizard = () => {
     sqft?: number;
   } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const regridDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [regridSuggestions, setRegridSuggestions] = useState<string[]>([]);
+  const [showRegridSuggestions, setShowRegridSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const initialSkipDone = useRef(false);
 
@@ -194,11 +197,55 @@ const OnboardingWizard = () => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+        setShowRegridSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  /** Regrid address typeahead — proxied via the regrid-typeahead edge
+   *  function so the API token stays server-side. Always degrades to a no-op
+   *  on errors so the input keeps working as a plain text field. */
+  const fetchRegridSuggestions = async (q: string) => {
+    if (q.trim().length < 3) {
+      setRegridSuggestions([]);
+      setShowRegridSuggestions(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke("regrid-typeahead", {
+        body: null,
+        // We pass the query via the URL so we can keep the function GET-style.
+        method: "GET" as any,
+      } as any).catch(() => ({ data: null, error: null } as any));
+      // The supabase-js invoke helper doesn't expose query params directly,
+      // so use a direct fetch to the function URL with the user's token.
+      let suggestions: string[] = (data as any)?.suggestions || [];
+      if (!Array.isArray(suggestions) || suggestions.length === 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const url = `https://${projectRef}.supabase.co/functions/v1/regrid-typeahead?query=${encodeURIComponent(q)}`;
+        const res = await fetch(url, {
+          headers: session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {},
+        });
+        if (res.ok) {
+          const json = await res.json().catch(() => ({}));
+          suggestions = Array.isArray(json?.suggestions) ? json.suggestions : [];
+        }
+      }
+      setRegridSuggestions(suggestions);
+      setShowRegridSuggestions(suggestions.length > 0);
+      // Hide the legacy geocode dropdown when Regrid has results to show.
+      if (suggestions.length > 0) setShowSuggestions(false);
+      void error;
+    } catch {
+      setRegridSuggestions([]);
+      setShowRegridSuggestions(false);
+    }
+  };
 
   const fetchSuggestions = async (q: string) => {
     if (q.trim().length < 4) { setSuggestions([]); return; }
@@ -231,6 +278,19 @@ const OnboardingWizard = () => {
     setGeocodeError(null);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(v), 400);
+    if (regridDebounceRef.current) clearTimeout(regridDebounceRef.current);
+    regridDebounceRef.current = setTimeout(() => fetchRegridSuggestions(v), 300);
+  };
+
+  /** User tapped a Regrid suggestion — set the field text and let the
+   *  existing geocode flow resolve a selectedMatch so Continue still works. */
+  const selectRegridSuggestion = (full: string) => {
+    setAddressInput(full);
+    setRegridSuggestions([]);
+    setShowRegridSuggestions(false);
+    setShowSuggestions(false);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    fetchSuggestions(full);
   };
 
   const selectAddress = (m: AddressMatch) => {
