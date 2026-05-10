@@ -6,6 +6,8 @@ export interface InspectionFindingLite {
   category?: string;
   location?: string;
   level?: 1 | 2 | 3 | 4;
+  /** Explicit user-confirmed mapping from the by-system review UI. */
+  systemOverride?: string | null;
 }
 
 // Slugs MUST match the `name` values rendered in src/pages/SystemsScreen.tsx
@@ -80,7 +82,8 @@ export async function applyInspectionFindingsToSystems(args: {
   // Group findings per system slug
   const bySystem = new Map<string, InspectionFindingLite[]>();
   for (const f of findings) {
-    for (const slug of mapFindingToSystems(f)) {
+    const slugs = f.systemOverride ? [f.systemOverride] : mapFindingToSystems(f);
+    for (const slug of slugs) {
       const arr = bySystem.get(slug) ?? [];
       arr.push(f);
       bySystem.set(slug, arr);
