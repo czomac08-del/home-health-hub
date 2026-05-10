@@ -491,6 +491,19 @@ const SystemConfigScreen = () => {
     // path does not need multi-instance routing — every system-card upload
     // must surface the review screen so the user confirms what AI found.
     if (vaultRecordId) {
+      // Universal rule: before extraction, if this system has not yet been
+      // assigned to a structure (Main House, Garage, Former, etc.), ask the
+      // user. We open the dialog with UploadStructurePrompt; once resolved we
+      // resume into runExtractAndOpenReview.
+      if (systemDetailId && !structureAssignment) {
+        setPendingStructurePromptUpload({
+          recordId: vaultRecordId,
+          signedUrl: signedData.signedUrl,
+          fileName: file.name,
+          targetSystemName: displayName,
+        });
+        return;
+      }
       void runExtractAndOpenReview({
         recordId: vaultRecordId,
         signedUrl: signedData.signedUrl,
