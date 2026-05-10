@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText, Shield } from "lucide-react";
+import { Search, Plus, ChevronRight, Droplets, Fan, Zap, Home, Flame, Gauge, Waves, Refrigerator, WashingMachine, UtensilsCrossed, DoorOpen, GlassWater, FileText, Shield, AlertOctagon, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
@@ -83,7 +83,20 @@ const hasRealSystemData = (item: SystemDetailSummary) => {
   return coreFields.some(hasValue) || (item.specs && Object.values(item.specs).some(hasValue));
 };
 
-const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, summary, onClick }: { item: SystemItem; documented: boolean; flagged?: boolean; flaggedDetail?: string | null; notApplicable?: boolean; summary?: string; onClick: () => void }) => {
+interface SystemRowFindings {
+  count: number;
+  worstLevel: 1 | 2 | 3 | 4 | null;
+}
+
+const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, summary, findings, onClick }: { item: SystemItem; documented: boolean; flagged?: boolean; flaggedDetail?: string | null; notApplicable?: boolean; summary?: string; findings?: SystemRowFindings; onClick: () => void }) => {
+  const fc = findings?.count ?? 0;
+  const wl = findings?.worstLevel;
+  const badgeBg =
+    wl === 1 ? "bg-destructive text-destructive-foreground" :
+    wl === 2 ? "bg-[hsl(var(--health-amber))] text-background" :
+    wl === 3 ? "bg-[hsl(var(--brain-blue))] text-background" :
+    "bg-muted text-muted-foreground";
+  const Icon = wl === 1 ? AlertOctagon : wl === 2 ? AlertTriangle : null;
   return (
     <button onClick={onClick} className={`w-full flex items-center gap-3 py-3.5 border-b border-border/50 last:border-0 hover:bg-secondary/30 transition-colors text-left ${notApplicable ? "opacity-50" : ""}`}>
       <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -95,6 +108,12 @@ const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, su
           <span className={`font-medium text-sm ${documented ? "text-foreground" : "text-muted-foreground"}`}>{item.name}</span>
           {notApplicable && (
             <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">N/A</span>
+          )}
+          {fc > 0 && !notApplicable && (
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeBg}`}>
+              {Icon ? <Icon className="h-2.5 w-2.5" /> : null}
+              {fc} open
+            </span>
           )}
         </div>
         <p className={`text-xs mt-0.5 ml-[18px] ${documented ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
@@ -113,6 +132,7 @@ const SystemsScreen = () => {
   const [notApplicableNames, setNotApplicableNames] = useState<Set<string>>(new Set());
   const [systemSummaries, setSystemSummaries] = useState<Record<string, string>>({});
   const [multiInstances, setMultiInstances] = useState<Record<string, { id: string; label: string; documented: boolean }[]>>({});
+  const [findingsBySystem, setFindingsBySystem] = useState<Record<string, SystemRowFindings>>({});
   const navigate = useNavigate();
   const { user, activeProperty } = useAuth();
 
@@ -167,6 +187,26 @@ const SystemsScreen = () => {
         setSystemSummaries(summaries);
         setMultiInstances(grouped);
       });
+
+    // Open inspection findings grouped by system_category — drives the per-card badge.
+    supabase
+      .from("inspection_findings")
+      .select("system_category, level, status")
+      .eq("property_id", activeProperty.id)
+      .eq("status", "open")
+      .then(({ data }) => {
+        const acc: Record<string, SystemRowFindings> = {};
+        for (const r of (data as any[] | null) || []) {
+          const slug = r.system_category as string | null;
+          if (!slug) continue;
+          const lvl = Number(r.level) as 1 | 2 | 3 | 4;
+          const cur = acc[slug] || { count: 0, worstLevel: null };
+          cur.count += 1;
+          if (cur.worstLevel === null || lvl < cur.worstLevel) cur.worstLevel = lvl;
+          acc[slug] = cur;
+        }
+        setFindingsBySystem(acc);
+      });
   }, [user, activeProperty]);
 
   const isDocumented = (item: SystemItem) => {
@@ -178,6 +218,13 @@ const SystemsScreen = () => {
     return possibleNames.some((name) => flaggedNames.has(name));
   };
   const isNotApplicable = (item: SystemItem) => notApplicableNames.has(item.name);
+  const findingsFor = (item: SystemItem): SystemRowFindings | undefined => {
+    const possibleNames = [item.name, ...(item.aliases || [])];
+    for (const n of possibleNames) {
+      if (findingsBySystem[n]) return findingsBySystem[n];
+    }
+    return undefined;
+  };
   const summaryFor = (item: SystemItem): string | undefined => {
     const insts = multiInstances[item.name];
     if (insts && insts.length >= 2) {
@@ -231,6 +278,7 @@ const SystemsScreen = () => {
                   flagged={isFlagged(item)}
                   notApplicable={isNotApplicable(item)}
                   summary={summaryFor(item)}
+                  findings={findingsFor(item)}
                   onClick={() => {
                     if (item.route) navigate(item.route);
                     else navigate(`/system-config/${encodeURIComponent(item.name)}`);
@@ -271,6 +319,7 @@ const SystemsScreen = () => {
                   flagged={isFlagged(item)}
                   notApplicable={isNotApplicable(item)}
                   summary={summaryFor(item)}
+                  findings={findingsFor(item)}
                   onClick={() => navigate(`/system-config/${encodeURIComponent(item.name)}`)}
                 />
                 {insts.length >= 2 && (
