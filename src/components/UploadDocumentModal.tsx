@@ -58,6 +58,9 @@ export default function UploadDocumentModal({
   const [extracted, setExtracted] = useState<Record<string, any>>({});
   const [confidence, setConfidence] = useState<string>("");
   const [inspectionReport, setInspectionReport] = useState<InspectionReportData | null>(null);
+  // System overrides confirmed by the user in the by-system review UI.
+  // Keyed by finding.id → system slug (or null = unassigned/skipped).
+  const [findingMappings, setFindingMappings] = useState<Record<string, string | null>>({});
   const [recordId, setRecordId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [reanalyzing, setReanalyzing] = useState(false);
@@ -517,10 +520,16 @@ export default function UploadDocumentModal({
       // from grey "Not yet documented" to documented (or flagged) immediately.
       if (docType === "inspection_report" && activeProperty?.id && user?.id && inspectionReport?.findings?.length) {
         try {
+          // Apply the user's confirmed system mapping (and AI fallback) to each finding
+          // so they land on the correct system card.
+          const findingsWithSystem = (inspectionReport.findings as any[]).map((f) => ({
+            ...f,
+            systemOverride: findingMappings[f.id] ?? undefined,
+          }));
           await applyInspectionFindingsToSystems({
             propertyId: activeProperty.id,
             userId: user.id,
-            findings: inspectionReport.findings as any,
+            findings: findingsWithSystem as any,
           });
         } catch (sysErr) {
           console.warn("System fan-out failed (non-fatal):", sysErr);
@@ -914,7 +923,11 @@ export default function UploadDocumentModal({
             </div>
 
             {inspectionReport && inspectionReport.findings?.length > 0 ? (
-              <InspectionFindingsReview data={inspectionReport} showAttributionDisclaimer />
+              <InspectionFindingsReview
+                data={inspectionReport}
+                showAttributionDisclaimer
+                onMappingsChange={setFindingMappings}
+              />
             ) : vaultReviewKind && activeProperty?.id && user?.id && !extractionEmpty ? (
               <VaultRecordReview
                 kind={vaultReviewKind}
