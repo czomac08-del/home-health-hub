@@ -231,10 +231,9 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
     }
   };
 
-  const handleAutoConfirmed = async (data: Record<string, any>) => {
-    if (!lastUploadedRecordId) return;
-    await autoConfirmData(data, lastUploadedRecordId);
-    toast.success("All fields resolved and saved!");
+  const handleAutoConfirmed = async (_data: Record<string, any>) => {
+    // Legacy callback — no-op now that the unified review modal is the
+    // single point of confirmation.
     setExtractionState(null);
   };
 
