@@ -286,7 +286,132 @@ export default function InspectionFindingsReview({ data, showAttributionDisclaim
         </div>
       </div>
 
-      {([1, 2, 3, 4] as const).map((lvl) => {
+      {/* Group toggle — default to "By System" so each finding lands on its system card. */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground">
+          {groupBy === "system"
+            ? "Confirm each finding's system before saving — items the AI is unsure about are marked ✏️."
+            : "Sorted by inspector severity level."}
+        </p>
+        <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-[11px] font-semibold">
+          <button
+            type="button"
+            onClick={() => setGroupBy("system")}
+            className={`px-2.5 py-1 rounded-md inline-flex items-center gap-1 ${groupBy === "system" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <Boxes className="h-3 w-3" /> By System
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupBy("severity")}
+            className={`px-2.5 py-1 rounded-md inline-flex items-center gap-1 ${groupBy === "severity" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+          >
+            <Layers className="h-3 w-3" /> By Severity
+          </button>
+        </div>
+      </div>
+
+      {groupBy === "system" && (
+        <div className="space-y-3">
+          {Object.keys(bySystem).sort().map((slug) => {
+            const items = bySystem[slug];
+            const worst = Math.min(...items.map((i) => i.level)) as 1 | 2 | 3 | 4;
+            const meta = LEVEL_META[worst];
+            return (
+              <div key={slug} className={`rounded-xl border ${meta.border} bg-card overflow-hidden`}>
+                <div className="flex items-center gap-3 p-3 border-b border-border">
+                  <div className={`h-8 w-8 rounded-full ${meta.badgeBg} flex items-center justify-center shrink-0`}>
+                    <meta.icon className={`h-4 w-4 ${meta.badgeText}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">{slug}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {items.length} finding{items.length === 1 ? "" : "s"} · worst: {meta.label}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 space-y-2">
+                  {items.map((f) => {
+                    const fMeta = LEVEL_META[f.level];
+                    return (
+                      <div key={f.id} className="rounded-lg border border-border bg-background p-2.5">
+                        <div className="flex items-start gap-2">
+                          <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${fMeta.badgeBg} ${fMeta.badgeText} font-semibold shrink-0`}>L{f.level}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-foreground">{f.title}</p>
+                            {f.location && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {f.location}</p>}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">System:</span>
+                          <select
+                            value={systemFor(f) ?? ""}
+                            onChange={(e) => setOverride(f.id, e.target.value || null)}
+                            className="flex-1 rounded-md border border-border bg-card px-2 py-1 text-[11px]"
+                          >
+                            {SYSTEM_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                            <option value="">— Unassigned —</option>
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {unassigned.length > 0 && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 overflow-hidden">
+              <div className="flex items-center gap-3 p-3 border-b border-border">
+                <div className="h-8 w-8 rounded-full bg-amber-500/15 flex items-center justify-center">
+                  <Pencil className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Needs assignment</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {unassigned.length} finding{unassigned.length === 1 ? "" : "s"} the AI couldn't confidently match — pick a system.
+                  </p>
+                </div>
+              </div>
+              <div className="p-3 space-y-2">
+                {unassigned.map((f) => {
+                  const fMeta = LEVEL_META[f.level];
+                  return (
+                    <div key={f.id} className="rounded-lg border border-border bg-background p-2.5">
+                      <div className="flex items-start gap-2">
+                        <Pencil className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${fMeta.badgeBg} ${fMeta.badgeText} font-semibold shrink-0`}>L{f.level}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">{f.title}</p>
+                          {f.location && <p className="text-[10px] text-muted-foreground mt-0.5">📍 {f.location}</p>}
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground">Assign to:</span>
+                        <select
+                          value=""
+                          onChange={(e) => setOverride(f.id, e.target.value || null)}
+                          className="flex-1 rounded-md border border-amber-500/40 bg-card px-2 py-1 text-[11px]"
+                        >
+                          <option value="">— Pick a system —</option>
+                          {SYSTEM_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {groupBy === "severity" && ([1, 2, 3, 4] as const).map((lvl) => {
         const meta = LEVEL_META[lvl];
         const items = grouped[lvl];
         if (items.length === 0) return null;
