@@ -536,7 +536,11 @@ const SystemConfigScreen = () => {
         try {
           await supabase
             .from("property_records")
-            .update({ ai_extracted_data: extracted, ai_verified: true } as any)
+            // IMPORTANT: do NOT set ai_verified=true here. Verification only
+            // happens after the user reviews the extracted fields in the
+            // UnifiedDocumentReview screen and saves. Premature verification
+            // hides un-reviewed data from the user.
+            .update({ ai_extracted_data: extracted } as any)
             .eq("id", recordId);
         } catch { /* best-effort */ }
       }
