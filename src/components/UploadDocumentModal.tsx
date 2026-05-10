@@ -534,6 +534,46 @@ export default function UploadDocumentModal({
         } catch (sysErr) {
           console.warn("System fan-out failed (non-fatal):", sysErr);
         }
+        // Seed the inspection_findings table directly so each finding lives as
+        // an open item under its mapped system, with severity carried through.
+        if (recordId) {
+          try {
+            const { findingKey, isDiy } = await import("@/lib/inspectionScoring");
+            const { mapFindingToSystems } = await import("@/lib/applyInspectionFindingsToSystems");
+            const rows = (inspectionReport.findings as any[]).map((f, i) => {
+              const override = findingMappings[f.id];
+              const slug = override !== undefined
+                ? override
+                : (mapFindingToSystems({ title: f.title, description: f.description, location: f.location, category: f.category, level: f.level })[0] ?? null);
+              return {
+                user_id: user.id,
+                property_id: activeProperty.id,
+                inspection_record_id: recordId,
+                source_document_id: recordId,
+                finding_key: findingKey(f, i),
+                level: f.level,
+                category: f.category ?? null,
+                system_category: slug,
+                severity_label:
+                  f.level === 1 ? "Safety" : f.level === 2 ? "Major" : f.level === 3 ? "Minor" : "Informational",
+                title: f.title,
+                description: f.description ?? null,
+                location_in_home: f.location ?? null,
+                inspector_recommendation: f.recommendation ?? null,
+                recommendation: f.recommendation ?? null,
+                is_diy: isDiy({ level: f.level, title: f.title, description: f.description }),
+                status: "open" as const,
+              };
+            });
+            // Use upsert on the (inspection_record_id, finding_key) unique index
+            // so a later viewer doesn't double-seed.
+            await supabase
+              .from("inspection_findings")
+              .upsert(rows as any, { onConflict: "inspection_record_id,finding_key" });
+          } catch (seedErr) {
+            console.warn("inspection_findings seed failed (non-fatal):", seedErr);
+          }
+        }
         // Also extract structured field values (brand, model, install date, etc.)
         // so system config screens show real data instead of empty fields.
         try {
