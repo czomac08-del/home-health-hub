@@ -64,6 +64,7 @@ const RecordsStatusSelector = ({ systemName, hasDocuments }: Props) => {
           <div className="mt-3">
             <RecordRecoveryGuide
               systemType={systemType}
+              systemName={systemName}
               propertyId={activeProperty.id}
               county={countyArea}
               state={stateAbbr}
@@ -136,6 +137,7 @@ const RecordsStatusSelector = ({ systemName, hasDocuments }: Props) => {
       {activeProperty && (
         <RecordRecoveryGuide
           systemType={systemType}
+          systemName={systemName}
           propertyId={activeProperty.id}
           county={countyArea}
           state={stateAbbr}
