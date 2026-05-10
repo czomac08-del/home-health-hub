@@ -523,6 +523,70 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
           </div>
         </div>
       )}
+
+      {/* Unified Document Review — opens after every upload from the
+          recovery flow so the user always confirms AI-extracted fields
+          before anything writes to system specs. */}
+      <Dialog
+        open={!!reviewState || extractingReview || !!pendingStructurePromptUpload}
+        onOpenChange={(o) => {
+          if (!o) {
+            setReviewState(null);
+            setPendingStructurePromptUpload(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStructurePromptUpload ? "Which structure does this serve?" : "Review AI-extracted details"}
+            </DialogTitle>
+          </DialogHeader>
+          {pendingStructurePromptUpload && systemDetailId ? (
+            <UploadStructurePrompt
+              systemDetailId={systemDetailId}
+              systemName={pendingStructurePromptUpload.targetSystemName}
+              onResolved={({ value }) => {
+                setStructureAssignment(value);
+                const ctx = pendingStructurePromptUpload;
+                setPendingStructurePromptUpload(null);
+                if (ctx) void runExtractAndOpenReview(ctx);
+              }}
+            />
+          ) : extractingReview && !reviewState ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Reading your document…
+            </div>
+          ) : reviewState && user?.id ? (
+            <UnifiedDocumentReview
+              propertyId={propertyId}
+              userId={user.id}
+              systemName={reviewState.targetSystemName}
+              fileName={reviewState.fileName}
+              recordId={reviewState.recordId}
+              extracted={reviewState.extracted}
+              onSaved={async () => {
+                try {
+                  await supabase.from("property_records")
+                    .update({ ai_verified: true } as any)
+                    .eq("id", reviewState.recordId);
+                } catch {}
+                setReviewState(null);
+                // Refresh local records list to pick up the verified badge.
+                const { data } = await supabase
+                  .from("property_records")
+                  .select("*")
+                  .eq("property_id", propertyId)
+                  .eq("system_type", systemType)
+                  .order("created_at", { ascending: false });
+                if (data) setRecords(data);
+              }}
+              onCompleteLater={() => setReviewState(null)}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
