@@ -138,6 +138,13 @@ const SystemConfigScreen = () => {
     targetSystemName: string;
   } | null>(null);
   const [extractingReview, setExtractingReview] = useState(false);
+  // When a document is uploaded from a system card and the system has not yet
+  // been assigned to a structure (Main House, Garage, Former, etc.), we hold
+  // the upload context here and prompt the user BEFORE running AI extraction.
+  const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
+    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
+    | null
+  >(null);
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
