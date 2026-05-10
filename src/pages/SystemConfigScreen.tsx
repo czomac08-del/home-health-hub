@@ -806,7 +806,31 @@ const SystemConfigScreen = () => {
           if (s?.waterType) setWaterType(s.waterType);
         }
         if (dn.includes("sewer") || dn.includes("waste")) {
-          if (s?.systemType) setSewerType(s.systemType);
+          if (s?.systemType) {
+            setSewerType(s.systemType);
+          } else {
+            // Fallback: if onboarding seeded sibling Septic System rows for
+            // this property, the user clearly chose septic — auto-persist it
+            // here so they aren't asked again.
+            try {
+              const { data: septicRows } = await supabase
+                .from("system_details")
+                .select("id")
+                .eq("property_id", activeProperty.id)
+                .ilike("system_name", "Septic%")
+                .limit(1);
+              if (septicRows && septicRows.length > 0) {
+                setSewerType("septic");
+                setSpecs((prev) => ({ ...prev, systemType: "septic" }));
+                if (data?.id) {
+                  await supabase
+                    .from("system_details")
+                    .update({ specs: { ...((data.specs as any) || {}), systemType: "septic" } as any })
+                    .eq("id", data.id);
+                }
+              }
+            } catch { /* best-effort */ }
+          }
         }
       }
       if (data.notes) setNotes(data.notes);
