@@ -27,6 +27,7 @@ import StructureAssignmentSelector, { LEGACY_OPTION, LEGACY_STATUS } from "@/com
 import type { RefreshScope } from "@/hooks/useDataRefresh";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
+import UploadStructurePrompt from "@/components/UploadStructurePrompt";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
