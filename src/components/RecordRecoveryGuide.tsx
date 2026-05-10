@@ -9,9 +9,18 @@ import CivicConsentCheckbox from "@/components/CivicConsentCheckbox";
 import AiExtractionResults from "@/components/AiExtractionResults";
 import RecordsRequestCard from "@/components/RecordsRequestCard";
 import CommunityBanner from "@/components/CommunityBanner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
+import UploadStructurePrompt from "@/components/UploadStructurePrompt";
+import { Loader2 } from "lucide-react";
 
 interface Props {
   systemType: SystemRecordType;
+  /** Optional display name for the system (e.g. "Sewer and Waste"). Used to
+   *  resolve the matching system_details row so uploads from the recovery
+   *  flow run through the same structure-prompt + UnifiedDocumentReview path
+   *  as uploads from inside the system card. */
+  systemName?: string;
   propertyId: string;
   county: string;
   state: string;
@@ -28,7 +37,7 @@ interface ExtractionState {
   extracted: Record<string, any>;
 }
 
-const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }: Props) => {
+const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state, address }: Props) => {
   const { user } = useAuth();
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [expandedStep, setExpandedStep] = useState<number | null>(0);
@@ -46,8 +55,46 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
   const [extracting, setExtracting] = useState(false);
   const [lastUploadedRecordId, setLastUploadedRecordId] = useState<string | null>(null);
   const [autoAddedCount, setAutoAddedCount] = useState(0);
+  // Unified review flow state — mirrors SystemConfigScreen so uploads from
+  // the records-recovery path get the same structure prompt → AI extraction
+  // → UnifiedDocumentReview → confirm flow.
+  const [systemDetailId, setSystemDetailId] = useState<string | null>(null);
+  const [structureAssignment, setStructureAssignment] = useState<string>("");
+  const [reviewState, setReviewState] = useState<{
+    recordId: string;
+    fileName: string;
+    extracted: Record<string, any>;
+    targetSystemName: string;
+  } | null>(null);
+  const [extractingReview, setExtractingReview] = useState(false);
+  const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
+    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
+    | null
+  >(null);
 
   const steps = getRecoverySteps(systemType, county, state, address);
+
+  // Resolve the system_details row this recovery guide is attached to so we
+  // know whether to ask for a structure assignment before extraction.
+  useEffect(() => {
+    if (!propertyId || !systemName) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("system_details")
+        .select("id, specs")
+        .eq("property_id", propertyId)
+        .eq("system_name", systemName)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.id) {
+        setSystemDetailId(data.id as string);
+        const sa = ((data.specs as any) || {}).structure_assignment;
+        if (typeof sa === "string") setStructureAssignment(sa);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [propertyId, systemName]);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -76,13 +123,37 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     });
   };
 
-  // Auto-confirm and save extracted data to the record
-  const autoConfirmData = async (data: Record<string, any>, recordId: string) => {
-    await supabase.from("property_records").update({
-      ai_extracted_data: data,
-      ai_verified: true,
-    }).eq("id", recordId);
-    setAutoAddedCount(prev => prev + Object.keys(data).length);
+  // Calls extract-document-data and opens the UnifiedDocumentReview modal.
+  // The document is already in the vault — the review modal still opens so
+  // the user always confirms what AI found before anything writes to system
+  // specs. Verification (`ai_verified`) flips only after the user saves.
+  const runExtractAndOpenReview = async ({
+    recordId,
+    signedUrl,
+    fileName,
+    targetSystemName,
+  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }) => {
+    setExtractingReview(true);
+    let extracted: Record<string, any> = {};
+    try {
+      const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
+        body: { documentUrl: signedUrl, systemType: targetSystemName, source: uploadData.source },
+      });
+      if (!extErr) {
+        extracted = (ext?.extracted as Record<string, any>) || {};
+        try {
+          await supabase
+            .from("property_records")
+            .update({ ai_extracted_data: extracted } as any)
+            .eq("id", recordId);
+        } catch { /* best-effort */ }
+      }
+    } catch (err) {
+      console.warn("[RecordRecovery] extraction error:", err);
+    } finally {
+      setExtractingReview(false);
+      setReviewState({ recordId, fileName, extracted, targetSystemName });
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,52 +188,31 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
 
       const recordId = insertData?.id || null;
       setLastUploadedRecordId(recordId);
-      toast.success("Record saved! AI is processing...");
+      toast.success("Record saved — review what AI found");
       setShowUpload(false);
+      const fileNameSnapshot = file.name;
+      const signedUrlSnapshot = urlData?.signedUrl || "";
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
 
-      // Trigger AI extraction with source info
-      if (urlData?.signedUrl && recordId) {
-        setExtracting(true);
-        try {
-          const { data: extractData, error: extractError } = await supabase.functions.invoke("extract-document-data", {
-            body: { documentUrl: urlData.signedUrl, systemType, source: uploadData.source },
+      // Universal upload flow: structure prompt (if needed) → AI extract →
+      // UnifiedDocumentReview. Same path as SystemConfigScreen so every
+      // upload entry point behaves identically.
+      if (recordId && signedUrlSnapshot) {
+        const targetSystemName = systemName || systemType;
+        if (systemDetailId && !structureAssignment) {
+          setPendingStructurePromptUpload({
+            recordId,
+            signedUrl: signedUrlSnapshot,
+            fileName: fileNameSnapshot,
+            targetSystemName,
           });
-          if (!extractError && extractData) {
-            // New tiered response
-            if (extractData.tier !== undefined) {
-              const state: ExtractionState = {
-                tier: extractData.tier,
-                confirmedFields: extractData.confirmedFields || {},
-                fieldsNeedingInput: extractData.fieldsNeedingInput || [],
-                overallConfidence: extractData.overallConfidence || 0,
-                documentQuality: extractData.documentQuality || "unknown",
-                fieldConfidences: extractData.fieldConfidences || {},
-                extracted: extractData.extracted || {},
-              };
-              setExtractionState(state);
-
-              // Auto-confirm for tiers 1-3
-              if (state.tier <= 3 && Object.keys(state.confirmedFields).length > 0) {
-                await autoConfirmData(state.confirmedFields, recordId);
-                if (state.tier === 1) {
-                  // Silent — no notification
-                } else if (state.tier === 2) {
-                  toast.success(`${Object.keys(state.confirmedFields).length} fields auto-added to your profile`);
-                } else {
-                  toast("A few records were added that you may want to glance at", { icon: "⚠️" });
-                }
-              }
-            } else {
-              // Legacy response — use old confirm-all flow
-              setExtractionState(null);
-              // Still show legacy UI via the extracted/confidence props
-            }
-          }
-        } catch {
-          // Extraction is best-effort
-        } finally {
-          setExtracting(false);
+        } else {
+          void runExtractAndOpenReview({
+            recordId,
+            signedUrl: signedUrlSnapshot,
+            fileName: fileNameSnapshot,
+            targetSystemName,
+          });
         }
       }
 
@@ -181,10 +231,9 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
     }
   };
 
-  const handleAutoConfirmed = async (data: Record<string, any>) => {
-    if (!lastUploadedRecordId) return;
-    await autoConfirmData(data, lastUploadedRecordId);
-    toast.success("All fields resolved and saved!");
+  const handleAutoConfirmed = async (_data: Record<string, any>) => {
+    // Legacy callback — no-op now that the unified review modal is the
+    // single point of confirmation.
     setExtractionState(null);
   };
 
@@ -474,6 +523,70 @@ const RecordRecoveryGuide = ({ systemType, propertyId, county, state, address }:
           </div>
         </div>
       )}
+
+      {/* Unified Document Review — opens after every upload from the
+          recovery flow so the user always confirms AI-extracted fields
+          before anything writes to system specs. */}
+      <Dialog
+        open={!!reviewState || extractingReview || !!pendingStructurePromptUpload}
+        onOpenChange={(o) => {
+          if (!o) {
+            setReviewState(null);
+            setPendingStructurePromptUpload(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStructurePromptUpload ? "Which structure does this serve?" : "Review AI-extracted details"}
+            </DialogTitle>
+          </DialogHeader>
+          {pendingStructurePromptUpload && systemDetailId ? (
+            <UploadStructurePrompt
+              systemDetailId={systemDetailId}
+              systemName={pendingStructurePromptUpload.targetSystemName}
+              onResolved={({ value }) => {
+                setStructureAssignment(value);
+                const ctx = pendingStructurePromptUpload;
+                setPendingStructurePromptUpload(null);
+                if (ctx) void runExtractAndOpenReview(ctx);
+              }}
+            />
+          ) : extractingReview && !reviewState ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Reading your document…
+            </div>
+          ) : reviewState && user?.id ? (
+            <UnifiedDocumentReview
+              propertyId={propertyId}
+              userId={user.id}
+              systemName={reviewState.targetSystemName}
+              fileName={reviewState.fileName}
+              recordId={reviewState.recordId}
+              extracted={reviewState.extracted}
+              onSaved={async () => {
+                try {
+                  await supabase.from("property_records")
+                    .update({ ai_verified: true } as any)
+                    .eq("id", reviewState.recordId);
+                } catch {}
+                setReviewState(null);
+                // Refresh local records list to pick up the verified badge.
+                const { data } = await supabase
+                  .from("property_records")
+                  .select("*")
+                  .eq("property_id", propertyId)
+                  .eq("system_type", systemType)
+                  .order("created_at", { ascending: false });
+                if (data) setRecords(data);
+              }}
+              onCompleteLater={() => setReviewState(null)}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
