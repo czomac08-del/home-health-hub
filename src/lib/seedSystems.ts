@@ -96,6 +96,13 @@ export async function seedSystemsFromOnboarding(
           source: "OWNER_PROVIDED",
         });
       }
+      // Also persist on the canonical "Sewer and Waste" system row so the
+      // system card doesn't re-prompt the user for type.
+      await writeSystemField({
+        propertyId, userId, systemName: "Sewer and Waste",
+        field: "systemType", value: "septic",
+        source: "OWNER_PROVIDED",
+      });
     } else {
       await writeSystemField({
         propertyId, userId, systemName: "Sewer and Waste",

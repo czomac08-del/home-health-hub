@@ -27,6 +27,7 @@ import StructureAssignmentSelector, { LEGACY_OPTION, LEGACY_STATUS } from "@/com
 import type { RefreshScope } from "@/hooks/useDataRefresh";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
+import UploadStructurePrompt from "@/components/UploadStructurePrompt";
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -137,6 +138,13 @@ const SystemConfigScreen = () => {
     targetSystemName: string;
   } | null>(null);
   const [extractingReview, setExtractingReview] = useState(false);
+  // When a document is uploaded from a system card and the system has not yet
+  // been assigned to a structure (Main House, Garage, Former, etc.), we hold
+  // the upload context here and prompt the user BEFORE running AI extraction.
+  const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
+    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
+    | null
+  >(null);
   const [locationTracking, setLocationTracking] = useState<Record<string, string>>({});
   const [showAiPicker, setShowAiPicker] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -483,6 +491,19 @@ const SystemConfigScreen = () => {
     // path does not need multi-instance routing — every system-card upload
     // must surface the review screen so the user confirms what AI found.
     if (vaultRecordId) {
+      // Universal rule: before extraction, if this system has not yet been
+      // assigned to a structure (Main House, Garage, Former, etc.), ask the
+      // user. We open the dialog with UploadStructurePrompt; once resolved we
+      // resume into runExtractAndOpenReview.
+      if (systemDetailId && !structureAssignment) {
+        setPendingStructurePromptUpload({
+          recordId: vaultRecordId,
+          signedUrl: signedData.signedUrl,
+          fileName: file.name,
+          targetSystemName: displayName,
+        });
+        return;
+      }
       void runExtractAndOpenReview({
         recordId: vaultRecordId,
         signedUrl: signedData.signedUrl,
@@ -515,7 +536,11 @@ const SystemConfigScreen = () => {
         try {
           await supabase
             .from("property_records")
-            .update({ ai_extracted_data: extracted, ai_verified: true } as any)
+            // IMPORTANT: do NOT set ai_verified=true here. Verification only
+            // happens after the user reviews the extracted fields in the
+            // UnifiedDocumentReview screen and saves. Premature verification
+            // hides un-reviewed data from the user.
+            .update({ ai_extracted_data: extracted } as any)
             .eq("id", recordId);
         } catch { /* best-effort */ }
       }
@@ -781,7 +806,31 @@ const SystemConfigScreen = () => {
           if (s?.waterType) setWaterType(s.waterType);
         }
         if (dn.includes("sewer") || dn.includes("waste")) {
-          if (s?.systemType) setSewerType(s.systemType);
+          if (s?.systemType) {
+            setSewerType(s.systemType);
+          } else {
+            // Fallback: if onboarding seeded sibling Septic System rows for
+            // this property, the user clearly chose septic — auto-persist it
+            // here so they aren't asked again.
+            try {
+              const { data: septicRows } = await supabase
+                .from("system_details")
+                .select("id")
+                .eq("property_id", activeProperty.id)
+                .ilike("system_name", "Septic%")
+                .limit(1);
+              if (septicRows && septicRows.length > 0) {
+                setSewerType("septic");
+                setSpecs((prev) => ({ ...prev, systemType: "septic" }));
+                if (data?.id) {
+                  await supabase
+                    .from("system_details")
+                    .update({ specs: { ...((data.specs as any) || {}), systemType: "septic" } as any })
+                    .eq("id", data.id);
+                }
+              }
+            } catch { /* best-effort */ }
+          }
         }
       }
       if (data.notes) setNotes(data.notes);
@@ -1398,14 +1447,33 @@ const SystemConfigScreen = () => {
           system card, so the user always confirms AI-extracted fields
           before anything writes to system specs. */}
       <Dialog
-        open={!!reviewState || extractingReview}
-        onOpenChange={(next) => { if (!next) setReviewState(null); }}
+        open={!!reviewState || extractingReview || !!pendingStructurePromptUpload}
+        onOpenChange={(next) => {
+          if (!next) {
+            setReviewState(null);
+            setPendingStructurePromptUpload(null);
+          }
+        }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Review AI-extracted details</DialogTitle>
+            <DialogTitle>
+              {pendingStructurePromptUpload ? "Which structure does this serve?" : "Review AI-extracted details"}
+            </DialogTitle>
           </DialogHeader>
-          {extractingReview && !reviewState ? (
+          {pendingStructurePromptUpload && systemDetailId ? (
+            <UploadStructurePrompt
+              systemDetailId={systemDetailId}
+              systemName={displayName}
+              onResolved={({ value }) => {
+                setStructureAssignment(value);
+                setSpecs((prev) => ({ ...prev, structure_assignment: value }));
+                const ctx = pendingStructurePromptUpload;
+                setPendingStructurePromptUpload(null);
+                if (ctx) void runExtractAndOpenReview(ctx);
+              }}
+            />
+          ) : extractingReview && !reviewState ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               <Sparkles className="h-5 w-5 text-primary mx-auto mb-2 animate-pulse" />
               Reading your document…
@@ -1418,7 +1486,17 @@ const SystemConfigScreen = () => {
               fileName={reviewState.fileName}
               recordId={reviewState.recordId}
               extracted={reviewState.extracted}
-              onSaved={() => setReviewState(null)}
+              onSaved={async () => {
+                // Universal rule: only mark ai_verified=true once the user has
+                // seen and confirmed the review screen.
+                try {
+                  await supabase
+                    .from("property_records")
+                    .update({ ai_verified: true } as any)
+                    .eq("id", reviewState.recordId);
+                } catch { /* best-effort */ }
+                setReviewState(null);
+              }}
               onCompleteLater={() => setReviewState(null)}
             />
           ) : null}
