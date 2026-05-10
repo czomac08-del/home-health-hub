@@ -1423,14 +1423,33 @@ const SystemConfigScreen = () => {
           system card, so the user always confirms AI-extracted fields
           before anything writes to system specs. */}
       <Dialog
-        open={!!reviewState || extractingReview}
-        onOpenChange={(next) => { if (!next) setReviewState(null); }}
+        open={!!reviewState || extractingReview || !!pendingStructurePromptUpload}
+        onOpenChange={(next) => {
+          if (!next) {
+            setReviewState(null);
+            setPendingStructurePromptUpload(null);
+          }
+        }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Review AI-extracted details</DialogTitle>
+            <DialogTitle>
+              {pendingStructurePromptUpload ? "Which structure does this serve?" : "Review AI-extracted details"}
+            </DialogTitle>
           </DialogHeader>
-          {extractingReview && !reviewState ? (
+          {pendingStructurePromptUpload && systemDetailId ? (
+            <UploadStructurePrompt
+              systemDetailId={systemDetailId}
+              systemName={displayName}
+              onResolved={({ value }) => {
+                setStructureAssignment(value);
+                setSpecs((prev) => ({ ...prev, structure_assignment: value }));
+                const ctx = pendingStructurePromptUpload;
+                setPendingStructurePromptUpload(null);
+                if (ctx) void runExtractAndOpenReview(ctx);
+              }}
+            />
+          ) : extractingReview && !reviewState ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               <Sparkles className="h-5 w-5 text-primary mx-auto mb-2 animate-pulse" />
               Reading your document…
@@ -1443,7 +1462,17 @@ const SystemConfigScreen = () => {
               fileName={reviewState.fileName}
               recordId={reviewState.recordId}
               extracted={reviewState.extracted}
-              onSaved={() => setReviewState(null)}
+              onSaved={async () => {
+                // Universal rule: only mark ai_verified=true once the user has
+                // seen and confirmed the review screen.
+                try {
+                  await supabase
+                    .from("property_records")
+                    .update({ ai_verified: true } as any)
+                    .eq("id", reviewState.recordId);
+                } catch { /* best-effort */ }
+                setReviewState(null);
+              }}
               onCompleteLater={() => setReviewState(null)}
             />
           ) : null}
