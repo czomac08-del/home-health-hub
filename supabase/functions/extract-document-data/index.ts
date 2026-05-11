@@ -39,7 +39,49 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
     "companyName": { "value": string or null, "confidence": 85 },
     "conditionRating": { "value": 1 | 2 | 3 | 4 | 5 | null, "confidence": 80 },
     "propertyAddress": { "value": string or null, "confidence": 95 },
-    "notes": { "value": string or null, "confidence": 70 }
+    "notes": { "value": string or null, "confidence": 70 },
+
+    "permitDate": { "value": "YYYY-MM-DD" or null, "confidence": 85 },
+    "issuingAuthority": { "value": "County health department / Environmental Health Division name" or null, "confidence": 85 },
+    "permitBy": { "value": "Official who issued/signed the permit" or null, "confidence": 80 },
+    "inspectedBy": { "value": "Inspector name" or null, "confidence": 80 },
+    "contractorName": { "value": string or null, "confidence": 80 },
+    "code": { "value": "Permit classification code as printed" or null, "confidence": 75 },
+
+    "bedroomsDesignedFor": { "value": number or null, "confidence": 85 },
+    "maxOccupants": { "value": number or null, "confidence": 80 },
+    "appliancesCovered": { "value": ["washing machine","garbage disposal","dishwasher"] or null, "confidence": 75 },
+    "waterSupplyType": { "value": "Municipal|Community|Non-Community|Private" or null, "confidence": 80 },
+
+    "tankCapacityGallons": { "value": number or null, "confidence": 90 },
+    "tankType": { "value": "Block|Precast|Fiberglass|Plastic|Steel" or null, "confidence": 85 },
+    "tankManufacturer": { "value": string or null, "confidence": 75 },
+    "tankPosition": { "value": "Position/orientation as written on permit" or null, "confidence": 70 },
+    "tankDistanceFromBuilding": { "value": number or null, "confidence": 80 },
+    "distributionBoxDistanceFromTank": { "value": number or null, "confidence": 75 },
+
+    "drainFieldSqFt": { "value": number or null, "confidence": 80 },
+    "drainFieldLines": { "value": number or null, "confidence": 80 },
+    "drainFieldTrenches": { "value": number or null, "confidence": 80 },
+    "trenchLengthFt": { "value": number or null, "confidence": 80 },
+    "trenchWidthFt": { "value": number or null, "confidence": 80 },
+    "drainTileType": { "value": "concrete|plastic|terra cotta" or null, "confidence": 75 },
+    "drainTileSizeInch": { "value": number or null, "confidence": 75 },
+    "crushedStoneDepthInch": { "value": number or null, "confidence": 75 },
+    "stoneUnderTileInch": { "value": number or null, "confidence": 75 },
+    "drainFieldDistanceFromBuilding": { "value": number or null, "confidence": 80 },
+    "seepagePit": { "value": "yes/no plus dimensions if present" or null, "confidence": 70 },
+    "sandFilter": { "value": "yes/no plus dimensions if present" or null, "confidence": 70 },
+
+    "wellDistanceFromTank": { "value": number or null, "confidence": 80 },
+    "wellDistanceFromDisposalField": { "value": number or null, "confidence": 80 },
+    "houseSewerSetback": { "value": number or null, "confidence": 75 },
+    "soilAppearance": { "value": "Suitable|Provisionally Suitable|Unsuitable" or null, "confidence": 75 },
+    "remarks": { "value": "Any handwritten notes / remarks block, verbatim" or null, "confidence": 65 },
+
+    "structureType": { "value": "House|Trailer|Commercial|ADU|Other" or null, "confidence": 80 },
+    "ownerNameOnPermit": { "value": string or null, "confidence": 80 },
+    "locationDescription": { "value": "Address or location/directions text as written on the permit" or null, "confidence": 85 }
   },
   "overall_confidence": 88,
   "document_quality": "good|fair|poor|damaged",
@@ -47,7 +89,9 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
   "possible_values": { "field_name": ["option1", "option2"] }
 }
 
-tankSize is in gallons. companyName is the servicing/installing company. conditionRating is an integer 1-5 (1=failing, 2=poor, 3=fair, 4=good, 5=excellent) — infer from condition language only when explicit (e.g. "system in excellent condition" → 5, "needs replacement" → 1); otherwise return null. Only return values explicitly present in the document — do not invent values.`,
+tankSize / tankCapacityGallons are in gallons (treat as the same number; populate both when present). All distances are in feet unless the form explicitly says otherwise. companyName is the servicing/installing company; contractorName is the contractor listed on the permit. conditionRating is an integer 1-5 (1=failing, 2=poor, 3=fair, 4=good, 5=excellent) — infer from condition language only when explicit (e.g. "system in excellent condition" → 5, "needs replacement" → 1); otherwise return null.
+
+This schema is designed for COUNTY HEALTH DEPARTMENT SEPTIC TANK INSPECTION RECORDS / SEPTIC PERMITS issued by Environmental Health Divisions nationwide. Recognize the form regardless of state, county, or layout — fields are often labeled with abbreviations or short codes. Capture handwritten values; if legibility is uncertain, lower the confidence for that field (<= 60) so the UI can flag it for human review. Only return values explicitly present in the document — do not invent values.`,
   permit: `Extract these fields from this building/construction permit. For each field, rate confidence 0-100. Return JSON only:
 {
   "fields": {

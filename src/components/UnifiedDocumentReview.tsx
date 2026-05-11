@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, AlertTriangle, Pencil, Sparkles, Loader2, FileText, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   prepareReviewRows,
   saveReviewedFields,
@@ -56,6 +57,52 @@ export default function UnifiedDocumentReview({
   /** Conflict resolutions: field.key -> "current" | "new" | undefined (unresolved). */
   const [conflictPick, setConflictPick] = useState<Record<string, "current" | "new">>({});
   const [saving, setSaving] = useState(false);
+
+  // ── Address verification (legacy / septic permits etc.) ────────────────
+  type AddressVerifyResponse =
+    | "previous_address_or_combined"
+    | "same_lot_structure"
+    | "different_property";
+  const [addressChecked, setAddressChecked] = useState(false);
+  const [addressMismatch, setAddressMismatch] = useState<{
+    documentAddress: string;
+    propertyAddress: string;
+  } | null>(null);
+  const [addressResponse, setAddressResponse] = useState<AddressVerifyResponse | null>(null);
+
+  const docAddressRaw =
+    (extracted?.locationDescription as string | undefined) ||
+    (extracted?.propertyAddress as string | undefined) ||
+    (extracted?.address as string | undefined) ||
+    null;
+
+  const normalizeAddr = (s: string | null | undefined) =>
+    String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!docAddressRaw) { setAddressChecked(true); return; }
+      const { data } = await supabase
+        .from("properties")
+        .select("address")
+        .eq("id", propertyId)
+        .maybeSingle();
+      if (cancelled) return;
+      const propAddr = (data?.address as string | undefined) ?? null;
+      if (propAddr) {
+        const a = normalizeAddr(propAddr);
+        const b = normalizeAddr(docAddressRaw);
+        // Mismatch only if neither contains the other (handles partial / verbose location text)
+        const matches = a && b && (a.includes(b) || b.includes(a));
+        if (!matches) {
+          setAddressMismatch({ documentAddress: docAddressRaw, propertyAddress: propAddr });
+        }
+      }
+      setAddressChecked(true);
+    })();
+    return () => { cancelled = true; };
+  }, [propertyId, docAddressRaw]);
 
   const tier = useMemo<ExtractionTier>(() => {
     return assessExtraction(extracted ?? {}).tier;
@@ -125,6 +172,28 @@ export default function UnifiedDocumentReview({
         ownerEdited: edited,
         documentDate: pickDocumentDate(extracted),
       });
+      // Persist the user's address-verification response (if any) onto the record.
+      if (recordId && addressMismatch && addressResponse) {
+        try {
+          await supabase
+            .from("property_records")
+            .update({
+              ai_extracted_data: {
+                ...(extracted ?? {}),
+                address_confirmation: {
+                  document_address: addressMismatch.documentAddress,
+                  property_address: addressMismatch.propertyAddress,
+                  response: addressResponse,
+                  confirmed_at: new Date().toISOString(),
+                  confirmed_by_user_id: userId,
+                },
+              },
+            } as any)
+            .eq("id", recordId);
+        } catch (e) {
+          console.warn("address_confirmation save failed", e);
+        }
+      }
       toast.success(
         result.written > 0
           ? `Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${systemName}`
@@ -147,11 +216,78 @@ export default function UnifiedDocumentReview({
     onCompleteLater();
   };
 
-  if (!rows) {
+  if (!rows || !addressChecked) {
     return (
       <div className="py-6 text-center text-sm text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
         Preparing review…
+      </div>
+    );
+  }
+
+  // Address verification gate — must be resolved before save (or reject to abort).
+  if (addressMismatch && !addressResponse) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-amber-600 font-semibold text-sm">
+            <AlertTriangle className="h-4 w-4" /> Address doesn't match
+          </div>
+          <p className="text-xs text-foreground">
+            The address on this document shows{" "}
+            <span className="font-semibold">{addressMismatch.documentAddress}</span>. Your property
+            is registered as{" "}
+            <span className="font-semibold">{addressMismatch.propertyAddress}</span>. Can you
+            confirm this document belongs to this property?
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-2.5"
+            onClick={() => setAddressResponse("previous_address_or_combined")}
+          >
+            Yes, this property was previously at that address or the parcels were combined
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left h-auto py-2.5"
+            onClick={() => setAddressResponse("same_lot_structure")}
+          >
+            Yes, this was a structure on the same lot
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-left h-auto py-2.5 text-destructive"
+            onClick={async () => {
+              setAddressResponse("different_property");
+              if (recordId) {
+                try {
+                  await supabase
+                    .from("property_records")
+                    .update({
+                      ai_extracted_data: {
+                        ...(extracted ?? {}),
+                        address_confirmation: {
+                          document_address: addressMismatch.documentAddress,
+                          property_address: addressMismatch.propertyAddress,
+                          response: "different_property",
+                          confirmed_at: new Date().toISOString(),
+                          confirmed_by_user_id: userId,
+                        },
+                      },
+                    } as any)
+                    .eq("id", recordId);
+                  await markRecordNeedsReview(recordId);
+                } catch {}
+              }
+              toast.info("Document not attached — it's marked as needing review in your vault.");
+              onCompleteLater();
+            }}
+          >
+            No, this document is for a different property
+          </Button>
+        </div>
       </div>
     );
   }
