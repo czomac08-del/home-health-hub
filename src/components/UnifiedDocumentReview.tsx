@@ -63,7 +63,6 @@ export default function UnifiedDocumentReview({
     | "previous_address_or_combined"
     | "same_lot_structure"
     | "different_property";
-  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
   const [addressChecked, setAddressChecked] = useState(false);
   const [addressMismatch, setAddressMismatch] = useState<{
     documentAddress: string;
@@ -91,7 +90,6 @@ export default function UnifiedDocumentReview({
         .maybeSingle();
       if (cancelled) return;
       const propAddr = (data?.address as string | undefined) ?? null;
-      setCurrentAddress(propAddr);
       if (propAddr) {
         const a = normalizeAddr(propAddr);
         const b = normalizeAddr(docAddressRaw);
