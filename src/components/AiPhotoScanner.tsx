@@ -420,7 +420,7 @@ export function AiScanReview({ result, onConfirm, onClose }: AiScanReviewProps) 
 
         {/* Photo preview */}
         <div className="rounded-xl overflow-hidden border border-border mb-4 max-h-48">
-          <img src={result.imagePreview} alt="Scanned" className="w-full object-contain max-h-48" />
+          <img src={result.imagePreview} alt="Scanned home system photo with AI-detected details" className="w-full object-contain max-h-48" />
         </div>
 
         {/* Summary for full_unit mode */}
