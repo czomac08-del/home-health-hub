@@ -213,6 +213,15 @@ const PricingPage = () => {
         title="Pricing — Independent Home Intelligence | ComingHomeIQ"
         description="The only independent home intelligence platform built for homeowners. Powered by real government data. Free to start, no credit card."
         path="/pricing"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqs.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        }}
       />
       {/* Nav */}
       <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">

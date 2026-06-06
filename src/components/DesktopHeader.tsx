@@ -62,6 +62,9 @@ const DesktopHeader = () => {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
+            aria-label="Open user account menu"
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <div className="relative">

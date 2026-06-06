@@ -36,7 +36,7 @@ const CookieConsentBanner = () => {
           We use cookies to improve your experience and analyze platform usage.{" "}
           <strong>We do not sell your data.</strong>{" "}
           <Link to="/privacy" className="underline text-primary hover:opacity-80">
-            Learn more
+            Learn more about our privacy policy
           </Link>
         </p>
         <div className="flex gap-2 w-full sm:w-auto">

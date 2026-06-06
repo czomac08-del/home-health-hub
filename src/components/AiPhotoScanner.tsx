@@ -246,7 +246,7 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
       {/* Camera viewfinder area */}
       <div className="flex-1 mx-4 relative rounded-2xl overflow-hidden bg-black/50 flex items-center justify-center border border-primary/10">
         {preview ? (
-          <img src={preview} alt="Captured" className="w-full h-full object-contain" />
+          <img src={preview} alt="Captured photo of home system or appliance for AI analysis" className="w-full h-full object-contain" />
         ) : (
           <>
             <video
@@ -420,7 +420,7 @@ export function AiScanReview({ result, onConfirm, onClose }: AiScanReviewProps) 
 
         {/* Photo preview */}
         <div className="rounded-xl overflow-hidden border border-border mb-4 max-h-48">
-          <img src={result.imagePreview} alt="Scanned" className="w-full object-contain max-h-48" />
+          <img src={result.imagePreview} alt="Scanned home system photo with AI-detected details" className="w-full object-contain max-h-48" />
         </div>
 
         {/* Summary for full_unit mode */}
@@ -591,7 +591,7 @@ export function ScanHistory({ scans }: { scans: ScanResult[] }) {
         {recent.map((scan, i) => (
           <div key={i} className="shrink-0 w-24">
             <div className="h-20 w-24 rounded-lg overflow-hidden border border-border mb-1.5">
-              <img src={scan.imagePreview} alt="Scan" className="w-full h-full object-cover" />
+              <img src={scan.imagePreview} alt="Previously scanned home system photo" className="w-full h-full object-cover" />
             </div>
             <p className="text-[10px] text-muted-foreground truncate">
               {scan.data.brand || scan.data.unitType || scan.mode}

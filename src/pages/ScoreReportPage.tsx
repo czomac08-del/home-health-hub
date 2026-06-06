@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Home, Shield, Star, Check, Lock, AlertTriangle, Clock, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import SEO from "@/components/SEO";
 
 const systemsData = [
   { name: "HVAC", health: 92, status: "green", last: "Mar 2024" },
@@ -32,6 +33,12 @@ const ScoreReportPage = () => {
 
   return (
     <div className="min-h-screen pb-16 max-w-lg mx-auto px-4 py-6">
+      <SEO
+        title={`Home Passport Report${activeProperty?.address ? ` — ${activeProperty.address}` : ""}`}
+        description={`Verified Home Passport Report for ${activeProperty?.address || "this property"} — overall health score, system condition, maintenance history, and timeline.`}
+        path={`/report/${id ?? ""}`}
+        type="article"
+      />
       {/* Header */}
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1 mb-4">

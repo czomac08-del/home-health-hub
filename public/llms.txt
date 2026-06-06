@@ -1,0 +1,26 @@
+# ComingHomeIQ
+
+> Your Home's Complete IQ — the independent home intelligence platform that gives homeowners, buyers, realtors, inspectors, contractors, and investors a verified Home Passport for every property.
+
+ComingHomeIQ is an independent (not owned by an insurer or warranty company) home management platform. We combine homeowner-uploaded records with live public data — FEMA flood zones, NOAA storm history, EPA environmental facilities, USDA drought monitoring, county permits, and Census geocoding — to produce a verified Home Passport, a 0–100 health score, and per-system maintenance intelligence for every U.S. property.
+
+## Pages
+
+- [Home](/): What ComingHomeIQ does and why an independent home file matters.
+- [Pricing](/pricing): Plans for homeowners and professionals, 14-day free trial, free Home Passport tier.
+- [Centriq Alternative](/centriq-alternative): How ComingHomeIQ compares to Centriq for independent home management.
+- [API & Developer Docs](/api-docs): Developer preview of the ComingHomeIQ API for verified home data.
+- [Partners & Affiliates](/partners): Revenue-share program for creators and community leaders.
+- [Terms of Service](/terms): Legal terms for using ComingHomeIQ.
+- [Privacy Policy](/privacy): How we handle property and personal data — we do not sell your data.
+- [Privacy Rights](/privacy-rights): State-specific privacy rights (CCPA, CPRA, and equivalents).
+
+## Blog
+
+- [Blog](/blog): Guides on home records, permits, inspections, and property history.
+- [How to look up permit history on a house](/blog/how-to-look-up-permit-history-on-a-house): Free step-by-step guide to finding building permits by address.
+- [Centriq alternative](/blog/centriq-alternative): Why homeowners are switching from Centriq to ComingHomeIQ.
+
+## Optional
+
+- [Unsubscribe](/unsubscribe): Email preference management.
