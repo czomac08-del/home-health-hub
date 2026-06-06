@@ -52,7 +52,7 @@ const CentriqAlternativePage = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="Centriq Alternative — ComingHomeIQ | The Home App Centriq Used to Be"
+        title="Centriq Alternative — ComingHomeIQ"
         description="Looking for a Centriq alternative? ComingHomeIQ is the independent home management platform built for homeowners — not owned by a warranty company."
         path="/centriq-alternative"
         jsonLd={jsonLd}
