@@ -123,7 +123,7 @@ const BlogIndexPage = () => {
                     onClick={() => navigate(`/blog/${p.slug}`)}
                     className="text-sm font-heading font-extrabold text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    Read More <ChevronRight className="h-4 w-4" />
+                    Read the full article <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </article>
