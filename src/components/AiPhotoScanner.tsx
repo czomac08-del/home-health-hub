@@ -246,7 +246,7 @@ function AiCameraOverlay({ mode, onModeChange, onClose, onScanComplete, showRece
       {/* Camera viewfinder area */}
       <div className="flex-1 mx-4 relative rounded-2xl overflow-hidden bg-black/50 flex items-center justify-center border border-primary/10">
         {preview ? (
-          <img src={preview} alt="Captured" className="w-full h-full object-contain" />
+          <img src={preview} alt="Captured photo of home system or appliance for AI analysis" className="w-full h-full object-contain" />
         ) : (
           <>
             <video
