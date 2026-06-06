@@ -41,6 +41,31 @@ function valuesConflict(a: string | null, b: string | null) {
   return a.trim().toLowerCase() !== b.trim().toLowerCase();
 }
 
+/** Translates common AI extraction key aliases to their canonical spec keys. */
+const KEY_ALIASES: Record<string, string> = {
+  lastPumpDate: "lastPumped",
+  lastPumpedDate: "lastPumped",
+  pumpDate: "lastPumped",
+  companyName: "pumpingCompany",
+  company: "pumpingCompany",
+  installDate: "install_date",
+  technicianName: "inspectedBy",
+  technician: "inspectedBy",
+  beds: "bedrooms",
+  numBedrooms: "bedrooms",
+};
+
+function normalizeExtracted(extracted: Record<string, any> | undefined | null): Record<string, any> {
+  const out: Record<string, any> = { ...(extracted || {}) };
+  for (const [alias, canonical] of Object.entries(KEY_ALIASES)) {
+    const v = (extracted as any)?.[alias];
+    if (v != null && v !== "" && (out[canonical] == null || out[canonical] === "")) {
+      out[canonical] = v;
+    }
+  }
+  return out;
+}
+
 /** Build the row buckets for the review screen. */
 export async function prepareReviewRows(args: {
   propertyId: string;
@@ -48,6 +73,7 @@ export async function prepareReviewRows(args: {
   extracted: Record<string, any>;
 }): Promise<ReviewRow[]> {
   const fields = getSpecFields(args.systemName);
+  const normalized = normalizeExtracted(args.extracted);
   const { data: existing } = await supabase
     .from("system_details")
     .select("*")
@@ -56,7 +82,7 @@ export async function prepareReviewRows(args: {
     .maybeSingle();
 
   return fields.map((field) => {
-    const aiRaw = args.extracted?.[field.key];
+    const aiRaw = normalized?.[field.key];
     const aiValue =
       aiRaw == null || aiRaw === "" ? null : String(aiRaw);
     const currentValue = readField(existing, field.key);

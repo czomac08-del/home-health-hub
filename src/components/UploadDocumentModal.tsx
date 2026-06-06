@@ -16,6 +16,7 @@ import UnifiedDocumentReview from "./UnifiedDocumentReview";
 import VaultRecordReview from "./VaultRecordReview";
 import UploadStructurePrompt from "./UploadStructurePrompt";
 import { isLegacyAssignment } from "./StructureAssignmentSelector";
+import { getSpecFields } from "@/data/systemSpecFields";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -447,28 +448,42 @@ export default function UploadDocumentModal({
           docSystemType === "sewer_and_waste" ||
           docSystemType === "sewer-and-waste" ||
           docSystemType === "sewer" ||
-          detectedSystem === "septic";
+          docSystemType === "sewer_waste" ||
+          detectedSystem === "septic" ||
+          detectedSystem === "sewer_waste";
 
         if (isSepticDoc && user && activeProperty?.id) {
           const e = extracted as any;
-          const septicSpecKeys = [
-            "tankSize",
-            "tankCount",
-            "systemType",
-            "lastPumpDate",
-            "drainFieldCondition",
-            "permitNumber",
-            "installDate",
-            "technicianName",
-            "company",
-            "conditionRating",
-            "propertyAddress",
-            "notes",
-          ] as const;
+          const septicSpecKeySet = new Set(
+            getSpecFields("Septic System").map((f) => f.key),
+          );
+          const SEPTIC_KEY_ALIASES: Record<string, string> = {
+            lastPumpDate: "lastPumped",
+            lastPumpedDate: "lastPumped",
+            pumpDate: "lastPumped",
+            companyName: "pumpingCompany",
+            company: "pumpingCompany",
+            pumpCompany: "pumpingCompany",
+            serviceCompany: "pumpingCompany",
+            installDate: "install_date",
+            technician: "inspectedBy",
+            technicianName: "inspectedBy",
+            inspector: "inspectedBy",
+            drainFieldCondition: "remarks",
+            conditionRating: "remarks",
+            beds: "bedrooms",
+            numBedrooms: "bedrooms",
+            notes: "notes",
+          };
 
           const newSpecs: Record<string, any> = {};
-          for (const k of septicSpecKeys) {
-            if (e?.[k] != null && e[k] !== "") newSpecs[k] = e[k];
+          for (const [rawKey, rawVal] of Object.entries(e || {})) {
+            if (rawVal == null || rawVal === "") continue;
+            if (septicSpecKeySet.has(rawKey)) {
+              newSpecs[rawKey] = rawVal;
+            } else if (SEPTIC_KEY_ALIASES[rawKey]) {
+              newSpecs[SEPTIC_KEY_ALIASES[rawKey]] = rawVal;
+            }
           }
 
           if (Object.keys(newSpecs).length > 0) {
@@ -489,19 +504,16 @@ export default function UploadDocumentModal({
             // Newer pump-out / inspection / install date is the most authoritative
             // signal for septic docs.
             const docDate =
-              newSpecs.lastPumpDate ||
+              newSpecs.lastPumped ||
               (e as any).inspection_date ||
               (e as any).report_date ||
-              newSpecs.installDate ||
+              newSpecs.install_date ||
               null;
             const result = await writeSystemFields({
               propertyId: activeProperty.id,
               userId: user.id,
               systemName: targetSystemName,
-              fields: {
-                ...newSpecs,
-                ...(newSpecs.installDate ? { install_date: newSpecs.installDate } : {}),
-              },
+              fields: newSpecs,
               source: "DOCUMENT_EXTRACTED",
               documentDate: docDate,
             });
