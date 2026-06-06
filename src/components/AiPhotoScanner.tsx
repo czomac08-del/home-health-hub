@@ -591,7 +591,7 @@ export function ScanHistory({ scans }: { scans: ScanResult[] }) {
         {recent.map((scan, i) => (
           <div key={i} className="shrink-0 w-24">
             <div className="h-20 w-24 rounded-lg overflow-hidden border border-border mb-1.5">
-              <img src={scan.imagePreview} alt="Scan" className="w-full h-full object-cover" />
+              <img src={scan.imagePreview} alt="Previously scanned home system photo" className="w-full h-full object-cover" />
             </div>
             <p className="text-[10px] text-muted-foreground truncate">
               {scan.data.brand || scan.data.unitType || scan.mode}
