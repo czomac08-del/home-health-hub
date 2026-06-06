@@ -242,6 +242,7 @@ export function getSpecFields(systemName: string): SpecField[] {
   if (lower.includes("propane")) return propaneFields;
   if (lower.includes("natural gas")) return naturalGasFields;
   if (lower.includes("septic")) return septicFields;
+  if (lower.includes("sewer") && lower.includes("waste")) return septicFields;
   if (lower.includes("sewer")) return citySewerFields;
   if (lower.includes("electrical")) return electricalFields;
   if (lower.includes("roof")) return roofFields;
