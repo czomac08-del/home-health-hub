@@ -805,6 +805,7 @@ const OnboardingWizard = () => {
         else if (yr >= 1970) ageRange = "1970–1990";
         else if (yr >= 1950) ageRange = "1950–1970";
         update("homeAge", ageRange);
+        update("specificYear", String(yr));
         filled.add("homeAge");
       }
       if (json.propertyType) {
