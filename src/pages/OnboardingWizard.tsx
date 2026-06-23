@@ -1359,11 +1359,51 @@ const OnboardingWizard = () => {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">How old is your home?</label>
-              <select value={data.homeAge} onChange={e => update("homeAge", e.target.value)}
+              <select
+                value={data.homeAge}
+                onChange={e => {
+                  const next = e.target.value;
+                  update("homeAge", next);
+                  // Pre-fill the specific-year input with the midpoint of the chosen
+                  // range so the user can tweak rather than re-type. year_built is
+                  // only ever written from this confirmed specific year.
+                  update("specificYear", ageRangeMidpoint(next));
+                }}
                 className="w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
                 <option value="">Select age range...</option>
                 {ageRanges.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
+              {data.homeAge && (() => {
+                const b = ageRangeBounds(data.homeAge);
+                const valid = isValidSpecificYear(data.specificYear, data.homeAge);
+                return (
+                  <div className="mt-3">
+                    <label className="text-sm font-medium text-foreground mb-2 block">
+                      What specific year was it built?
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d{4}"
+                      maxLength={4}
+                      value={data.specificYear}
+                      onChange={e => update("specificYear", e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                      placeholder={b ? `e.g. ${ageRangeMidpoint(data.homeAge)}` : "YYYY"}
+                      className="w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    {b && !valid && data.specificYear.length === 4 && (
+                      <p className="mt-1 text-xs text-destructive">
+                        Enter a year between {b.min} and {b.max}.
+                      </p>
+                    )}
+                    {b && data.specificYear.length < 4 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Pre-filled with the midpoint — adjust to the actual year if you know it.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             {isManufactured && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
