@@ -299,6 +299,18 @@ const SystemConfigScreen = () => {
     if (fields.filterSize) setSpec("filterSize", fields.filterSize);
     if (fields.serviceCompany) setServiceCompany(fields.serviceCompany);
     if (fields.servicePhone) setServicePhone(fields.servicePhone);
+    // Persist directly to system_details with PHOTO_AI source tag so the
+    // scan result is not silently lost if the user closes the form.
+    if (user?.id && activeProperty?.id && displayName) {
+      const raw = (scanResult?.data as Record<string, any>) || {};
+      savePhotoAiResult({
+        propertyId: activeProperty.id,
+        userId: user.id,
+        systemName: displayName,
+        result: raw,
+        overrides: fields,
+      }).catch((e) => console.error("[SystemConfig] PHOTO_AI save failed", e));
+    }
     setScanResult(null);
     toast.success("AI scan data saved to form!");
   };
