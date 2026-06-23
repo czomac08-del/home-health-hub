@@ -204,6 +204,14 @@ export function pickDocumentDate(extracted: Record<string, any>): string | null 
     extracted?.install_date ||
     extracted?.installDate ||
     extracted?.purchase_date ||
+    extracted?.permitDate ||
+    extracted?.permit_date ||
+    extracted?.drill_date ||
+    extracted?.wellDrillDate ||
+    extracted?.issue_date ||
+    extracted?.issueDate ||
+    extracted?.recorded_date ||
+    extracted?.recordedDate ||
     null
   );
 }
