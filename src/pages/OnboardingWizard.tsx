@@ -47,6 +47,7 @@ function parseMatchedAddress(matched: string): { street: string; city: string; s
 interface WizardData {
   homeType: string;
   homeAge: string;
+  specificYear: string;
   waterSource: string;
   hasWaterFilter: boolean;
   hasWaterSoftener: boolean;
@@ -70,7 +71,7 @@ interface WizardData {
 }
 
 const defaultData: WizardData = {
-  homeType: "", homeAge: "", waterSource: "",
+  homeType: "", homeAge: "", specificYear: "", waterSource: "",
   hasWaterFilter: false, hasWaterSoftener: false, knowsWaterShutoff: true,
   hvacType: "", fuelType: "", propaneTankOwned: true, knowsFilterLocation: true,
   hasGenerator: false, hasSolar: false, septicOrSewer: "", hasMultipleSeptic: false,
