@@ -48,6 +48,7 @@ export async function seedSystemsFromOnboarding(
     septicOrSewer?: string;
     hasMultipleSeptic?: boolean;
     homeAge?: string | number;
+    specificYear?: string | number | null;
   },
 ) {
   await seedStandardSystemRows(propertyId, userId);
