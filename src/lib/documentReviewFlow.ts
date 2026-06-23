@@ -85,6 +85,43 @@ export const EXTRACTION_KEY_ALIASES: Record<string, string> = {
 
 const KEY_ALIASES = EXTRACTION_KEY_ALIASES; // back-compat
 
+/**
+ * Map of alias keys → canonical top-level system_details column names.
+ * Used by saveReviewedFields to guarantee that confirmed brand/model/serial/
+ * date/warranty/service values land on the top-level columns (not just specs)
+ * regardless of which case style the spec field used.
+ */
+const TOP_LEVEL_ALIAS_TO_CANONICAL: Record<string, string> = {
+  brand: "brand",
+  manufacturer: "brand",
+  make: "brand",
+  model: "model",
+  modelNumber: "model",
+  model_number: "model",
+  serial_number: "serial_number",
+  serialNumber: "serial_number",
+  serial: "serial_number",
+  install_date: "install_date",
+  installDate: "install_date",
+  installationDate: "install_date",
+  installation_date: "install_date",
+  warranty_exp: "warranty_exp",
+  warrantyExp: "warranty_exp",
+  warrantyExpiration: "warranty_exp",
+  warranty_expiration: "warranty_exp",
+  warrantyExpDate: "warranty_exp",
+  warranty_provider: "warranty_provider",
+  warrantyProvider: "warranty_provider",
+  service_company: "service_company",
+  serviceCompany: "service_company",
+  service_phone: "service_phone",
+  servicePhone: "service_phone",
+  last_service: "last_service",
+  lastService: "last_service",
+  next_service: "next_service",
+  nextService: "next_service",
+};
+
 function snakeToCamel(s: string): string {
   return s.replace(/_([a-z0-9])/gi, (_, c) => String(c).toUpperCase());
 }
