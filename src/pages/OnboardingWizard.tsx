@@ -85,6 +85,40 @@ const ageRanges = [
   "Built before 1950", "1950–1970", "1970–1990", "1990–2010", "2010–2020", "2020 or newer",
 ];
 
+/**
+ * Returns the inclusive [min, max] year range for a given age-range label.
+ * Used to validate the specific-year input and to compute its midpoint pre-fill.
+ */
+function ageRangeBounds(range: string): { min: number; max: number } | null {
+  const currentYear = new Date().getFullYear();
+  switch (range) {
+    case "Built before 1950": return { min: 1700, max: 1949 };
+    case "1950–1970":         return { min: 1950, max: 1970 };
+    case "1970–1990":         return { min: 1970, max: 1990 };
+    case "1990–2010":         return { min: 1990, max: 2010 };
+    case "2010–2020":         return { min: 2010, max: 2020 };
+    case "2020 or newer":     return { min: 2020, max: currentYear + 1 };
+    default: return null;
+  }
+}
+
+function ageRangeMidpoint(range: string): string {
+  const b = ageRangeBounds(range);
+  if (!b) return "";
+  // For "Built before 1950" default to 1940 rather than 1824.
+  if (range === "Built before 1950") return "1940";
+  if (range === "2020 or newer") return String(new Date().getFullYear());
+  return String(Math.round((b.min + b.max) / 2));
+}
+
+function isValidSpecificYear(specificYear: string, homeAge: string): boolean {
+  if (!/^\d{4}$/.test(specificYear)) return false;
+  const yr = parseInt(specificYear, 10);
+  const b = ageRangeBounds(homeAge);
+  if (!b) return false;
+  return yr >= b.min && yr <= b.max;
+}
+
 
 const hvacTypes = [
   { id: "central", label: "Central HVAC", icon: ThermometerSun },
