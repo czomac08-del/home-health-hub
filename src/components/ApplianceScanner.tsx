@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Camera, Loader2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeImageFile, fileToDataUrl } from "@/lib/imageUpload";
+import { savePhotoAiResult } from "@/lib/photoAiSave";
 
 interface ScannedFields {
   brand: string | null;
@@ -13,9 +14,12 @@ interface ScannedFields {
 interface ApplianceScannerProps {
   systemName: string;
   onFieldsScanned: (fields: ScannedFields) => void;
+  /** When provided, scanned fields are persisted to system_details with PHOTO_AI tag. */
+  propertyId?: string;
+  userId?: string;
 }
 
-export default function ApplianceScanner({ systemName, onFieldsScanned }: ApplianceScannerProps) {
+export default function ApplianceScanner({ systemName, onFieldsScanned, propertyId, userId }: ApplianceScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scannedFields, setScannedFields] = useState<ScannedFields | null>(null);
@@ -55,6 +59,14 @@ export default function ApplianceScanner({ systemName, onFieldsScanned }: Applia
 
       setScannedFields(fields);
       onFieldsScanned(fields);
+      if (propertyId && userId) {
+        savePhotoAiResult({
+          propertyId,
+          userId,
+          systemName,
+          result,
+        }).catch((err) => console.error("[ApplianceScanner] PHOTO_AI save failed", err));
+      }
     } catch (err: any) {
       console.error("Scan error:", err);
       setError(err?.message || "Couldn't read label — please enter manually.");
