@@ -141,7 +141,7 @@ function formatInspectionDate(d?: string | null): string | null {
 const SystemDetailScreen = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { activeProperty } = useAuth();
+  const { activeProperty, user } = useAuth();
   const system = systems.find((s) => s.id === id);
   const details = id ? systemDetails[id] : undefined;
   const [checked, setChecked] = useState<boolean[]>(details ? details.steps.map(() => false) : []);
@@ -410,6 +410,8 @@ const SystemDetailScreen = () => {
       {/* AI Appliance Scanner */}
       <ApplianceScanner
         systemName={system.name}
+        propertyId={activeProperty?.id}
+        userId={user?.id}
         onFieldsScanned={(fields) => console.log("Scanned fields for", system.name, fields)}
       />
 

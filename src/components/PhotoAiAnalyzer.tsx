@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Sparkles, X, Loader2, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { savePhotoAiResult } from "@/lib/photoAiSave";
 
 export interface AnalyzablePhoto {
   id: string;                  // system_photos.id
@@ -102,7 +103,7 @@ function ConfirmModal({ photo, result, onClose, onSaved }: ConfirmModalProps) {
       // Merge into system_details — only fill empty fields, tag sources
       const { data: row } = await supabase
         .from("system_details")
-        .select("id, brand, model, serial_number, notes, specs, source_tags")
+        .select("id, brand, model, serial_number, notes, specs, source_tags, property_id, user_id, system_name")
         .eq("id", photo.systemDetailId)
         .maybeSingle();
       if (row) {
@@ -129,6 +130,22 @@ function ConfirmModal({ photo, result, onClose, onSaved }: ConfirmModalProps) {
           await supabase.from("system_details").update(update).eq("id", row.id);
         } else if (Object.keys(sourceTags).length) {
           await supabase.from("system_details").update({ source_tags: sourceTags } as any).eq("id", row.id);
+        }
+
+        // Persist canonical fields with PHOTO_AI source tag through the
+        // shared writer so trust/conflict bookkeeping stays consistent.
+        if ((row as any).property_id && (row as any).user_id && (row as any).system_name) {
+          try {
+            await savePhotoAiResult({
+              propertyId: (row as any).property_id,
+              userId: (row as any).user_id,
+              systemName: (row as any).system_name,
+              result,
+              overrides: { brand, model, serial_number: serial },
+            });
+          } catch (err) {
+            console.error("[PhotoAiAnalyzer] PHOTO_AI save failed", err);
+          }
         }
       }
 

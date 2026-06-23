@@ -27,6 +27,8 @@ const TOP_LEVEL_FIELDS = new Set([
   "service_phone",
   "location_in_home",
   "notes",
+  "status",
+  "health_score",
 ]);
 
 function readField(row: any, key: string): string | null {
@@ -41,26 +43,68 @@ function valuesConflict(a: string | null, b: string | null) {
   return a.trim().toLowerCase() !== b.trim().toLowerCase();
 }
 
-/** Translates common AI extraction key aliases to their canonical spec keys. */
-const KEY_ALIASES: Record<string, string> = {
+/**
+ * Translates common AI extraction key aliases to their canonical spec keys.
+ * Covers snake_case → camelCase mismatches and common synonym variants
+ * returned by extract-document-data and ai-scan across system types.
+ */
+export const EXTRACTION_KEY_ALIASES: Record<string, string> = {
+  // Septic
   lastPumpDate: "lastPumped",
   lastPumpedDate: "lastPumped",
   pumpDate: "lastPumped",
   companyName: "pumpingCompany",
   company: "pumpingCompany",
-  installDate: "install_date",
   technicianName: "inspectedBy",
   technician: "inspectedBy",
   beds: "bedrooms",
   numBedrooms: "bedrooms",
+  permit_number: "permitNumber",
+  tank_capacity: "tankCapacityGallons",
+  drain_field_sq_ft: "drainFieldSqFt",
+  soil_type: "soilType",
+  // Install date stays canonical
+  installDate: "install_date",
+  install_date: "install_date",
+  inspectedBy: "inspectedBy",
+  // Well water
+  depth_ft: "wellDepth",
+  casing_diameter_in: "casingDiameter",
+  driller_name: "wellDriller",
+  static_water_level_ft: "waterTableDepth",
+  drill_date: "wellDrillDate",
+  pump_gpm: "wellFlowRate",
+  // HVAC service records
+  company_name: "service_company",
+  model_number: "model",
+  next_service_date: "next_service",
+  service_date: "last_service",
+  refrigerant_type: "refrigerantType",
+  work_performed: "notes",
 };
+
+const KEY_ALIASES = EXTRACTION_KEY_ALIASES; // back-compat
+
+function snakeToCamel(s: string): string {
+  return s.replace(/_([a-z0-9])/gi, (_, c) => String(c).toUpperCase());
+}
 
 function normalizeExtracted(extracted: Record<string, any> | undefined | null): Record<string, any> {
   const out: Record<string, any> = { ...(extracted || {}) };
-  for (const [alias, canonical] of Object.entries(KEY_ALIASES)) {
-    const v = (extracted as any)?.[alias];
-    if (v != null && v !== "" && (out[canonical] == null || out[canonical] === "")) {
-      out[canonical] = v;
+  if (!extracted) return out;
+  for (const [k, v] of Object.entries(extracted)) {
+    if (v == null || v === "") continue;
+    const aliased = EXTRACTION_KEY_ALIASES[k];
+    if (aliased) {
+      if (out[aliased] == null || out[aliased] === "") out[aliased] = v;
+      continue;
+    }
+    // Auto-convert snake_case → camelCase when there is no explicit alias.
+    if (k.includes("_")) {
+      const camel = snakeToCamel(k);
+      if (camel !== k && (out[camel] == null || out[camel] === "")) {
+        out[camel] = v;
+      }
     }
   }
   return out;
