@@ -19,14 +19,11 @@ const JoinReferralScreen = () => {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("referral_codes")
-        .select("referrer_type")
-        .eq("code", captured)
-        .maybeSingle();
-      if (data) {
+      const { data } = await (supabase as any).rpc("validate_referral_code", { _code: captured });
+      const row = Array.isArray(data) ? data[0] : null;
+      if (row) {
         setValid(true);
-        setReferrerType(data.referrer_type as "homeowner" | "contractor");
+        setReferrerType(row.referrer_type as "homeowner" | "contractor");
       } else {
         setValid(false);
       }
