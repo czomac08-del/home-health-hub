@@ -941,7 +941,10 @@ const OnboardingWizard = () => {
           fuelType: data.fuelType,
           septicOrSewer: data.septicOrSewer,
           hasMultipleSeptic: data.hasMultipleSeptic,
-          homeAge: data.homeAge,
+          // Don't pass the range string — seedSystems used to parse the
+          // bottom of the range as year_built. Pass the confirmed specific year.
+          homeAge: undefined,
+          specificYear: isValidSpecificYear(data.specificYear, data.homeAge) ? data.specificYear : null,
         });
       } catch (e) {
         console.warn("seedSystemsFromOnboarding failed", e);
