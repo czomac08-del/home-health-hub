@@ -841,7 +841,8 @@ const OnboardingWizard = () => {
     if (step === 2) {
       // If public records filled it in, the confirmation card always passes through
       if (prefilledFields.size > 0 && (data.homeType || data.homeAge)) return true;
-      return !!data.homeType && !!data.homeAge;
+      // Require a specific, in-range year — never let a user advance with only a range.
+      return !!data.homeType && !!data.homeAge && isValidSpecificYear(data.specificYear, data.homeAge);
     }
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
