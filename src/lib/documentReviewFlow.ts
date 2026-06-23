@@ -221,6 +221,46 @@ export async function saveReviewedFields(args: {
     written += r.written;
     conflicts += r.conflicts;
   }
+
+  // Ensure top-level system_details columns get populated even when the spec
+  // field key didn't match the canonical column name. UnifiedDocumentReview
+  // routes everything through here, so this is the only chance we get to
+  // mirror brand/model/serial/date/warranty/service values to the row's
+  // top-level columns. writeSystemFields is idempotent for unchanged values.
+  const topLevelOwner: Record<string, string> = {};
+  const topLevelDoc: Record<string, string> = {};
+  for (const [k, v] of Object.entries(args.values)) {
+    if (v == null || v === "") continue;
+    const canon = TOP_LEVEL_ALIAS_TO_CANONICAL[k];
+    if (!canon) continue;
+    if (args.ownerEdited.has(k)) topLevelOwner[canon] = v;
+    else topLevelDoc[canon] = v;
+  }
+  if (Object.keys(topLevelOwner).length) {
+    const r = await writeSystemFields({
+      propertyId: args.propertyId,
+      userId: args.userId,
+      systemName: args.systemName,
+      fields: topLevelOwner,
+      source: "OWNER_PROVIDED",
+      documentDate: args.documentDate ?? null,
+    });
+    written += r.written;
+    conflicts += r.conflicts;
+  }
+  if (Object.keys(topLevelDoc).length) {
+    const r = await writeSystemFields({
+      propertyId: args.propertyId,
+      userId: args.userId,
+      systemName: args.systemName,
+      fields: topLevelDoc,
+      source: "DOCUMENT_EXTRACTED",
+      documentDate: args.documentDate ?? null,
+    });
+    written += r.written;
+    conflicts += r.conflicts;
+  }
+
   return { written, conflicts };
 }
 
