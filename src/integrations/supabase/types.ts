@@ -3244,6 +3244,7 @@ export type Database = {
           updated_at: string
           user_id: string
           year_built: string | null
+          year_built_needs_confirmation: boolean
           zip: string | null
         }
         Insert: {
@@ -3277,6 +3278,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           year_built?: string | null
+          year_built_needs_confirmation?: boolean
           zip?: string | null
         }
         Update: {
@@ -3310,6 +3312,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           year_built?: string | null
+          year_built_needs_confirmation?: boolean
           zip?: string | null
         }
         Relationships: [
