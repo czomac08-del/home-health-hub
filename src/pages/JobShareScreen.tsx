@@ -92,8 +92,8 @@ const JobShareScreen = () => {
           .from("contractor-submissions")
           .upload(path, f, { contentType: f.type });
         if (!upErr) {
-          const { data: pub } = supabase.storage.from("contractor-submissions").getPublicUrl(path);
-          if (pub?.publicUrl) photoUrls.push(pub.publicUrl);
+          // Bucket is private; store storage path. Owner generates signed URLs at view time.
+          photoUrls.push(path);
         }
       }
 

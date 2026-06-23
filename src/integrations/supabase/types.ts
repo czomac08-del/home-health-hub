@@ -5209,6 +5209,14 @@ export type Database = {
       record_share_view: { Args: { _token: string }; Returns: undefined }
       revoke_property_share: { Args: { _share_id: string }; Returns: boolean }
       spend_credits: { Args: { _amount: number }; Returns: boolean }
+      validate_referral_code: {
+        Args: { _code: string }
+        Returns: {
+          code: string
+          referrer_type: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:

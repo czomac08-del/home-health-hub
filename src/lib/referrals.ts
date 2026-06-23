@@ -126,11 +126,8 @@ export async function attributeSignupReferral(referredUserId: string): Promise<v
 
   if (!code) return;
 
-  const { data: codeRow } = await supabase
-    .from("referral_codes")
-    .select("user_id, code, referrer_type")
-    .eq("code", code)
-    .maybeSingle();
+  const { data: codeRows } = await (supabase as any).rpc("validate_referral_code", { _code: code });
+  const codeRow = Array.isArray(codeRows) ? codeRows[0] : null;
 
   if (!codeRow || codeRow.user_id === referredUserId) {
     clearStoredReferralCode();

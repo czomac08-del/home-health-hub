@@ -31,6 +31,7 @@ const PendingContractorSubmissions = ({ propertyId, systemId, systemName }: Prop
   const [rows, setRows] = useState<Sub[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [signedPhotos, setSignedPhotos] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!user || !propertyId) return;
@@ -42,7 +43,23 @@ const PendingContractorSubmissions = ({ propertyId, systemId, systemName }: Prop
       .eq("system_id", systemId)
       .is("homeowner_approved", null)
       .order("submitted_at", { ascending: false });
-    setRows((data as any) || []);
+    const list = (data as any[]) || [];
+    setRows(list as Sub[]);
+    // Sign any storage paths for display (legacy entries may already be full URLs)
+    const paths: string[] = [];
+    for (const r of list) for (const p of (r.photos || [])) {
+      if (typeof p === "string" && !/^https?:\/\//i.test(p)) paths.push(p);
+    }
+    if (paths.length) {
+      const { data: signed } = await supabase.storage
+        .from("contractor-submissions")
+        .createSignedUrls(paths, 3600);
+      const map: Record<string, string> = {};
+      (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map[paths[i]] = s.signedUrl; });
+      setSignedPhotos(map);
+    } else {
+      setSignedPhotos({});
+    }
     setLoading(false);
   }, [user, propertyId, systemId]);
 
@@ -131,11 +148,14 @@ const PendingContractorSubmissions = ({ propertyId, systemId, systemName }: Prop
             )}
             {s.photos && s.photos.length > 0 && (
               <div className="grid grid-cols-4 gap-1 mb-2">
-                {s.photos.slice(0, 4).map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-md overflow-hidden bg-secondary">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
-                  </a>
-                ))}
+                {s.photos.slice(0, 4).map((url, i) => {
+                  const src = /^https?:\/\//i.test(url) ? url : (signedPhotos[url] || "");
+                  return (
+                    <a key={i} href={src} target="_blank" rel="noreferrer" className="aspect-square rounded-md overflow-hidden bg-secondary">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                    </a>
+                  );
+                })}
               </div>
             )}
             <div className="flex gap-2 mt-2">
