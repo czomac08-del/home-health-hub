@@ -85,6 +85,43 @@ export const EXTRACTION_KEY_ALIASES: Record<string, string> = {
 
 const KEY_ALIASES = EXTRACTION_KEY_ALIASES; // back-compat
 
+/**
+ * Map of alias keys → canonical top-level system_details column names.
+ * Used by saveReviewedFields to guarantee that confirmed brand/model/serial/
+ * date/warranty/service values land on the top-level columns (not just specs)
+ * regardless of which case style the spec field used.
+ */
+const TOP_LEVEL_ALIAS_TO_CANONICAL: Record<string, string> = {
+  brand: "brand",
+  manufacturer: "brand",
+  make: "brand",
+  model: "model",
+  modelNumber: "model",
+  model_number: "model",
+  serial_number: "serial_number",
+  serialNumber: "serial_number",
+  serial: "serial_number",
+  install_date: "install_date",
+  installDate: "install_date",
+  installationDate: "install_date",
+  installation_date: "install_date",
+  warranty_exp: "warranty_exp",
+  warrantyExp: "warranty_exp",
+  warrantyExpiration: "warranty_exp",
+  warranty_expiration: "warranty_exp",
+  warrantyExpDate: "warranty_exp",
+  warranty_provider: "warranty_provider",
+  warrantyProvider: "warranty_provider",
+  service_company: "service_company",
+  serviceCompany: "service_company",
+  service_phone: "service_phone",
+  servicePhone: "service_phone",
+  last_service: "last_service",
+  lastService: "last_service",
+  next_service: "next_service",
+  nextService: "next_service",
+};
+
 function snakeToCamel(s: string): string {
   return s.replace(/_([a-z0-9])/gi, (_, c) => String(c).toUpperCase());
 }
@@ -184,6 +221,46 @@ export async function saveReviewedFields(args: {
     written += r.written;
     conflicts += r.conflicts;
   }
+
+  // Ensure top-level system_details columns get populated even when the spec
+  // field key didn't match the canonical column name. UnifiedDocumentReview
+  // routes everything through here, so this is the only chance we get to
+  // mirror brand/model/serial/date/warranty/service values to the row's
+  // top-level columns. writeSystemFields is idempotent for unchanged values.
+  const topLevelOwner: Record<string, string> = {};
+  const topLevelDoc: Record<string, string> = {};
+  for (const [k, v] of Object.entries(args.values)) {
+    if (v == null || v === "") continue;
+    const canon = TOP_LEVEL_ALIAS_TO_CANONICAL[k];
+    if (!canon) continue;
+    if (args.ownerEdited.has(k)) topLevelOwner[canon] = v;
+    else topLevelDoc[canon] = v;
+  }
+  if (Object.keys(topLevelOwner).length) {
+    const r = await writeSystemFields({
+      propertyId: args.propertyId,
+      userId: args.userId,
+      systemName: args.systemName,
+      fields: topLevelOwner,
+      source: "OWNER_PROVIDED",
+      documentDate: args.documentDate ?? null,
+    });
+    written += r.written;
+    conflicts += r.conflicts;
+  }
+  if (Object.keys(topLevelDoc).length) {
+    const r = await writeSystemFields({
+      propertyId: args.propertyId,
+      userId: args.userId,
+      systemName: args.systemName,
+      fields: topLevelDoc,
+      source: "DOCUMENT_EXTRACTED",
+      documentDate: args.documentDate ?? null,
+    });
+    written += r.written;
+    conflicts += r.conflicts;
+  }
+
   return { written, conflicts };
 }
 
@@ -204,6 +281,14 @@ export function pickDocumentDate(extracted: Record<string, any>): string | null 
     extracted?.install_date ||
     extracted?.installDate ||
     extracted?.purchase_date ||
+    extracted?.permitDate ||
+    extracted?.permit_date ||
+    extracted?.drill_date ||
+    extracted?.wellDrillDate ||
+    extracted?.issue_date ||
+    extracted?.issueDate ||
+    extracted?.recorded_date ||
+    extracted?.recordedDate ||
     null
   );
 }

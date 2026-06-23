@@ -48,6 +48,7 @@ export async function seedSystemsFromOnboarding(
     septicOrSewer?: string;
     hasMultipleSeptic?: boolean;
     homeAge?: string | number;
+    specificYear?: string | number | null;
   },
 ) {
   await seedStandardSystemRows(propertyId, userId);
@@ -111,14 +112,23 @@ export async function seedSystemsFromOnboarding(
       });
     }
   }
-  if (wizardData.homeAge) {
-    const year = typeof wizardData.homeAge === "string"
-      ? parseInt(wizardData.homeAge)
-      : wizardData.homeAge;
-    if (!isNaN(year as number) && (year as number) > 1700) {
-      await supabase.from("properties")
-        .update({ year_built: String(year) })
-        .eq("id", propertyId);
+  // Only persist year_built when the caller has a specific, confirmed year.
+  // Never write a range boundary (e.g. "1970–1990" → 1970) — that produces
+  // false history. The wizard now collects a specific year separately and
+  // passes it as `specificYear`. We also accept a 4-digit numeric homeAge
+  // for back-compat, but reject any string that looks like a range.
+  const specificYearRaw = (wizardData as any).specificYear ?? wizardData.homeAge;
+  if (specificYearRaw != null && specificYearRaw !== "") {
+    const asString = String(specificYearRaw).trim();
+    const isRange = /[–\-—]/.test(asString) || /[a-zA-Z]/.test(asString);
+    if (!isRange) {
+      const year = parseInt(asString, 10);
+      const currentYear = new Date().getFullYear();
+      if (!isNaN(year) && year > 1700 && year <= currentYear + 1) {
+        await supabase.from("properties")
+          .update({ year_built: String(year) })
+          .eq("id", propertyId);
+      }
     }
   }
 }

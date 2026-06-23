@@ -47,6 +47,7 @@ function parseMatchedAddress(matched: string): { street: string; city: string; s
 interface WizardData {
   homeType: string;
   homeAge: string;
+  specificYear: string;
   waterSource: string;
   hasWaterFilter: boolean;
   hasWaterSoftener: boolean;
@@ -70,7 +71,7 @@ interface WizardData {
 }
 
 const defaultData: WizardData = {
-  homeType: "", homeAge: "", waterSource: "",
+  homeType: "", homeAge: "", specificYear: "", waterSource: "",
   hasWaterFilter: false, hasWaterSoftener: false, knowsWaterShutoff: true,
   hvacType: "", fuelType: "", propaneTankOwned: true, knowsFilterLocation: true,
   hasGenerator: false, hasSolar: false, septicOrSewer: "", hasMultipleSeptic: false,
@@ -83,6 +84,40 @@ const defaultData: WizardData = {
 const ageRanges = [
   "Built before 1950", "1950–1970", "1970–1990", "1990–2010", "2010–2020", "2020 or newer",
 ];
+
+/**
+ * Returns the inclusive [min, max] year range for a given age-range label.
+ * Used to validate the specific-year input and to compute its midpoint pre-fill.
+ */
+function ageRangeBounds(range: string): { min: number; max: number } | null {
+  const currentYear = new Date().getFullYear();
+  switch (range) {
+    case "Built before 1950": return { min: 1700, max: 1949 };
+    case "1950–1970":         return { min: 1950, max: 1970 };
+    case "1970–1990":         return { min: 1970, max: 1990 };
+    case "1990–2010":         return { min: 1990, max: 2010 };
+    case "2010–2020":         return { min: 2010, max: 2020 };
+    case "2020 or newer":     return { min: 2020, max: currentYear + 1 };
+    default: return null;
+  }
+}
+
+function ageRangeMidpoint(range: string): string {
+  const b = ageRangeBounds(range);
+  if (!b) return "";
+  // For "Built before 1950" default to 1940 rather than 1824.
+  if (range === "Built before 1950") return "1940";
+  if (range === "2020 or newer") return String(new Date().getFullYear());
+  return String(Math.round((b.min + b.max) / 2));
+}
+
+function isValidSpecificYear(specificYear: string, homeAge: string): boolean {
+  if (!/^\d{4}$/.test(specificYear)) return false;
+  const yr = parseInt(specificYear, 10);
+  const b = ageRangeBounds(homeAge);
+  if (!b) return false;
+  return yr >= b.min && yr <= b.max;
+}
 
 
 const hvacTypes = [
@@ -605,6 +640,7 @@ const OnboardingWizard = () => {
               else if (yr >= 1970) ageRange = "1970–1990";
               else if (yr >= 1950) ageRange = "1950–1970";
               update("homeAge", ageRange);
+              update("specificYear", String(yr));
               filled.add("homeAge");
             }
 
@@ -769,6 +805,7 @@ const OnboardingWizard = () => {
         else if (yr >= 1970) ageRange = "1970–1990";
         else if (yr >= 1950) ageRange = "1950–1970";
         update("homeAge", ageRange);
+        update("specificYear", String(yr));
         filled.add("homeAge");
       }
       if (json.propertyType) {
@@ -804,7 +841,8 @@ const OnboardingWizard = () => {
     if (step === 2) {
       // If public records filled it in, the confirmation card always passes through
       if (prefilledFields.size > 0 && (data.homeType || data.homeAge)) return true;
-      return !!data.homeType && !!data.homeAge;
+      // Require a specific, in-range year — never let a user advance with only a range.
+      return !!data.homeType && !!data.homeAge && isValidSpecificYear(data.specificYear, data.homeAge);
     }
     if (step === 3) return !!data.waterSource;
     if (step === 4) return !!data.hvacType && !!data.fuelType;
@@ -903,7 +941,10 @@ const OnboardingWizard = () => {
           fuelType: data.fuelType,
           septicOrSewer: data.septicOrSewer,
           hasMultipleSeptic: data.hasMultipleSeptic,
-          homeAge: data.homeAge,
+          // Don't pass the range string — seedSystems used to parse the
+          // bottom of the range as year_built. Pass the confirmed specific year.
+          homeAge: undefined,
+          specificYear: isValidSpecificYear(data.specificYear, data.homeAge) ? data.specificYear : null,
         });
       } catch (e) {
         console.warn("seedSystemsFromOnboarding failed", e);
@@ -1321,11 +1362,51 @@ const OnboardingWizard = () => {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">How old is your home?</label>
-              <select value={data.homeAge} onChange={e => update("homeAge", e.target.value)}
+              <select
+                value={data.homeAge}
+                onChange={e => {
+                  const next = e.target.value;
+                  update("homeAge", next);
+                  // Pre-fill the specific-year input with the midpoint of the chosen
+                  // range so the user can tweak rather than re-type. year_built is
+                  // only ever written from this confirmed specific year.
+                  update("specificYear", ageRangeMidpoint(next));
+                }}
                 className="w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50">
                 <option value="">Select age range...</option>
                 {ageRanges.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
+              {data.homeAge && (() => {
+                const b = ageRangeBounds(data.homeAge);
+                const valid = isValidSpecificYear(data.specificYear, data.homeAge);
+                return (
+                  <div className="mt-3">
+                    <label className="text-sm font-medium text-foreground mb-2 block">
+                      What specific year was it built?
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="\d{4}"
+                      maxLength={4}
+                      value={data.specificYear}
+                      onChange={e => update("specificYear", e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                      placeholder={b ? `e.g. ${ageRangeMidpoint(data.homeAge)}` : "YYYY"}
+                      className="w-full rounded-xl border border-border bg-card px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    {b && !valid && data.specificYear.length === 4 && (
+                      <p className="mt-1 text-xs text-destructive">
+                        Enter a year between {b.min} and {b.max}.
+                      </p>
+                    )}
+                    {b && data.specificYear.length < 4 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Pre-filled with the midpoint — adjust to the actual year if you know it.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             {isManufactured && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
