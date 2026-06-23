@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { WaterHeaterLocation, HvacLocation, WaterSystemLocation } from "@/components/SystemLocationTracking";
 import { AiPhotoPicker, AiScanReview, AiFieldScanButton, type ScanResult } from "@/components/AiPhotoScanner";
+import { savePhotoAiResult, mapPhotoAiResult } from "@/lib/photoAiSave";
 import { useManualSearch, ManualSearchIndicator, ManualFoundBanner, WarrantyStatusBadge, WarrantyInfoCard, RecallAlertBanner, SystemDocumentVault, type ManualSearchResult, type WarrantyInfo, type RecallInfo } from "@/components/ManualFinder";
 import { WaterSourceTypeSelector, AdditionalWaterSources, UtilityContactCard } from "@/components/WaterSourceSelector";
 import { SewerTypeSelector, MultipleSepticSystems, type SepticSystem } from "@/components/SewerSelector";
