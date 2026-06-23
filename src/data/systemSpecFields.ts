@@ -20,6 +20,10 @@ const hvacFields: SpecField[] = [
   { key: "fuelType", label: "Fuel Type", type: "select", options: ["Electric", "Natural Gas", "Propane", "Oil"] },
   { key: "zones", label: "Number of Zones", type: "number" },
   { key: "thermostat", label: "Thermostat Brand/Model", type: "text", placeholder: "e.g. Nest Learning 3rd Gen" },
+  { key: "refrigerantType", label: "Refrigerant Type", type: "text" },
+  { key: "lastFilterChange", label: "Last Filter Change", type: "date" },
+  { key: "filterBrand", label: "Filter Brand", type: "text" },
+  { key: "unitLocation", label: "Unit Location", type: "text" },
 ];
 
 const wellWaterFields: SpecField[] = [
@@ -36,6 +40,8 @@ const wellWaterFields: SpecField[] = [
   { key: "lastWaterTest", label: "Last Water Test Date", type: "date" },
   { key: "waterTestResults", label: "Water Test Results", type: "select", options: ["Pass", "Fail", "Not Tested"] },
   { key: "wellDriller", label: "Well Driller Company", type: "text" },
+  { key: "wellFlowRate", label: "Flow Rate", type: "number", suffix: "GPM" },
+  { key: "wellDrillDate", label: "Date Drilled", type: "date" },
 ];
 
 const waterFilterFields: SpecField[] = [
@@ -175,6 +181,8 @@ const roofFields: SpecField[] = [
   { key: "gutterMaterial", label: "Gutter Material", type: "select", options: ["Aluminum", "Vinyl", "Copper"] },
   { key: "gutterGuards", label: "Gutter Guards Installed", type: "toggle" },
   { key: "lastGutterCleaning", label: "Last Gutter Cleaning", type: "date" },
+  { key: "lastInspected", label: "Last Inspected", type: "date" },
+  { key: "roofCondition", label: "Condition", type: "text" },
 ];
 
 const garageDoorFields: SpecField[] = [
