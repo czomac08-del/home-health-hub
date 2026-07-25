@@ -102,8 +102,6 @@ const naturalGasFields: SpecField[] = [
 ];
 
 const septicFields: SpecField[] = [
-  { key: "tankSize", label: "Tank Size", type: "number", suffix: "gal" },
-  { key: "tankMaterial", label: "Tank Material", type: "select", options: ["Concrete", "Fiberglass", "Plastic"] },
   { key: "bedrooms", label: "Number of Bedrooms Served", type: "number" },
   { key: "lastPumped", label: "Last Pumped Date", type: "date" },
   { key: "pumpFrequency", label: "Pump Frequency", type: "number", suffix: "years" },
@@ -126,7 +124,7 @@ const septicFields: SpecField[] = [
   { key: "appliancesCovered", label: "Appliances Covered", type: "text", placeholder: "e.g. washing machine, garbage disposal, dishwasher" },
   { key: "waterSupplyType", label: "Water Supply Type", type: "select", options: ["Municipal", "Community", "Non-Community", "Private"] },
   { key: "tankCapacityGallons", label: "Tank Capacity", type: "number", suffix: "gal" },
-  { key: "tankType", label: "Tank Type", type: "select", options: ["Block", "Precast", "Fiberglass", "Plastic", "Steel"] },
+  { key: "tankType", label: "Tank Material / Type", type: "select", options: ["Block", "Precast", "Concrete", "Fiberglass", "Plastic", "Steel"] },
   { key: "tankManufacturer", label: "Tank Manufacturer", type: "text" },
   { key: "tankPosition", label: "Tank Position", type: "text" },
   { key: "tankDistanceFromBuilding", label: "Tank Distance from Building", type: "number", suffix: "ft" },

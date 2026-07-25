@@ -17,6 +17,7 @@ import VaultRecordReview from "./VaultRecordReview";
 import UploadStructurePrompt from "./UploadStructurePrompt";
 import { isLegacyAssignment } from "./StructureAssignmentSelector";
 import { getSpecFields } from "@/data/systemSpecFields";
+import { normalizeExtracted } from "@/lib/documentReviewFlow";
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -457,33 +458,15 @@ export default function UploadDocumentModal({
           const septicSpecKeySet = new Set(
             getSpecFields("Septic System").map((f) => f.key),
           );
-          const SEPTIC_KEY_ALIASES: Record<string, string> = {
-            lastPumpDate: "lastPumped",
-            lastPumpedDate: "lastPumped",
-            pumpDate: "lastPumped",
-            companyName: "pumpingCompany",
-            company: "pumpingCompany",
-            pumpCompany: "pumpingCompany",
-            serviceCompany: "pumpingCompany",
-            installDate: "install_date",
-            technician: "inspectedBy",
-            technicianName: "inspectedBy",
-            inspector: "inspectedBy",
-            drainFieldCondition: "remarks",
-            conditionRating: "remarks",
-            beds: "bedrooms",
-            numBedrooms: "bedrooms",
-            notes: "notes",
-          };
-
+          // FIX 5 — Route through the same central normalization used by the
+          // unified review flow so snake_case keys, the snake→camel fallback,
+          // and septic-specific overrides (company_name → pumpingCompany,
+          // phone → pumpingPhone) all apply here too.
+          const normalized = normalizeExtracted(e, "Septic System");
           const newSpecs: Record<string, any> = {};
-          for (const [rawKey, rawVal] of Object.entries(e || {})) {
-            if (rawVal == null || rawVal === "") continue;
-            if (septicSpecKeySet.has(rawKey)) {
-              newSpecs[rawKey] = rawVal;
-            } else if (SEPTIC_KEY_ALIASES[rawKey]) {
-              newSpecs[SEPTIC_KEY_ALIASES[rawKey]] = rawVal;
-            }
+          for (const [k, v] of Object.entries(normalized)) {
+            if (v == null || v === "") continue;
+            if (septicSpecKeySet.has(k)) newSpecs[k] = v;
           }
 
           if (Object.keys(newSpecs).length > 0) {

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import RefreshButton from "@/components/RefreshButton";
 import { summarizeChimneyState } from "@/components/ChimneyFireplaceConfig";
 import { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
+import { UNASSIGNED_SLUG, EXTERIOR_SLUG, STRUCTURAL_SLUG, INTERIOR_SLUG } from "@/lib/applyInspectionFindingsToSystems";
 
 type SystemStatus = "documented" | "unconfigured";
 
@@ -133,6 +134,7 @@ const SystemsScreen = () => {
   const [systemSummaries, setSystemSummaries] = useState<Record<string, string>>({});
   const [multiInstances, setMultiInstances] = useState<Record<string, { id: string; label: string; documented: boolean }[]>>({});
   const [findingsBySystem, setFindingsBySystem] = useState<Record<string, SystemRowFindings>>({});
+  const [orphanFindings, setOrphanFindings] = useState<Array<{ slug: string; count: number; worstLevel: 1|2|3|4|null }>>([]);
   const navigate = useNavigate();
   const { user, activeProperty } = useAuth();
 
@@ -206,6 +208,14 @@ const SystemsScreen = () => {
           acc[slug] = cur;
         }
         setFindingsBySystem(acc);
+        // Anything mapped to a broad-fallback / unassigned bucket won't hit a
+        // system tile — surface it separately so it's never hidden.
+        const orphanSlugs = [UNASSIGNED_SLUG, EXTERIOR_SLUG, STRUCTURAL_SLUG, INTERIOR_SLUG];
+        setOrphanFindings(
+          orphanSlugs
+            .filter((s) => acc[s])
+            .map((s) => ({ slug: s, count: acc[s].count, worstLevel: acc[s].worstLevel })),
+        );
       });
   }, [user, activeProperty]);
 
@@ -253,6 +263,28 @@ const SystemsScreen = () => {
           ? `You've documented ${documentedCount} system${documentedCount !== 1 ? "s" : ""} — that's ${documentedCount} thing${documentedCount !== 1 ? "s" : ""} future you (and future owners) will thank you for.`
           : "Start documenting your home systems to build your property's permanent record."}
       </p>
+
+      {orphanFindings.length > 0 && (
+        <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+          <p className="text-xs font-semibold text-amber-600 mb-1">
+            Inspection findings not tied to a specific system
+          </p>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            These belong to broad areas of the home. Open one to review or reassign.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {orphanFindings.map((o) => (
+              <button
+                key={o.slug}
+                onClick={() => navigate(`/inspection?system=${encodeURIComponent(o.slug)}`)}
+                className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                {o.slug} · {o.count} open
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
