@@ -28,7 +28,7 @@ const SYSTEM_KEYWORDS: Array<{ slug: string; needles: string[] }> = [
   { slug: "Chimney & Fireplace", needles: ["chimney cap", "chimney", "fireplace", "flue tile", "flue liner", "firebox", "hearth"] },
   { slug: "Water Heater", needles: ["water heater", "hot water tank", "tankless", "tpr valve", "tpr "] },
   { slug: "Sewer and Waste", needles: ["sewer line", "sewer main", "sewer lateral", "septic tank", "septic", "waste line", "drain field", "leach field", "leach line"] },
-  { slug: "Well Water", needles: ["well cap", "wellhead", "well pump", "pressure tank", "pump house", " well "] },
+  { slug: "Well Water", needles: ["well cap", "wellhead", "well pump", "well water", "pressure tank", "pump house"] },
   { slug: "Water Source", needles: ["water main", "water service line", "water supply line", "city water", "municipal water"] },
   { slug: "Natural Gas / Propane", needles: ["gas line", "natural gas", "propane", "lp gas", "gas leak", "gas meter"] },
   { slug: "Electrical Panel", needles: ["electrical panel", "breaker panel", "circuit breaker", "gfci", "afci", "service entrance", "fuse box", "sub panel", "subpanel", "receptacle", "outlet ", "wiring", "electrical"] },

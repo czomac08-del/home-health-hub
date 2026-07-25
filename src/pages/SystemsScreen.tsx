@@ -7,6 +7,7 @@ import RefreshButton from "@/components/RefreshButton";
 import { summarizeChimneyState } from "@/components/ChimneyFireplaceConfig";
 import { MULTI_INSTANCE_SYSTEM_NAMES } from "@/components/SystemInstanceSwitcher";
 import { UNASSIGNED_SLUG, EXTERIOR_SLUG, STRUCTURAL_SLUG, INTERIOR_SLUG } from "@/lib/applyInspectionFindingsToSystems";
+import { countDocumentedSystems } from "@/lib/systemsCount";
 
 type SystemStatus = "documented" | "unconfigured";
 
@@ -129,6 +130,7 @@ const SystemRow = ({ item, documented, flagged, flaggedDetail, notApplicable, su
 const SystemsScreen = () => {
   const [search, setSearch] = useState("");
   const [documentedNames, setDocumentedNames] = useState<Set<string>>(new Set());
+  const [documentedCount, setDocumentedCount] = useState<number>(0);
   const [flaggedNames, setFlaggedNames] = useState<Set<string>>(new Set());
   const [notApplicableNames, setNotApplicableNames] = useState<Set<string>>(new Set());
   const [systemSummaries, setSystemSummaries] = useState<Record<string, string>>({});
@@ -140,6 +142,7 @@ const SystemsScreen = () => {
 
   useEffect(() => {
     if (!user || !activeProperty) return;
+    countDocumentedSystems(activeProperty.id).then(setDocumentedCount);
 
     supabase
       .from("system_details")
@@ -246,11 +249,6 @@ const SystemsScreen = () => {
 
   const filterItems = (items: SystemItem[]) =>
     items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
-
-  const documentedCount = useMemo(
-    () => [...coreInfrastructure, ...appliances].filter(isDocumented).length,
-    [documentedNames],
-  );
 
   return (
     <div className="min-h-screen pb-24 max-w-lg lg:max-w-6xl mx-auto px-6 py-8">
