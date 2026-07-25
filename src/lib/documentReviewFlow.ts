@@ -31,6 +31,27 @@ const TOP_LEVEL_FIELDS = new Set([
   "health_score",
 ]);
 
+/**
+ * Human-readable labels + input types for canonical top-level system_details
+ * columns. Used to synthesize review rows for extracted top-level values that
+ * would otherwise have no matching spec-field row (see FIX 1).
+ */
+const TOP_LEVEL_LABELS: Record<string, { label: string; type: "text" | "date" }> = {
+  brand: { label: "Brand", type: "text" },
+  model: { label: "Model", type: "text" },
+  serial_number: { label: "Serial Number", type: "text" },
+  install_date: { label: "Install Date", type: "date" },
+  purchase_date: { label: "Purchase Date", type: "date" },
+  warranty_exp: { label: "Warranty Expiration", type: "date" },
+  warranty_provider: { label: "Warranty Provider", type: "text" },
+  last_service: { label: "Last Service Date", type: "date" },
+  next_service: { label: "Next Service Due", type: "date" },
+  service_company: { label: "Service Company", type: "text" },
+  service_phone: { label: "Service Company Phone", type: "text" },
+  location_in_home: { label: "Location In Home", type: "text" },
+  notes: { label: "Notes", type: "text" },
+};
+
 function readField(row: any, key: string): string | null {
   if (!row) return null;
   const v = TOP_LEVEL_FIELDS.has(key) ? row[key] : row?.specs?.[key];
@@ -74,16 +95,37 @@ export const EXTRACTION_KEY_ALIASES: Record<string, string> = {
   static_water_level_ft: "waterTableDepth",
   drill_date: "wellDrillDate",
   pump_gpm: "wellFlowRate",
-  // HVAC service records
+  // HVAC / generic service records
   company_name: "service_company",
   model_number: "model",
+  phone: "service_phone",
+  company_phone: "service_phone",
   next_service_date: "next_service",
   service_date: "last_service",
   refrigerant_type: "refrigerantType",
   work_performed: "notes",
 };
 
-const KEY_ALIASES = EXTRACTION_KEY_ALIASES; // back-compat
+/**
+ * System-context overrides for the alias map. When the target system is
+ * septic / sewer & waste, "company_name" and "company" refer to the pumping
+ * company, not a generic service company. Phone follows the same rule.
+ * (FIX 6.)
+ */
+const SEPTIC_ALIAS_OVERRIDES: Record<string, string> = {
+  company_name: "pumpingCompany",
+  company: "pumpingCompany",
+  serviceCompany: "pumpingCompany",
+  service_company: "pumpingCompany",
+  phone: "pumpingPhone",
+  company_phone: "pumpingPhone",
+  service_phone: "pumpingPhone",
+};
+
+function isSepticContext(systemName?: string | null): boolean {
+  const s = (systemName || "").toLowerCase();
+  return s.includes("septic") || s.includes("sewer") || s.includes("waste");
+}
 
 /**
  * Map of alias keys → canonical top-level system_details column names.
@@ -126,12 +168,24 @@ function snakeToCamel(s: string): string {
   return s.replace(/_([a-z0-9])/gi, (_, c) => String(c).toUpperCase());
 }
 
-function normalizeExtracted(extracted: Record<string, any> | undefined | null): Record<string, any> {
+/**
+ * Central extraction-key normalization. Applies the shared alias map plus a
+ * snake_case → camelCase fallback so downstream consumers never see the raw
+ * AI-returned key style. When `systemContext` names a septic/sewer system,
+ * septic-specific overrides win (e.g. company_name → pumpingCompany).
+ */
+export function normalizeExtracted(
+  extracted: Record<string, any> | undefined | null,
+  systemContext?: string | null,
+): Record<string, any> {
   const out: Record<string, any> = { ...(extracted || {}) };
   if (!extracted) return out;
+  const septic = isSepticContext(systemContext);
   for (const [k, v] of Object.entries(extracted)) {
     if (v == null || v === "") continue;
-    const aliased = EXTRACTION_KEY_ALIASES[k];
+    const aliased =
+      (septic ? SEPTIC_ALIAS_OVERRIDES[k] : undefined) ||
+      EXTRACTION_KEY_ALIASES[k];
     if (aliased) {
       if (out[aliased] == null || out[aliased] === "") out[aliased] = v;
       continue;
@@ -154,7 +208,7 @@ export async function prepareReviewRows(args: {
   extracted: Record<string, any>;
 }): Promise<ReviewRow[]> {
   const fields = getSpecFields(args.systemName);
-  const normalized = normalizeExtracted(args.extracted);
+  const normalized = normalizeExtracted(args.extracted, args.systemName);
   const { data: existing } = await supabase
     .from("system_details")
     .select("*")
@@ -162,7 +216,7 @@ export async function prepareReviewRows(args: {
     .eq("system_name", args.systemName)
     .maybeSingle();
 
-  return fields.map((field) => {
+  const specRows: ReviewRow[] = fields.map((field) => {
     const aiRaw = normalized?.[field.key];
     const aiValue =
       aiRaw == null || aiRaw === "" ? null : String(aiRaw);
@@ -175,6 +229,32 @@ export async function prepareReviewRows(args: {
     }
     return { field, state, aiValue, currentValue };
   });
+
+  // FIX 1 — Top-level fields (brand, model, install_date, warranty_exp, etc.)
+  // are NOT part of any getSpecFields() array, so an extracted value for them
+  // would be silently dropped. Append a synthetic review row for every
+  // top-level field that the AI actually returned and that isn't already
+  // represented in the spec rows above.
+  const existingKeys = new Set(specRows.map((r) => r.field.key));
+  const synthetic: ReviewRow[] = [];
+  for (const key of Object.keys(TOP_LEVEL_LABELS)) {
+    if (existingKeys.has(key)) continue;
+    const raw = normalized?.[key];
+    if (raw == null || raw === "") continue;
+    const meta = TOP_LEVEL_LABELS[key];
+    const aiValue = String(raw);
+    const currentValue = readField(existing, key);
+    let state: ReviewRowState = "confirmed";
+    if (currentValue && valuesConflict(aiValue, currentValue)) state = "conflict";
+    synthetic.push({
+      field: { key, label: meta.label, type: meta.type },
+      state,
+      aiValue,
+      currentValue,
+    });
+  }
+
+  return [...specRows, ...synthetic];
 }
 
 /** Persist user's choices from the unified review screen. */
