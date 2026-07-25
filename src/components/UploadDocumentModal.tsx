@@ -281,11 +281,17 @@ export default function UploadDocumentModal({
     }
   };
 
-  const handleConfirm = async () => {
-    if (!recordId) {
-      handleClose(false);
-      return;
-    }
+  /**
+   * FIX 3 — Record finalization shared by every save path.
+   * Runs the writes that used to live inside handleConfirm — record update,
+   * extracted-data write, system-type tagging, parcel-id save, warranty
+   * auto-sync, septic fan-out, and inspection-findings fan-out — so nothing
+   * is silently skipped when the user goes through a review component.
+   * Safe to call from Save handlers AND from Complete-Later handlers.
+   * Returns whether the finalization completed without a fatal error.
+   */
+  const finalizeRecord = async (): Promise<boolean> => {
+    if (!recordId) return false;
     try {
       const merged = inspectionReport
         ? { ...extracted, inspection_report: inspectionReport }
@@ -613,7 +619,24 @@ export default function UploadDocumentModal({
           console.warn("Notification fan-out failed (non-fatal):", notifyErr);
         }
       }
+      return true;
+    } catch (e) {
+      console.error("[UploadDocumentModal] finalizeRecord failed", e);
+      return false;
+    }
+  };
 
+  const handleConfirm = async () => {
+    if (!recordId) {
+      handleClose(false);
+      return;
+    }
+    const ok = await finalizeRecord();
+    if (!ok) {
+      toast.error("Failed to save");
+      return;
+    }
+    try {
       if (docType === "warranty") {
         toast.success("Warranty saved", {
           description: "Added to your Warranties dashboard automatically.",
@@ -642,6 +665,35 @@ export default function UploadDocumentModal({
     } catch (e) {
       toast.error("Failed to save");
     }
+  };
+
+  /**
+   * FIX 3 — Shared handler for review-component onSaved. Runs finalize so
+   * ai_extracted_data / parcel_id / warranty sync / fan-out all happen even
+   * when the review component owns the primary save path.
+   */
+  const handleReviewComponentSaved = async () => {
+    await finalizeRecord();
+    try {
+      recordRecentUpload({
+        id: recordId || "",
+        name: file?.name || "Document",
+        uploadedAt: new Date().toISOString(),
+        category: docType,
+        url: null,
+      });
+    } catch {}
+    setStep("saved");
+    setTimeout(() => handleClose(false), 1200);
+  };
+
+  /**
+   * FIX 3 — Complete-Later still finalizes so ai_extracted_data is persisted
+   * (Add-to-Profile and warranty review depend on that column being written).
+   */
+  const handleReviewComponentCompleteLater = async () => {
+    await finalizeRecord();
+    handleClose(false);
   };
 
   const handleSkipExtraction = async () => {
@@ -972,20 +1024,8 @@ export default function UploadDocumentModal({
                 recordId={recordId}
                 extracted={extracted}
                 systemName={detectedSystemName || (defaultSystemType ? defaultSystemType : null)}
-                onSaved={() => {
-                  try {
-                    recordRecentUpload({
-                      id: recordId || "",
-                      name: file?.name || "Document",
-                      uploadedAt: new Date().toISOString(),
-                      category: docType,
-                      url: null,
-                    });
-                  } catch {}
-                  setStep("saved");
-                  setTimeout(() => handleClose(false), 1200);
-                }}
-                onCompleteLater={() => handleClose(false)}
+                onSaved={handleReviewComponentSaved}
+                onCompleteLater={handleReviewComponentCompleteLater}
               />
             ) : (() => {
               // Determine target system name for the unified review.
@@ -1055,20 +1095,8 @@ export default function UploadDocumentModal({
                     fileName={file?.name || "Document"}
                     recordId={recordId}
                     extracted={extracted}
-                    onSaved={() => {
-                      try {
-                        recordRecentUpload({
-                          id: recordId || "",
-                          name: file?.name || "Document",
-                          uploadedAt: new Date().toISOString(),
-                          category: docType,
-                          url: null,
-                        });
-                      } catch {}
-                      setStep("saved");
-                      setTimeout(() => handleClose(false), 1200);
-                    }}
-                    onCompleteLater={() => handleClose(false)}
+                    onSaved={handleReviewComponentSaved}
+                    onCompleteLater={handleReviewComponentCompleteLater}
                   />
                 );
               }

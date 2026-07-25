@@ -17,6 +17,7 @@ import UploadPromptCard from "@/components/UploadPromptCard";
 import ContractorShareModal from "@/components/ContractorShareModal";
 import PendingContractorSubmissions from "@/components/PendingContractorSubmissions";
 import { toast } from "sonner";
+import { savePhotoAiResult } from "@/lib/photoAiSave";
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -154,6 +155,8 @@ const SystemDetailScreen = () => {
   const [loaded, setLoaded] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [shareSystemId, setShareSystemId] = useState<string | null>(null);
+  // Bumping this triggers a re-fetch of system_details rows after a scan save.
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!activeProperty?.id || !id) { setLoaded(true); return; }
@@ -205,7 +208,7 @@ const SystemDetailScreen = () => {
       setLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [activeProperty?.id, id]);
+  }, [activeProperty?.id, id, refreshTick]);
 
   // Pull the most useful display fields out of the imported rows.
   const importedView = useMemo(() => {
@@ -250,9 +253,43 @@ const SystemDetailScreen = () => {
     setScanHistory(prev => [...prev, result]);
   };
 
-  const handleConfirmScan = (fields: Record<string, string>) => {
-    console.log("Saving scanned fields:", fields);
-    setScanReview(null);
+  const handleConfirmScan = async (fields: Record<string, string>) => {
+    if (!activeProperty?.id || !user?.id || !system) {
+      toast.error("Sign in and pick a property first.");
+      return;
+    }
+    try {
+      const raw = (scanReview?.data as Record<string, any>) || {};
+      const result = await savePhotoAiResult({
+        propertyId: activeProperty.id,
+        userId: user.id,
+        systemName: system.name,
+        result: raw,
+        overrides: fields,
+      });
+      if (result.failed > 0 && result.written === 0) {
+        toast.error(`Couldn't save any scanned fields to ${system.name}.`);
+      } else if (result.failed > 0) {
+        toast.warning(`Saved ${result.written} of ${result.written + result.failed} scanned fields — ${result.failed} failed.`);
+      } else if (result.written > 0) {
+        toast.success(`Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${system.name}.`);
+      } else {
+        toast.info("Nothing new to save from that scan.");
+      }
+      setRefreshTick((t) => t + 1);
+    } catch (e) {
+      console.error("[SystemDetailScreen] scan save failed", e);
+      toast.error("Couldn't save scanned data. Please try again.");
+    } finally {
+      setScanReview(null);
+    }
+  };
+
+  const handleApplianceFieldsScanned = async (_fields: unknown) => {
+    // ApplianceScanner persists PHOTO_AI values internally when propertyId +
+    // userId are provided; we just need to refresh the header so the newly
+    // saved brand/model/serial show up without a full page reload.
+    setRefreshTick((t) => t + 1);
   };
 
   const openShare = async () => {
@@ -412,7 +449,7 @@ const SystemDetailScreen = () => {
         systemName={system.name}
         propertyId={activeProperty?.id}
         userId={user?.id}
-        onFieldsScanned={(fields) => console.log("Scanned fields for", system.name, fields)}
+        onFieldsScanned={handleApplianceFieldsScanned}
       />
 
       {/* Scan History */}
