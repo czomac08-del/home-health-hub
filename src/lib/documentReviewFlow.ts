@@ -277,6 +277,7 @@ export async function saveReviewedFields(args: {
   }
   let written = 0;
   let conflicts = 0;
+  let failed = 0;
   if (Object.keys(ownerFields).length) {
     const r = await writeSystemFields({
       propertyId: args.propertyId,
@@ -288,6 +289,7 @@ export async function saveReviewedFields(args: {
     });
     written += r.written;
     conflicts += r.conflicts;
+    failed += r.failed;
   }
   if (Object.keys(docFields).length) {
     const r = await writeSystemFields({
@@ -300,6 +302,7 @@ export async function saveReviewedFields(args: {
     });
     written += r.written;
     conflicts += r.conflicts;
+    failed += r.failed;
   }
 
   // Ensure top-level system_details columns get populated even when the spec
@@ -327,6 +330,7 @@ export async function saveReviewedFields(args: {
     });
     written += r.written;
     conflicts += r.conflicts;
+    failed += r.failed;
   }
   if (Object.keys(topLevelDoc).length) {
     const r = await writeSystemFields({
@@ -339,9 +343,10 @@ export async function saveReviewedFields(args: {
     });
     written += r.written;
     conflicts += r.conflicts;
+    failed += r.failed;
   }
 
-  return { written, conflicts };
+  return { written, conflicts, failed };
 }
 
 /** Mark a stored vault row as needing review (used when user picks "Complete Later"). */
