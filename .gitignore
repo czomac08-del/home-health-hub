@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+# Only VITE-prefixed values may ever go in env files because they are compiled
+# into the public client bundle. Server-side secrets such as the Supabase
+# service role key and the Stripe secret key must live only in Supabase Edge
+# Function secrets.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
