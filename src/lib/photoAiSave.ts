@@ -66,7 +66,7 @@ export async function savePhotoAiResult(args: {
       if (v != null && v !== "") mapped[k] = String(v);
     }
   }
-  if (!Object.keys(mapped).length) return { written: 0, conflicts: 0 };
+  if (!Object.keys(mapped).length) return { written: 0, conflicts: 0, failed: 0 };
   return await writeSystemFields({
     propertyId: args.propertyId,
     userId: args.userId,

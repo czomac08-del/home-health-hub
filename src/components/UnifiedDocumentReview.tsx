@@ -194,11 +194,22 @@ export default function UnifiedDocumentReview({
           console.warn("address_confirmation save failed", e);
         }
       }
-      toast.success(
-        result.written > 0
-          ? `Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${systemName}`
-          : "Document saved to vault",
-      );
+      const attempted = Object.keys(filtered).length;
+      if (result.failed > 0 && result.written === 0) {
+        toast.error(
+          `Couldn't save any of ${attempted} field${attempted === 1 ? "" : "s"} to ${systemName}. Your document is still in the vault.`,
+        );
+      } else if (result.failed > 0) {
+        toast.warning(
+          `Saved ${result.written} of ${attempted} fields to ${systemName} — ${result.failed} failed. Your document is still in the vault.`,
+        );
+      } else {
+        toast.success(
+          result.written > 0
+            ? `Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${systemName}`
+            : "Document saved to vault",
+        );
+      }
       onSaved();
     } catch (e) {
       console.error(e);
