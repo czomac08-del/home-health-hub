@@ -67,7 +67,7 @@ export async function writeSystemField(args: {
    * Manually-entered (OWNER_PROVIDED) values are still never overwritten.
    */
   documentDate?: string | null;
-}): Promise<{ ok: boolean; conflict?: boolean }> {
+}): Promise<{ ok: boolean; conflict?: boolean; failed?: boolean; error?: any }> {
   const { propertyId, userId, systemName, field, value, source, notes, documentDate } = args;
   if (value == null || value === "") return { ok: false };
 
@@ -130,18 +130,30 @@ export async function writeSystemField(args: {
   if (notes && !existing?.notes) update.notes = notes;
 
   if (existing) {
-    await supabase
+    const { error: updErr } = await supabase
       .from("system_details")
       .update(update as any)
       .eq("id", existing.id);
+    if (updErr) {
+      console.error("[systemFieldWrite] update failed", {
+        systemName, field, error: updErr,
+      });
+      return { ok: false, conflict: false, failed: true, error: updErr };
+    }
   } else {
-    await supabase.from("system_details").insert({
+    const { error: insErr } = await supabase.from("system_details").insert({
       property_id: propertyId,
       user_id: userId,
       system_name: systemName,
       data_status: source === "OWNER_PROVIDED" ? "confirmed" : "ai_extracted",
       ...update,
     } as any);
+    if (insErr) {
+      console.error("[systemFieldWrite] insert failed", {
+        systemName, field, error: insErr,
+      });
+      return { ok: false, conflict: false, failed: true, error: insErr };
+    }
   }
 
   return { ok: true, conflict: false };
@@ -158,6 +170,7 @@ export async function writeSystemFields(args: {
 }) {
   let written = 0;
   let conflicts = 0;
+  let failed = 0;
   for (const [field, value] of Object.entries(args.fields)) {
     if (value == null || value === "") continue;
     const r = await writeSystemField({
@@ -172,6 +185,7 @@ export async function writeSystemFields(args: {
     });
     if (r.ok) written++;
     if (r.conflict) conflicts++;
+    if (r.failed) failed++;
   }
-  return { written, conflicts };
+  return { written, conflicts, failed };
 }
