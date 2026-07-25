@@ -12,22 +12,61 @@ export interface InspectionFindingLite {
 
 // Slugs MUST match the `name` values rendered in src/pages/SystemsScreen.tsx
 // so the documented-state check keys off the same string.
+// Order matters: more specific matches must precede broader ones so, e.g.,
+// "suction line" is caught by HVAC before "line" hits Plumbing, and
+// "chimney cap" is caught by Chimney before "cap" hits Roof.
 const SYSTEM_KEYWORDS: Array<{ slug: string; needles: string[] }> = [
-  { slug: "HVAC", needles: ["hvac", "heating", "cooling", "furnace", "air condition", "a/c", "ac unit", "heat pump", "ductwork", "duct ", "thermostat", "boiler"] },
-  { slug: "Roof", needles: ["roof", "shingle", "attic", "gutter", "soffit", "fascia", "flashing", "chimney cap"] },
-  { slug: "Electrical Panel", needles: ["electrical", "panel", "breaker", "wiring", "outlet", "gfci", "afci", "service entrance", "fuse"] },
-  { slug: "Plumbing", needles: ["plumb", "pipe", "leak", "faucet", "toilet", "drain", "supply line", "shutoff", "valve"] },
-  { slug: "Water Heater", needles: ["water heater", "hot water tank", "tankless", "tpr"] },
-  { slug: "Sewer and Waste", needles: ["sewer", "septic", "waste line", "lateral", "drain field", "leach"] },
-  { slug: "Water Source", needles: ["water main", "water service", "water supply", "city water", "municipal water"] },
-  { slug: "Well Water", needles: ["well", "wellhead", "pressure tank", "pump house"] },
+  // Highly specific HVAC refrigerant / distribution vocabulary must come first
+  // so an item that says "suction line" or "condensate" is not misfiled to
+  // Plumbing.
+  { slug: "HVAC", needles: [
+    "suction line", "refrigerant line", "refrigerant", "condensate", "air handler",
+    "ductwork", "duct ", "return duct", "supply duct", "flue pipe", "hvac", "heating",
+    "cooling", "furnace", "air condition", "a/c", "ac unit", "heat pump", "thermostat",
+    "boiler", "condenser", "evaporator", "compressor",
+  ] },
+  { slug: "Chimney & Fireplace", needles: ["chimney cap", "chimney", "fireplace", "flue tile", "flue liner", "firebox", "hearth"] },
+  { slug: "Water Heater", needles: ["water heater", "hot water tank", "tankless", "tpr valve", "tpr "] },
+  { slug: "Sewer and Waste", needles: ["sewer line", "sewer main", "sewer lateral", "septic tank", "septic", "waste line", "drain field", "leach field", "leach line"] },
+  { slug: "Well Water", needles: ["well cap", "wellhead", "well pump", "pressure tank", "pump house", " well "] },
+  { slug: "Water Source", needles: ["water main", "water service line", "water supply line", "city water", "municipal water"] },
   { slug: "Natural Gas / Propane", needles: ["gas line", "natural gas", "propane", "lp gas", "gas leak", "gas meter"] },
-  { slug: "Chimney & Fireplace", needles: ["chimney", "fireplace", "flue", "firebox", "hearth"] },
+  { slug: "Electrical Panel", needles: ["electrical panel", "breaker panel", "circuit breaker", "gfci", "afci", "service entrance", "fuse box", "sub panel", "subpanel", "receptacle", "outlet ", "wiring", "electrical"] },
+  { slug: "Roof", needles: ["roof", "shingle", "attic", "gutter", "downspout", "soffit", "fascia", "flashing"] },
+  { slug: "Plumbing", needles: ["plumb", "water leak", "faucet", "toilet", "drain trap", "p-trap", "supply valve", "shutoff valve", "pipe insulation on cold", "pipe insulation on hot"] },
   { slug: "Refrigerator", needles: ["refrigerator", "fridge", "freezer"] },
-  { slug: "Washer / Dryer", needles: ["washer", "dryer", "laundry"] },
+  // Only match the appliance itself; a "laundry room door" must NOT land here.
+  { slug: "Washer / Dryer", needles: ["washing machine", "clothes washer", "clothes dryer", "dryer vent", " washer ", " dryer "] },
   { slug: "Dishwasher", needles: ["dishwasher"] },
-  { slug: "Garage Door Opener", needles: ["garage door", "garage opener"] },
-  { slug: "Water Softener", needles: ["softener", "water filtration", "water filter"] },
+  { slug: "Garage Door Opener", needles: ["garage door opener", "garage door"] },
+  { slug: "Water Softener", needles: ["water softener", "softener", "water filtration", "whole-house filter"] },
+];
+
+// Broad architectural categories used as a fallback so findings never get
+// force-fitted onto an unrelated system. These slugs are used by the Systems
+// screen to surface an "Unassigned issues" banner (they don't match tiles).
+export const STRUCTURAL_SLUG = "Structural";
+export const EXTERIOR_SLUG = "Exterior";
+export const INTERIOR_SLUG = "Interior";
+export const UNASSIGNED_SLUG = "Unassigned";
+
+const BROAD_KEYWORDS: Array<{ slug: string; needles: string[] }> = [
+  { slug: EXTERIOR_SLUG, needles: [
+    "ivy", "vine", "vegetation", "overgrowth", "tree limb", "landscaping", "grading",
+    "walkway", "driveway", "deck", "patio", "porch", "railing", "siding", "paint",
+    "trim", "exterior wall", "stucco",
+  ] },
+  { slug: STRUCTURAL_SLUG, needles: [
+    "crawl space", "crawlspace", "vapor barrier", "foundation", "footer", "footing",
+    "framing", "joist", "beam", "load bearing", "wall crack", "cracking on", "crack in wall",
+    "settling", "retaining wall", "slab crack",
+  ] },
+  { slug: INTERIOR_SLUG, needles: [
+    "interior door", "closet door", "cabinet", "counter", "vanity",
+    "flooring", "carpet", "tile floor", "grout", "wall paint", "ceiling stain",
+    "door binding", "door binds", "door won't", "window binding", "window won't",
+    "window operation", "window sash",
+  ] },
 ];
 
 const CATEGORY_TO_SLUGS: Record<string, string[]> = {
@@ -44,16 +83,43 @@ const CATEGORY_TO_SLUGS: Record<string, string[]> = {
 };
 
 export function mapFindingToSystems(f: InspectionFindingLite): string[] {
-  const hay = `${f.title ?? ""} ${f.description ?? ""} ${f.location ?? ""}`.toLowerCase();
-  const hits = new Set<string>();
-  for (const { slug, needles } of SYSTEM_KEYWORDS) {
-    if (needles.some((n) => hay.includes(n))) hits.add(slug);
+  // Weight the title much more heavily than the description or location — the
+  // component named in the title is the most reliable signal for which
+  // system a finding belongs to. Only fall back to the description/location
+  // if the title alone doesn't match anything.
+  const title = (f.title ?? "").toLowerCase();
+  const rest = `${f.description ?? ""} ${f.location ?? ""}`.toLowerCase();
+
+  const scan = (hay: string) => {
+    for (const { slug, needles } of SYSTEM_KEYWORDS) {
+      if (needles.some((n) => hay.includes(n))) return slug;
+    }
+    return null;
+  };
+
+  const firstTitleMatch = scan(title);
+  if (firstTitleMatch) return [firstTitleMatch];
+  const restMatch = scan(rest);
+  if (restMatch) return [restMatch];
+
+  // Broad architectural fallback (Exterior / Structural / Interior).
+  const hay = `${title} ${rest}`;
+  for (const { slug, needles } of BROAD_KEYWORDS) {
+    if (needles.some((n) => hay.includes(n))) return [slug];
   }
-  if (hits.size === 0 && f.category) {
+
+  // Category hint from the AI, if provided.
+  if (f.category) {
     const fallback = CATEGORY_TO_SLUGS[f.category.toLowerCase()] || [];
-    fallback.forEach((s) => hits.add(s));
+    if (fallback.length) return fallback;
+    const catLower = f.category.toLowerCase();
+    if (catLower === "exterior") return [EXTERIOR_SLUG];
+    if (catLower === "structural") return [STRUCTURAL_SLUG];
+    if (catLower === "interior") return [INTERIOR_SLUG];
   }
-  return [...hits];
+
+  // Last-resort: never force-fit onto an unrelated system.
+  return [UNASSIGNED_SLUG];
 }
 
 function severityLabel(level?: number) {

@@ -22,6 +22,7 @@ import InspectionIssuesList from "@/components/InspectionIssuesList";
 import InspectionHistorySection from "@/components/InspectionHistorySection";
 import InspectionProgressCard from "@/components/InspectionProgressCard";
 import StructuresZonesSection from "@/components/StructuresZonesSection";
+import { countDocumentedSystems } from "@/lib/systemsCount";
 
 const PropertyDetailScreen = () => {
   const navigate = useNavigate();
@@ -32,11 +33,7 @@ const PropertyDetailScreen = () => {
 
   useEffect(() => {
     if (!propertyId) return;
-    supabase
-      .from("system_details")
-      .select("id", { count: "exact", head: true })
-      .eq("property_id", propertyId)
-      .then(({ count }) => setSystemCount(count ?? 0));
+    countDocumentedSystems(propertyId).then((n) => setSystemCount(n));
   }, [propertyId]);
 
   if (!activeProperty) {
