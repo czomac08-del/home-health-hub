@@ -219,15 +219,23 @@ const AppContent = () => {
     PUBLIC_INDEXABLE_PREFIXES.some((p) => location.pathname.startsWith(p));
 
   // Welcome toast on sign in
+  // Wait for the profile to hydrate so we always greet by first name instead
+  // of the "back" fallback. A ref-flag lets us fire the greeting once per
+  // sign-in even if the event arrives before the profile is loaded.
+  const pendingGreetingRef = useRef(false);
   useEffect(() => {
-    const handler = () => {
-      const name = profile?.full_name?.split(" ")[0] || "back";
-      import("sonner").then(({ toast }) => {
-        toast.success(`Welcome back, ${name}!`, { duration: 3000 });
-      });
-    };
+    const handler = () => { pendingGreetingRef.current = true; };
     window.addEventListener("auth:signed_in", handler);
     return () => window.removeEventListener("auth:signed_in", handler);
+  }, []);
+  useEffect(() => {
+    if (!pendingGreetingRef.current) return;
+    const first = profile?.full_name?.trim().split(/\s+/)[0];
+    if (!first) return; // wait until we actually have a name
+    pendingGreetingRef.current = false;
+    import("sonner").then(({ toast }) => {
+      toast.success(`Welcome back, ${first}!`, { duration: 3000 });
+    });
   }, [profile]);
 
   return (
