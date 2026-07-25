@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { writeSystemFields } from "@/lib/systemFieldWrite";
 
 interface ExtractedItem {
   key: string;
@@ -417,33 +418,62 @@ export default function AddToProfileModal({ open, onOpenChange, recordId }: Prop
             added++;
           }
         } else if (item.target.kind === "system") {
-          // Stamp inspection date inside specs so the system carries its source-of-truth date,
-          // even for historical inspections (e.g. a 2022 report is still valid baseline data).
-          const specWithDate = {
-            ...(item.target.spec as Record<string, any>),
-            ...(inspectionDate ? { last_inspected_date: inspectionDate } : {}),
-            ...(isInspectionSource ? { source_record_id: recordId } : {}),
-          };
-          // Upsert by (property_id, system_name) to avoid unique-constraint failures
-          // when the user already added this system manually.
-          const { error } = await supabase.from("system_details").upsert(
-            {
-              property_id: activeProperty.id,
-              user_id: user.id,
-              system_name: item.target.systemName,
-              specs: specWithDate as any,
-              install_date: (item.target.spec as any)?.year || null,
-              brand: (item.target.spec as any)?.brand || null,
-              location_in_home: (item.target.spec as any)?.location || null,
-              status: "configured",
-              data_status: dataStatus as any,
-            } as any,
-            { onConflict: "property_id,system_name" },
-          );
-          if (error) {
-            console.warn("system_details upsert failed", item.target.systemName, error);
-          } else {
+          // FIX 4 — Route every system write through writeSystemFields so
+          // existing specs are MERGED (not replaced), trust ranking is
+          // enforced, and conflicts land in system_pending_verifications
+          // instead of silently overwriting owner-entered values.
+          const spec = (item.target.spec as Record<string, any>) || {};
+          const fields: Record<string, string | number | boolean | null> = {};
+          // Bare four-digit year → proper YYYY-01-01 date so we don't write
+          // a text year into a `date` column and get a silent type failure.
+          if (spec.year != null && spec.year !== "") {
+            const y = String(spec.year).trim();
+            fields.install_date = /^\d{4}$/.test(y) ? `${y}-01-01` : y;
+          }
+          if (spec.brand) fields.brand = spec.brand;
+          if (spec.location) fields.location_in_home = spec.location;
+          for (const [k, v] of Object.entries(spec)) {
+            if (v == null || v === "") continue;
+            if (k === "year" || k === "brand" || k === "location") continue;
+            fields[k] = v as any;
+          }
+          if (inspectionDate) fields.last_inspected_date = inspectionDate;
+          if (isInspectionSource) fields.source_record_id = recordId;
+          const result = await writeSystemFields({
+            propertyId: activeProperty.id,
+            userId: user.id,
+            systemName: item.target.systemName,
+            fields,
+            source: isInspectionSource ? "DOCUMENT_EXTRACTED" : "AI_INFERRED",
+            documentDate: inspectionDate ?? null,
+          });
+          if (result.failed > 0 && result.written === 0) {
+            console.warn("system_details write failed", item.target.systemName);
+          } else if (result.written > 0 || result.conflicts > 0) {
             added++;
+          }
+        } else if (item.target.kind === "note") {
+          // FIX 4 — Note items were previously silently discarded. Append to
+          // the source record's notes column so nothing goes missing.
+          if (recordId) {
+            const { data: rec } = await supabase
+              .from("property_records")
+              .select("notes")
+              .eq("id", recordId)
+              .maybeSingle();
+            const prior = (rec?.notes as string | null) || "";
+            const line = `${item.label}: ${item.value}`;
+            if (!prior.includes(line)) {
+              const nextNotes = prior ? `${prior}\n${line}` : line;
+              const { error } = await supabase
+                .from("property_records")
+                .update({ notes: nextNotes })
+                .eq("id", recordId);
+              if (!error) added++;
+              else console.warn("note append failed", item.key, error);
+            } else {
+              added++;
+            }
           }
         }
       } catch (e) {
