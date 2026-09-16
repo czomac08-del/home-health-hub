@@ -461,7 +461,7 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
             <label className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-bg-secondary py-3 cursor-pointer hover:border-primary/40 transition-colors">
               <Upload className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">{uploading ? "Uploading…" : "Upload Policy PDF"}</span>
-              <input type="file" accept=".pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadDoc(p.id, e.target.files[0]); }} />
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadDoc(p.id, e.target.files[0]); }} />
             </label>
           </div>
         ))}
