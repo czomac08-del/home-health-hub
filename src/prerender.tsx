@@ -9,7 +9,7 @@
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
 import { Routes, Route } from "react-router-dom";
-import { HelmetProvider, type FilledContext } from "react-helmet-async";
+import { HelmetProvider, type HelmetServerState } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import LandingPage from "./pages/LandingPage";
@@ -73,7 +73,7 @@ export function render(url: string): PrerenderResult {
     </HelmetProvider>
   );
 
-  const { helmet } = helmetContext as FilledContext;
+  const { helmet } = helmetContext as { helmet?: HelmetServerState };
   const head = helmet
     ? [
         helmet.title?.toString() ?? "",
