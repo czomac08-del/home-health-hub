@@ -18,6 +18,8 @@ import UploadStructurePrompt from "./UploadStructurePrompt";
 import { isLegacyAssignment } from "./StructureAssignmentSelector";
 import { getSpecFields } from "@/data/systemSpecFields";
 import { normalizeExtracted } from "@/lib/documentReviewFlow";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
@@ -252,8 +254,14 @@ export default function UploadDocumentModal({
       setStep("extracting");
       if (urlData?.signedUrl) {
         const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-          body: { documentUrl: urlData.signedUrl, systemType, source: "homeowner" },
+          body: {
+            documentUrl: urlData.signedUrl,
+            // Resolve the stored system type + chosen doc type into a real prompt key.
+            systemType: resolveExtractionPromptKey(systemType, docType),
+            source: "homeowner",
+          },
         });
+
         if (extErr) {
           // Document is saved; just skip extraction
           console.warn("Extraction failed:", extErr);
