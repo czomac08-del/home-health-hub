@@ -70,9 +70,10 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
 
   const [extractingReview, setExtractingReview] = useState(false);
   const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
-    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
+    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string; recordType?: string | null }
     | null
   >(null);
+
 
   const steps = getRecoverySteps(systemType, county, state, address);
 
@@ -134,12 +135,18 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
     signedUrl,
     fileName,
     targetSystemName,
-  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }) => {
+    recordType,
+  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string; recordType?: string | null }) => {
     setExtractingReview(true);
     let extracted: Record<string, any> = {};
     try {
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-        body: { documentUrl: signedUrl, systemType: targetSystemName, source: uploadData.source },
+        body: {
+          documentUrl: signedUrl,
+          // Resolve the display name / id into a real extraction prompt key.
+          systemType: resolveExtractionPromptKey(targetSystemName, recordType),
+          source: uploadData.source,
+        },
       });
       if (!extErr) {
         extracted = (ext?.extracted as Record<string, any>) || {};
@@ -154,9 +161,10 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
       console.warn("[RecordRecovery] extraction error:", err);
     } finally {
       setExtractingReview(false);
-      setReviewState({ recordId, fileName, extracted, targetSystemName });
+      setReviewState({ recordId, fileName, extracted, targetSystemName, recordType });
     }
   };
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
