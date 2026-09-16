@@ -215,12 +215,23 @@ const InsuranceScreen = () => {
     loadData();
   };
 
-  const handleUploadDoc = async (policyId: string, file: File) => {
+  const handleUploadDoc = async (policyId: string, rawFile: File) => {
     if (!user) return;
     setUploading(true);
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (e: any) {
+        toast.error(e?.message || "Couldn't read that photo");
+        setUploading(false);
+        return;
+      }
+    }
     const path = `${user.id}/${policyId}/${Date.now()}_${file.name}`;
     const { error: upErr } = await supabase.storage.from("insurance-documents").upload(path, file);
     if (upErr) { toast.error("Upload failed"); setUploading(false); return; }
+
     const { data: urlData } = await supabase.storage.from("insurance-documents").createSignedUrl(path, 86400);
     await supabase.from("insurance_documents").insert({
       user_id: user.id, policy_id: policyId, file_name: file.name,

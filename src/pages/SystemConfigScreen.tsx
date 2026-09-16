@@ -464,11 +464,21 @@ const SystemConfigScreen = () => {
   };
 
   const handleDocUpload = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile || !user) return;
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (err: any) {
+        toast.error(err?.message || "Couldn't read that photo");
+        return;
+      }
+    }
     const path = `${user.id}/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("system-documents").upload(path, file);
     if (error) { toast.error("Document upload failed"); return; }
+
     const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
     if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
 

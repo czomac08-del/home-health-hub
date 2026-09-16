@@ -101,12 +101,23 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
     loadWarranties();
   };
 
-  const handleUploadDoc = async (warrantyId: string, file: File) => {
+  const handleUploadDoc = async (warrantyId: string, rawFile: File) => {
     if (!user) return;
     setUploading(true);
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (e: any) {
+        toast.error(e?.message || "Couldn't read that photo");
+        setUploading(false);
+        return;
+      }
+    }
     const path = `${user.id}/${warrantyId}/${file.name}`;
     const { error: uploadError } = await supabase.storage.from("warranty-documents").upload(path, file);
     if (uploadError) { toast.error("Upload failed"); setUploading(false); return; }
+
     const { data: { signedUrl } } = await supabase.storage.from("warranty-documents").createSignedUrl(path, 60 * 60 * 24 * 365);
     await supabase.from("warranties").update({ document_path: path, document_url: signedUrl }).eq("id", warrantyId);
     toast.success("Document uploaded");
