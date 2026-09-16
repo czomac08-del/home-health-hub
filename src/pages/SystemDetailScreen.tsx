@@ -18,6 +18,8 @@ import ContractorShareModal from "@/components/ContractorShareModal";
 import PendingContractorSubmissions from "@/components/PendingContractorSubmissions";
 import { toast } from "sonner";
 import { savePhotoAiResult } from "@/lib/photoAiSave";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 const AMAZON_TAG = "cominghomeiq2-20";
 
@@ -407,7 +409,7 @@ const SystemDetailScreen = () => {
           title={systemUploadPrompts[system.id].title}
           description={systemUploadPrompts[system.id].description}
           defaultDocType={systemUploadPrompts[system.id].docType}
-          defaultSystemType={system.id}
+          defaultSystemType={resolveExtractionPromptKey(system.id, systemUploadPrompts[system.id].docType)}
           className="mb-6"
         />
       )}

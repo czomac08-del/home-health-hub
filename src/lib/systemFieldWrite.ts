@@ -69,6 +69,15 @@ export async function writeSystemField(args: {
   documentDate?: string | null;
 }): Promise<{ ok: boolean; conflict?: boolean; failed?: boolean; error?: any }> {
   const { propertyId, userId, systemName, field, value, source, notes, documentDate } = args;
+  if (!propertyId || !String(propertyId).trim()) {
+    return { ok: false, failed: true, error: new Error("Missing property id") };
+  }
+  if (!userId || !String(userId).trim()) {
+    return { ok: false, failed: true, error: new Error("Missing user id") };
+  }
+  if (!systemName || !String(systemName).trim()) {
+    return { ok: false, failed: true, error: new Error("Missing system name") };
+  }
   if (value == null || value === "") return { ok: false };
 
   const { data: existing } = await supabase
@@ -80,7 +89,10 @@ export async function writeSystemField(args: {
 
   const currentValue = existing ? readField(existing, field) : null;
   const existingTags = (existing?.source_tags as Record<string, string> | null) || {};
-  const existingSource = (existingTags?.[field] as SystemSourceTag | undefined) || "OWNER_PROVIDED";
+  // Untagged legacy values get the LOWEST trust so any properly tagged source
+  // can correct them. Real source tags keep their normal conflict behaviour.
+  const existingSource = (existingTags?.[field] as SystemSourceTag | undefined) || "AI_INFERRED";
+
   const existingDateKey = `__date_${field}`;
   const existingDate = (existingTags?.[existingDateKey] as string | undefined) || null;
 
