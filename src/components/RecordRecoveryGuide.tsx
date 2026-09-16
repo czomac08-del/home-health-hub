@@ -65,7 +65,9 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
     fileName: string;
     extracted: Record<string, any>;
     targetSystemName: string;
+    recordType?: string | null;
   } | null>(null);
+
   const [extractingReview, setExtractingReview] = useState(false);
   const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
     | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
