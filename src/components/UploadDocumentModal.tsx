@@ -1095,6 +1095,8 @@ export default function UploadDocumentModal({
                     isLegacy={selectedInstanceLegacy}
                     fileName={file?.name || "Document"}
                     recordId={recordId}
+                    documentType={docType}
+
                     extracted={extracted}
                     onSaved={handleReviewComponentSaved}
                     onCompleteLater={handleReviewComponentCompleteLater}

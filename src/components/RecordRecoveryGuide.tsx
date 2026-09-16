@@ -565,6 +565,8 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
               systemName={reviewState.targetSystemName}
               fileName={reviewState.fileName}
               recordId={reviewState.recordId}
+              documentType={reviewState.recordType}
+
               extracted={reviewState.extracted}
               onSaved={async () => {
                 try {

@@ -127,7 +127,7 @@ export default function UnifiedDocumentReview({
       setValues(seed);
     })();
     return () => { cancelled = true; };
-  }, [propertyId, systemName, JSON.stringify(extracted)]);
+  }, [propertyId, systemName, documentType, JSON.stringify(extracted)]);
 
   const unresolvedConflicts = useMemo(
     () => (rows ?? []).filter((r) => r.state === "conflict" && !conflictPick[r.field.key]),
