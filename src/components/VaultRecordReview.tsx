@@ -30,6 +30,8 @@ const WARRANTY_FIELDS: VaultReviewField[] = [
   { key: "claim_phone",    label: "Claim Phone",      type: "text",   extractKeys: ["claim_phone", "phone"] },
   { key: "claim_website",  label: "Claim Website",    type: "text",   extractKeys: ["claim_website", "website"] },
   { key: "claim_notes",    label: "Coverage Summary", type: "text",   extractKeys: ["coverage_summary", "claim_notes", "notes"] },
+  { key: "transferable",   label: "Transferable to New Owner (yes / no)", type: "text", extractKeys: ["transferable", "is_transferable", "transferability"], placeholder: "yes or no" },
+
 ];
 
 const INSURANCE_FIELDS: VaultReviewField[] = [
