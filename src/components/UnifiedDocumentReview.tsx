@@ -47,7 +47,9 @@ export default function UnifiedDocumentReview({
   isLegacy,
   fileName,
   recordId,
+  documentType,
   extracted,
+
   isPublicRecord,
   onSaved,
   onCompleteLater,
