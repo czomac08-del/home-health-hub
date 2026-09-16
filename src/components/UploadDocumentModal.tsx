@@ -766,7 +766,12 @@ export default function UploadDocumentModal({
       if (urlErr || !urlData?.signedUrl) throw urlErr || new Error("Could not get file URL");
 
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-        body: { documentUrl: urlData.signedUrl, systemType: rec.system_type, source: "homeowner" },
+        body: {
+          documentUrl: urlData.signedUrl,
+          systemType: resolveExtractionPromptKey(rec.system_type, docType),
+          source: "homeowner",
+        },
+
       });
       if (extErr) throw extErr;
       const newExtracted = ext?.extracted || {};
