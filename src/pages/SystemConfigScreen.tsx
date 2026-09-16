@@ -289,7 +289,7 @@ const SystemConfigScreen = () => {
     setScanResult(result);
   };
 
-  const handleScanConfirm = (fields: Record<string, string>) => {
+  const handleScanConfirm = async (fields: Record<string, string>) => {
     if (fields.brand) setBrand(fields.brand);
     if (fields.model) setModel(fields.model);
     if (fields.serial) setSerial(fields.serial);
@@ -301,21 +301,37 @@ const SystemConfigScreen = () => {
     if (fields.filterSize) setSpec("filterSize", fields.filterSize);
     if (fields.serviceCompany) setServiceCompany(fields.serviceCompany);
     if (fields.servicePhone) setServicePhone(fields.servicePhone);
+    const raw = (scanResult?.data as Record<string, any>) || {};
+    setScanResult(null);
     // Persist directly to system_details with PHOTO_AI source tag so the
     // scan result is not silently lost if the user closes the form.
-    if (user?.id && activeProperty?.id && displayName) {
-      const raw = (scanResult?.data as Record<string, any>) || {};
-      savePhotoAiResult({
+    if (!user?.id || !activeProperty?.id || !displayName) {
+      toast.info("Scan applied to the form — sign in and pick a property to save it.");
+      return;
+    }
+    try {
+      const result = await savePhotoAiResult({
         propertyId: activeProperty.id,
         userId: user.id,
         systemName: displayName,
         result: raw,
         overrides: fields,
-      }).catch((e) => console.error("[SystemConfig] PHOTO_AI save failed", e));
+      });
+      if (result.failed > 0 && result.written === 0) {
+        toast.error(`Couldn't save any scanned fields to ${displayName}.`);
+      } else if (result.failed > 0) {
+        toast.warning(`Saved ${result.written} of ${result.written + result.failed} scanned fields — ${result.failed} failed.`);
+      } else if (result.written > 0) {
+        toast.success(`Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${displayName}.`);
+      } else {
+        toast.info("Nothing new to save from that scan.");
+      }
+    } catch (e) {
+      console.error("[SystemConfig] PHOTO_AI save failed", e);
+      toast.error("Couldn't save scanned data. Please try again.");
     }
-    setScanResult(null);
-    toast.success("AI scan data saved to form!");
   };
+
 
   const analyzeUploadedPhoto = async (photo: AnalyzablePhoto) => {
     setAnalyzingPhotoIds((prev) => new Set(prev).add(photo.id));
