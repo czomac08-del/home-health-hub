@@ -150,6 +150,25 @@ export default function VaultRecordReview({
           .select("id")
           .eq("source_record_id", recordId ?? "")
           .maybeSingle();
+
+        // Carry the source document across so the warranty can always open its
+        // own PDF. Read straight from the record being reviewed.
+        let documentPath: string | null = null;
+        let documentUrl: string | null = null;
+        if (recordId) {
+          const { data: rec } = await supabase
+            .from("property_records")
+            .select("storage_path, url")
+            .eq("id", recordId)
+            .maybeSingle();
+          documentPath = (rec as any)?.storage_path || null;
+          documentUrl = (rec as any)?.url || null;
+        }
+
+        const rawTransferable = String(clean.transferable ?? "").trim().toLowerCase();
+        const isTransferable =
+          rawTransferable === "" ? null : /^(y|yes|true|transferable)/.test(rawTransferable);
+
         const payload: any = {
           user_id: userId,
           property_id: propertyId,
@@ -161,12 +180,17 @@ export default function VaultRecordReview({
           claim_phone: clean.claim_phone || null,
           claim_website: clean.claim_website || null,
           claim_notes: clean.claim_notes || null,
+          document_path: documentPath,
+          document_url: documentUrl,
+          document_bucket: documentPath ? "property-records" : null,
+          is_transferable: isTransferable,
         };
         if (existing?.id) {
           await supabase.from("warranties").update(payload).eq("id", existing.id);
         } else {
           await supabase.from("warranties").insert(payload);
         }
+
       } else if (kind === "insurance") {
         const payload: any = {
           user_id: userId,
