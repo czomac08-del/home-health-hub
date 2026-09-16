@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX, Upload, Phone, Globe, MessageSquare, ChevronDown, ChevronUp, FileText, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
