@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
 import UploadStructurePrompt from "@/components/UploadStructurePrompt";
 import { Loader2 } from "lucide-react";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 interface Props {
   systemType: SystemRecordType;
@@ -202,6 +204,7 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
       setShowUpload(false);
       const fileNameSnapshot = file.name;
       const signedUrlSnapshot = urlData?.signedUrl || "";
+      const recordTypeSnapshot = uploadData.recordType;
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
 
       // Universal upload flow: structure prompt (if needed) → AI extract →
@@ -215,6 +218,7 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
             signedUrl: signedUrlSnapshot,
             fileName: fileNameSnapshot,
             targetSystemName,
+            recordType: recordTypeSnapshot,
           });
         } else {
           void runExtractAndOpenReview({
@@ -222,9 +226,11 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
             signedUrl: signedUrlSnapshot,
             fileName: fileNameSnapshot,
             targetSystemName,
+            recordType: recordTypeSnapshot,
           });
         }
       }
+
 
       // Refresh records
       const { data } = await supabase
