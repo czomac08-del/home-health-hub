@@ -216,8 +216,11 @@ export async function prepareReviewRows(args: {
   propertyId: string;
   systemName: string;
   extracted: Record<string, any>;
+  /** User-chosen document type; permits define their own field list. */
+  documentType?: string | null;
 }): Promise<ReviewRow[]> {
-  const fields = getSpecFields(args.systemName);
+  const fields = getSpecFields(args.systemName, args.documentType);
+
   const normalized = normalizeExtracted(args.extracted, args.systemName);
   const { data: existing } = await supabase
     .from("system_details")
