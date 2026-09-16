@@ -116,7 +116,7 @@ export default function UnifiedDocumentReview({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const r = await prepareReviewRows({ propertyId, systemName, extracted });
+      const r = await prepareReviewRows({ propertyId, systemName, extracted, documentType });
       if (cancelled) return;
       setRows(r);
       // Pre-populate values with AI-confirmed values; conflicts left unresolved.
