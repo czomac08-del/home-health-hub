@@ -22,7 +22,10 @@ interface Props {
   isLegacy?: boolean;
   fileName: string;
   recordId: string | null;
+  /** User-chosen document type (e.g. "permit") — drives the field list. */
+  documentType?: string | null;
   extracted: Record<string, any>;
+
   /** True when this document was sourced from a public-records pull. */
   isPublicRecord?: boolean;
   onSaved: () => void;
