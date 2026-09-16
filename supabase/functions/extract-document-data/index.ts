@@ -218,6 +218,8 @@ EXTRACTION_PROMPTS.septic_inspection = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_pump_out = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_pumpout = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_permit = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.sewer_waste = EXTRACTION_PROMPTS.septic;
+
 
 // Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
 // used as a fallback in onboarding when public records aren't available for

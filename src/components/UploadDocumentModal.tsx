@@ -23,10 +23,11 @@ const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
   { value: "warranty", label: "Warranty", systemType: "warranty" },
   { value: "permit", label: "Permit", systemType: "permit" },
-  { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance" },
-  { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance" },
-  { value: "repair_receipt", label: "Repair Receipt", systemType: "maintenance" },
-  { value: "invoice", label: "Invoice / Receipt", systemType: "maintenance" },
+  { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance_policy" },
+  { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance_receipt" },
+  { value: "repair_receipt", label: "Repair Receipt", systemType: "appliance_receipt" },
+  { value: "invoice", label: "Invoice / Receipt", systemType: "appliance_receipt" },
+
   { value: "other", label: "Other", systemType: "other" },
 ];
 
