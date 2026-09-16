@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -215,12 +216,23 @@ const InsuranceScreen = () => {
     loadData();
   };
 
-  const handleUploadDoc = async (policyId: string, file: File) => {
+  const handleUploadDoc = async (policyId: string, rawFile: File) => {
     if (!user) return;
     setUploading(true);
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (e: any) {
+        toast.error(e?.message || "Couldn't read that photo");
+        setUploading(false);
+        return;
+      }
+    }
     const path = `${user.id}/${policyId}/${Date.now()}_${file.name}`;
     const { error: upErr } = await supabase.storage.from("insurance-documents").upload(path, file);
     if (upErr) { toast.error("Upload failed"); setUploading(false); return; }
+
     const { data: urlData } = await supabase.storage.from("insurance-documents").createSignedUrl(path, 86400);
     await supabase.from("insurance_documents").insert({
       user_id: user.id, policy_id: policyId, file_name: file.name,
@@ -461,7 +473,7 @@ Equipment Breakdown: ${p.equipment_breakdown ? "Yes" : "No"}
             <label className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-bg-secondary py-3 cursor-pointer hover:border-primary/40 transition-colors">
               <Upload className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">{uploading ? "Uploading…" : "Upload Policy PDF"}</span>
-              <input type="file" accept=".pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadDoc(p.id, e.target.files[0]); }} />
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadDoc(p.id, e.target.files[0]); }} />
             </label>
           </div>
         ))}

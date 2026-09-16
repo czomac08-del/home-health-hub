@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX, Upload, Phone, Globe, MessageSquare, ChevronDown, ChevronUp, FileText, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -101,12 +102,23 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
     loadWarranties();
   };
 
-  const handleUploadDoc = async (warrantyId: string, file: File) => {
+  const handleUploadDoc = async (warrantyId: string, rawFile: File) => {
     if (!user) return;
     setUploading(true);
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (e: any) {
+        toast.error(e?.message || "Couldn't read that photo");
+        setUploading(false);
+        return;
+      }
+    }
     const path = `${user.id}/${warrantyId}/${file.name}`;
     const { error: uploadError } = await supabase.storage.from("warranty-documents").upload(path, file);
     if (uploadError) { toast.error("Upload failed"); setUploading(false); return; }
+
     const { data: { signedUrl } } = await supabase.storage.from("warranty-documents").createSignedUrl(path, 60 * 60 * 24 * 365);
     await supabase.from("warranties").update({ document_path: path, document_url: signedUrl }).eq("id", warrantyId);
     toast.success("Document uploaded");
@@ -175,7 +187,7 @@ export default function WarrantySection({ systemDetailId, propertyId, systemInfo
         {!w.document_url && (
           <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
             <Upload className="h-3.5 w-3.5" /> Upload warranty document (PDF)
-            <input type="file" accept=".pdf" className="hidden" onChange={(e) => e.target.files?.[0] && handleUploadDoc(w.id, e.target.files[0])} />
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" className="hidden" onChange={(e) => e.target.files?.[0] && handleUploadDoc(w.id, e.target.files[0])} />
           </label>
         )}
         {w.document_url && (

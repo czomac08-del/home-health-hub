@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { normalizeImageFile } from "@/lib/imageUpload";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Camera, Save, X, Upload, FileText, Sparkles, Check, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -289,7 +290,7 @@ const SystemConfigScreen = () => {
     setScanResult(result);
   };
 
-  const handleScanConfirm = (fields: Record<string, string>) => {
+  const handleScanConfirm = async (fields: Record<string, string>) => {
     if (fields.brand) setBrand(fields.brand);
     if (fields.model) setModel(fields.model);
     if (fields.serial) setSerial(fields.serial);
@@ -301,21 +302,37 @@ const SystemConfigScreen = () => {
     if (fields.filterSize) setSpec("filterSize", fields.filterSize);
     if (fields.serviceCompany) setServiceCompany(fields.serviceCompany);
     if (fields.servicePhone) setServicePhone(fields.servicePhone);
+    const raw = (scanResult?.data as Record<string, any>) || {};
+    setScanResult(null);
     // Persist directly to system_details with PHOTO_AI source tag so the
     // scan result is not silently lost if the user closes the form.
-    if (user?.id && activeProperty?.id && displayName) {
-      const raw = (scanResult?.data as Record<string, any>) || {};
-      savePhotoAiResult({
+    if (!user?.id || !activeProperty?.id || !displayName) {
+      toast.info("Scan applied to the form — sign in and pick a property to save it.");
+      return;
+    }
+    try {
+      const result = await savePhotoAiResult({
         propertyId: activeProperty.id,
         userId: user.id,
         systemName: displayName,
         result: raw,
         overrides: fields,
-      }).catch((e) => console.error("[SystemConfig] PHOTO_AI save failed", e));
+      });
+      if (result.failed > 0 && result.written === 0) {
+        toast.error(`Couldn't save any scanned fields to ${displayName}.`);
+      } else if (result.failed > 0) {
+        toast.warning(`Saved ${result.written} of ${result.written + result.failed} scanned fields — ${result.failed} failed.`);
+      } else if (result.written > 0) {
+        toast.success(`Saved ${result.written} field${result.written === 1 ? "" : "s"} to ${displayName}.`);
+      } else {
+        toast.info("Nothing new to save from that scan.");
+      }
+    } catch (e) {
+      console.error("[SystemConfig] PHOTO_AI save failed", e);
+      toast.error("Couldn't save scanned data. Please try again.");
     }
-    setScanResult(null);
-    toast.success("AI scan data saved to form!");
   };
+
 
   const analyzeUploadedPhoto = async (photo: AnalyzablePhoto) => {
     setAnalyzingPhotoIds((prev) => new Set(prev).add(photo.id));
@@ -448,11 +465,21 @@ const SystemConfigScreen = () => {
   };
 
   const handleDocUpload = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile || !user) return;
+    let file = rawFile;
+    if (/^image\//i.test(rawFile.type) || /\.(heic|heif|jpe?g|png|webp)$/i.test(rawFile.name)) {
+      try {
+        file = await normalizeImageFile(rawFile);
+      } catch (err: any) {
+        toast.error(err?.message || "Couldn't read that photo");
+        return;
+      }
+    }
     const path = `${user.id}/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("system-documents").upload(path, file);
     if (error) { toast.error("Document upload failed"); return; }
+
     const { data: signedData } = await supabase.storage.from("system-documents").createSignedUrl(path, 3600);
     if (!signedData?.signedUrl) { toast.error("Failed to get document URL"); return; }
 
@@ -1308,7 +1335,7 @@ const SystemConfigScreen = () => {
                       {doc ? <p className="text-xs text-muted-foreground truncate">{doc.name} — {doc.date}</p> : <p className="text-xs text-muted-foreground/50 italic">No file uploaded</p>}
                     </div>
                     <label className="cursor-pointer shrink-0">
-                      <input type="file" accept=".pdf,.jpg,.png" className="hidden" onChange={(e) => handleDocUpload(docType, e)} />
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp" className="hidden" onChange={(e) => handleDocUpload(docType, e)} />
                       <Upload className="h-4 w-4 text-primary hover:text-primary/80 transition-colors" />
                     </label>
                   </div>
