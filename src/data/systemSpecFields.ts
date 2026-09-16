@@ -235,10 +235,29 @@ const chimneyFields: SpecField[] = [
   { key: "knownRepairs", label: "Known Repairs (description + date)", type: "text", placeholder: "e.g. Crown sealed, 2022" },
 ];
 
-// Map system display names to their spec fields
-export function getSpecFields(systemName: string): SpecField[] {
-  const lower = systemName.toLowerCase();
+// Building / trade permit documents (the `permit` extraction prompt).
+const permitFields: SpecField[] = [
+  { key: "permitNumber", label: "Permit Number", type: "text" },
+  { key: "permitType", label: "Permit Type", type: "text", placeholder: "e.g. Electrical, Plumbing, Building" },
+  { key: "permitDate", label: "Issue Date", type: "date" },
+  { key: "contractorName", label: "Contractor Name", type: "text" },
+  { key: "contractorLicense", label: "Contractor License Number", type: "text" },
+  { key: "workDescription", label: "Work Description", type: "text" },
+  { key: "inspectingOfficer", label: "Inspecting Officer", type: "text" },
+];
+
+export function getPermitFields(): SpecField[] {
+  return permitFields;
+}
+
+// Map system display names to their spec fields.
+// `documentType` wins when the document itself defines the schema (permits).
+export function getSpecFields(systemName: string, documentType?: string | null): SpecField[] {
+  const docType = String(documentType ?? "").toLowerCase();
+  if (docType.includes("permit")) return permitFields;
+  const lower = (systemName || "").toLowerCase();
   if (lower.includes("hvac")) return hvacFields;
+
   if (lower.includes("chimney") || lower.includes("fireplace")) return chimneyFields;
   if (lower.includes("well") || lower.includes("water source")) return wellWaterFields;
   if (lower.includes("water filter")) return waterFilterFields;

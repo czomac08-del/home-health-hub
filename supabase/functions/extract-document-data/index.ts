@@ -218,6 +218,8 @@ EXTRACTION_PROMPTS.septic_inspection = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_pump_out = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_pumpout = EXTRACTION_PROMPTS.septic;
 EXTRACTION_PROMPTS.septic_permit = EXTRACTION_PROMPTS.septic;
+EXTRACTION_PROMPTS.sewer_waste = EXTRACTION_PROMPTS.septic;
+
 
 // Real-estate listing extraction (Zillow, Realtor.com, Redfin, MLS sheets) —
 // used as a fallback in onboarding when public records aren't available for
@@ -357,6 +359,14 @@ EXTRACTION_PROMPTS.insurance_policy = `Extract details from a homeowner's insura
   "unclear_fields": [],
   "possible_values": {}
 }`;
+
+// Defensive aliases for legacy/bare document-type strings still written by
+// some callers. These must stay after the prompts they point at.
+EXTRACTION_PROMPTS.insurance = EXTRACTION_PROMPTS.insurance_policy;
+EXTRACTION_PROMPTS.appliance = EXTRACTION_PROMPTS.appliance_receipt;
+EXTRACTION_PROMPTS.maintenance = EXTRACTION_PROMPTS.appliance_receipt;
+
+
 
 // Safety-critical fields that require human confirmation when unclear
 const SAFETY_CRITICAL_FIELDS = new Set([

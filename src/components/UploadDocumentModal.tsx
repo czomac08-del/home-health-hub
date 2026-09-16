@@ -18,15 +18,18 @@ import UploadStructurePrompt from "./UploadStructurePrompt";
 import { isLegacyAssignment } from "./StructureAssignmentSelector";
 import { getSpecFields } from "@/data/systemSpecFields";
 import { normalizeExtracted } from "@/lib/documentReviewFlow";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 const DOC_TYPES = [
   { value: "inspection_report", label: "Inspection Report", systemType: "inspection" },
   { value: "warranty", label: "Warranty", systemType: "warranty" },
   { value: "permit", label: "Permit", systemType: "permit" },
-  { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance" },
-  { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance" },
-  { value: "repair_receipt", label: "Repair Receipt", systemType: "maintenance" },
-  { value: "invoice", label: "Invoice / Receipt", systemType: "maintenance" },
+  { value: "insurance_policy", label: "Insurance Policy", systemType: "insurance_policy" },
+  { value: "appliance_manual", label: "Appliance Manual", systemType: "appliance_receipt" },
+  { value: "repair_receipt", label: "Repair Receipt", systemType: "appliance_receipt" },
+  { value: "invoice", label: "Invoice / Receipt", systemType: "appliance_receipt" },
+
   { value: "other", label: "Other", systemType: "other" },
 ];
 
@@ -251,8 +254,14 @@ export default function UploadDocumentModal({
       setStep("extracting");
       if (urlData?.signedUrl) {
         const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-          body: { documentUrl: urlData.signedUrl, systemType, source: "homeowner" },
+          body: {
+            documentUrl: urlData.signedUrl,
+            // Resolve the stored system type + chosen doc type into a real prompt key.
+            systemType: resolveExtractionPromptKey(systemType, docType),
+            source: "homeowner",
+          },
         });
+
         if (extErr) {
           // Document is saved; just skip extraction
           console.warn("Extraction failed:", extErr);
@@ -757,7 +766,12 @@ export default function UploadDocumentModal({
       if (urlErr || !urlData?.signedUrl) throw urlErr || new Error("Could not get file URL");
 
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-        body: { documentUrl: urlData.signedUrl, systemType: rec.system_type, source: "homeowner" },
+        body: {
+          documentUrl: urlData.signedUrl,
+          systemType: resolveExtractionPromptKey(rec.system_type, docType),
+          source: "homeowner",
+        },
+
       });
       if (extErr) throw extErr;
       const newExtracted = ext?.extracted || {};
@@ -1094,6 +1108,8 @@ export default function UploadDocumentModal({
                     isLegacy={selectedInstanceLegacy}
                     fileName={file?.name || "Document"}
                     recordId={recordId}
+                    documentType={docType}
+
                     extracted={extracted}
                     onSaved={handleReviewComponentSaved}
                     onCompleteLater={handleReviewComponentCompleteLater}

@@ -104,7 +104,17 @@ export const EXTRACTION_KEY_ALIASES: Record<string, string> = {
   service_date: "last_service",
   refrigerant_type: "refrigerantType",
   work_performed: "notes",
+  // Permits
+  permit_type: "permitType",
+  issue_date: "permitDate",
+  permit_date: "permitDate",
+  contractor_name: "contractorName",
+  license_number: "contractorLicense",
+  contractor_license: "contractorLicense",
+  work_description: "workDescription",
+  inspecting_officer: "inspectingOfficer",
 };
+
 
 /**
  * System-context overrides for the alias map. When the target system is
@@ -206,8 +216,11 @@ export async function prepareReviewRows(args: {
   propertyId: string;
   systemName: string;
   extracted: Record<string, any>;
+  /** User-chosen document type; permits define their own field list. */
+  documentType?: string | null;
 }): Promise<ReviewRow[]> {
-  const fields = getSpecFields(args.systemName);
+  const fields = getSpecFields(args.systemName, args.documentType);
+
   const normalized = normalizeExtracted(args.extracted, args.systemName);
   const { data: existing } = await supabase
     .from("system_details")

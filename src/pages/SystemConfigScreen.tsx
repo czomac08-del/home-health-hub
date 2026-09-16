@@ -29,6 +29,8 @@ import type { RefreshScope } from "@/hooks/useDataRefresh";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
 import UploadStructurePrompt from "@/components/UploadStructurePrompt";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 const PHOTO_LABELS = ["Unit Photo", "Model Label", "Serial Number", "Installation", "Warranty Card"];
 const DOC_TYPES = ["Owner's Manual", "Warranty Document", "Purchase Receipt", "Service Records", "Permit Documents", "Property Survey"];
@@ -540,7 +542,13 @@ const SystemConfigScreen = () => {
     let extracted: Record<string, any> = {};
     try {
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-        body: { documentUrl: signedUrl, systemType: targetSystemName, source: "homeowner" },
+        body: {
+          documentUrl: signedUrl,
+          // Resolve the display name into a real extraction prompt key.
+          systemType: resolveExtractionPromptKey(targetSystemName),
+          source: "homeowner",
+        },
+
       });
       if (extErr) {
         console.warn("[SystemConfig] extract-document-data failed:", extErr);

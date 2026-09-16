@@ -22,7 +22,10 @@ interface Props {
   isLegacy?: boolean;
   fileName: string;
   recordId: string | null;
+  /** User-chosen document type (e.g. "permit") — drives the field list. */
+  documentType?: string | null;
   extracted: Record<string, any>;
+
   /** True when this document was sourced from a public-records pull. */
   isPublicRecord?: boolean;
   onSaved: () => void;
@@ -44,7 +47,9 @@ export default function UnifiedDocumentReview({
   isLegacy,
   fileName,
   recordId,
+  documentType,
   extracted,
+
   isPublicRecord,
   onSaved,
   onCompleteLater,
@@ -111,7 +116,7 @@ export default function UnifiedDocumentReview({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const r = await prepareReviewRows({ propertyId, systemName, extracted });
+      const r = await prepareReviewRows({ propertyId, systemName, extracted, documentType });
       if (cancelled) return;
       setRows(r);
       // Pre-populate values with AI-confirmed values; conflicts left unresolved.
@@ -122,7 +127,7 @@ export default function UnifiedDocumentReview({
       setValues(seed);
     })();
     return () => { cancelled = true; };
-  }, [propertyId, systemName, JSON.stringify(extracted)]);
+  }, [propertyId, systemName, documentType, JSON.stringify(extracted)]);
 
   const unresolvedConflicts = useMemo(
     () => (rows ?? []).filter((r) => r.state === "conflict" && !conflictPick[r.field.key]),

@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import UnifiedDocumentReview from "@/components/UnifiedDocumentReview";
 import UploadStructurePrompt from "@/components/UploadStructurePrompt";
 import { Loader2 } from "lucide-react";
+import { resolveExtractionPromptKey } from "@/lib/extractionRouting";
+
 
 interface Props {
   systemType: SystemRecordType;
@@ -65,12 +67,15 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
     fileName: string;
     extracted: Record<string, any>;
     targetSystemName: string;
+    recordType?: string | null;
   } | null>(null);
+
   const [extractingReview, setExtractingReview] = useState(false);
   const [pendingStructurePromptUpload, setPendingStructurePromptUpload] = useState<
-    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }
+    | { recordId: string; signedUrl: string; fileName: string; targetSystemName: string; recordType?: string | null }
     | null
   >(null);
+
 
   const steps = getRecoverySteps(systemType, county, state, address);
 
@@ -132,12 +137,18 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
     signedUrl,
     fileName,
     targetSystemName,
-  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string }) => {
+    recordType,
+  }: { recordId: string; signedUrl: string; fileName: string; targetSystemName: string; recordType?: string | null }) => {
     setExtractingReview(true);
     let extracted: Record<string, any> = {};
     try {
       const { data: ext, error: extErr } = await supabase.functions.invoke("extract-document-data", {
-        body: { documentUrl: signedUrl, systemType: targetSystemName, source: uploadData.source },
+        body: {
+          documentUrl: signedUrl,
+          // Resolve the display name / id into a real extraction prompt key.
+          systemType: resolveExtractionPromptKey(targetSystemName, recordType),
+          source: uploadData.source,
+        },
       });
       if (!extErr) {
         extracted = (ext?.extracted as Record<string, any>) || {};
@@ -152,9 +163,10 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
       console.warn("[RecordRecovery] extraction error:", err);
     } finally {
       setExtractingReview(false);
-      setReviewState({ recordId, fileName, extracted, targetSystemName });
+      setReviewState({ recordId, fileName, extracted, targetSystemName, recordType });
     }
   };
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -192,6 +204,7 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
       setShowUpload(false);
       const fileNameSnapshot = file.name;
       const signedUrlSnapshot = urlData?.signedUrl || "";
+      const recordTypeSnapshot = uploadData.recordType;
       setUploadData({ recordType: "permit", source: "county_office", documentDate: "", notes: "" });
 
       // Universal upload flow: structure prompt (if needed) → AI extract →
@@ -205,6 +218,7 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
             signedUrl: signedUrlSnapshot,
             fileName: fileNameSnapshot,
             targetSystemName,
+            recordType: recordTypeSnapshot,
           });
         } else {
           void runExtractAndOpenReview({
@@ -212,9 +226,11 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
             signedUrl: signedUrlSnapshot,
             fileName: fileNameSnapshot,
             targetSystemName,
+            recordType: recordTypeSnapshot,
           });
         }
       }
+
 
       // Refresh records
       const { data } = await supabase
@@ -565,6 +581,8 @@ const RecordRecoveryGuide = ({ systemType, systemName, propertyId, county, state
               systemName={reviewState.targetSystemName}
               fileName={reviewState.fileName}
               recordId={reviewState.recordId}
+              documentType={reviewState.recordType}
+
               extracted={reviewState.extracted}
               onSaved={async () => {
                 try {
